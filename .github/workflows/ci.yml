@@ -65,6 +65,9 @@ jobs:
       - name: Vite build check
         run: pnpm build
 
+      - name: Docs build check
+        run: pnpm docs:build
+
       # ── 1. Coverage-backed tests ──────────────────────────────────────────
       # The coverage commands run the same frontend and Rust test suites, so keep
       # them as the canonical test lane instead of running every suite twice.
