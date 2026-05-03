@@ -8,7 +8,7 @@ This file is the resumable working log for Tolaria mobile. The strategy and road
 
 - Branch: `codex/mobile`
 - Active phase: Phase 2 - Mobile Shell
-- Active slice: Define mobile vault repository boundary
+- Active slice: Include mobile tests in root test runner and commit gate
 - Push policy: commit locally; do not push unless explicitly requested
 - Validation target: iPad/iOS simulator first
 
@@ -37,6 +37,8 @@ This file is the resumable working log for Tolaria mobile. The strategy and road
 - Extracted compact phone navigation into a pure tested state machine so future swipe gestures can dispatch explicit events instead of mutating panels ad hoc.
 - Extracted mobile note projection into a pure module that turns raw vault-like note records into the list/editor shape used by the mobile shell.
 - Added a minimal mobile vault repository contract plus fixture implementation so app-local vault storage and git sync can plug in behind `listNotes` / `readNote` later.
+- Updated `scripts/run-tests.mjs` so full `pnpm test` runs desktop, mobile, and shared package tests, while targeted `apps/mobile/...` and `packages/markdown/...` paths route to the correct workspace Vitest config.
+- Updated `.husky/pre-commit` to use `pnpm test -- --silent` so local commits include the new mobile test suite.
 
 ## Next Action
 
@@ -95,6 +97,10 @@ Continue Phase 2 with the next mobile shell slice:
 - `pnpm --filter @tolaria/mobile typecheck` passed after mobile vault repository extraction.
 - CodeScene after mobile vault repository extraction: `apps/mobile/src/mobileVaultRepository.ts` and `apps/mobile/src/mobileVaultRepository.test.ts` scored `10`; `apps/mobile/src/demoData.ts` still returned no scorable code and no findings.
 - `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after mobile vault repository extraction.
+- `pnpm test -- apps/mobile/src/mobileVaultRepository.test.ts` passed and ran only the mobile repository test file.
+- `pnpm test -- packages/markdown/src/noteTitle.test.ts` passed and ran only the shared Markdown note-title test file.
+- `pnpm test -- --silent` passed after runner/hook updates: 309 desktop files / 3639 desktop tests, 4 mobile files / 11 mobile tests, 3 shared Markdown files / 56 shared tests.
+- CodeScene after test-runner update: `scripts/run-tests.mjs` scored `10`; `.husky/pre-commit` is unsupported by CodeScene file analysis because it has no supported extension.
 
 ## Risks / Watch Items
 
