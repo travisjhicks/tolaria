@@ -18,26 +18,28 @@ import {
   SlidersHorizontal,
 } from 'phosphor-react-native'
 import { MobileNote, notes, sidebarSections } from './demoData'
+import {
+  createCompactNavigationState,
+  transitionCompactNavigation,
+  type CompactNavigationEvent,
+  type CompactPanel,
+} from './compactNavigation'
 import { NamedIcon, type IconName } from './NamedIcon'
 import { styles } from './styles'
 import { colors } from './theme'
-
-type CompactPanel = 'sidebar' | 'list' | 'note' | 'properties'
 
 export function MobileApp() {
   const { width } = useWindowDimensions()
   const isTablet = width >= 820
   const showsProperties = width >= 1120
-  const [selectedNoteId, setSelectedNoteId] = useState(notes[0].id)
-  const [compactPanel, setCompactPanel] = useState<CompactPanel>('list')
+  const [compactNavigation, setCompactNavigation] = useState(() => createCompactNavigationState(notes[0].id))
   const selectedNote = useMemo(
-    () => notes.find((note) => note.id === selectedNoteId) ?? notes[0],
-    [selectedNoteId],
+    () => notes.find((note) => note.id === compactNavigation.selectedNoteId) ?? notes[0],
+    [compactNavigation.selectedNoteId],
   )
 
   const selectNote = (note: MobileNote) => {
-    setSelectedNoteId(note.id)
-    setCompactPanel('note')
+    setCompactNavigation((state) => transitionCompactNavigation(state, { type: 'selectNote', noteId: note.id }))
   }
 
   return (
@@ -46,16 +48,16 @@ export function MobileApp() {
         {isTablet ? (
           <View style={styles.tabletShell}>
             <SidebarPanel />
-            <NoteListPanel selectedNoteId={selectedNoteId} onSelectNote={selectNote} />
+            <NoteListPanel selectedNoteId={compactNavigation.selectedNoteId} onSelectNote={selectNote} />
             <EditorPanel note={selectedNote} />
             {showsProperties ? <PropertiesPanel note={selectedNote} /> : null}
           </View>
         ) : (
           <CompactShell
-            activePanel={compactPanel}
+            activePanel={compactNavigation.panel}
             note={selectedNote}
-            selectedNoteId={selectedNoteId}
-            onPanelChange={setCompactPanel}
+            selectedNoteId={compactNavigation.selectedNoteId}
+            onNavigate={(event) => setCompactNavigation((state) => transitionCompactNavigation(state, event))}
             onSelectNote={selectNote}
           />
         )}
@@ -67,38 +69,38 @@ export function MobileApp() {
 function CompactShell({
   activePanel,
   note,
-  onPanelChange,
+  onNavigate,
   onSelectNote,
   selectedNoteId,
 }: {
   activePanel: CompactPanel
   note: MobileNote
-  onPanelChange: (panel: CompactPanel) => void
+  onNavigate: (event: CompactNavigationEvent) => void
   onSelectNote: (note: MobileNote) => void
   selectedNoteId: string
 }) {
   if (activePanel === 'sidebar') {
-    return <SidebarPanel onClose={() => onPanelChange('list')} />
+    return <SidebarPanel onClose={() => onNavigate({ type: 'closeSidebar' })} />
   }
 
   if (activePanel === 'note') {
     return (
       <EditorPanel
         note={note}
-        onBack={() => onPanelChange('list')}
-        onOpenProperties={() => onPanelChange('properties')}
+        onBack={() => onNavigate({ type: 'backToList' })}
+        onOpenProperties={() => onNavigate({ type: 'openProperties' })}
       />
     )
   }
 
   if (activePanel === 'properties') {
-    return <PropertiesPanel note={note} onClose={() => onPanelChange('note')} />
+    return <PropertiesPanel note={note} onClose={() => onNavigate({ type: 'closeProperties' })} />
   }
 
   return (
     <NoteListPanel
       selectedNoteId={selectedNoteId}
-      onOpenSidebar={() => onPanelChange('sidebar')}
+      onOpenSidebar={() => onNavigate({ type: 'openSidebar' })}
       onSelectNote={onSelectNote}
     />
   )

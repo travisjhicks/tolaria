@@ -8,7 +8,7 @@ This file is the resumable working log for Tolaria mobile. The strategy and road
 
 - Branch: `codex/mobile`
 - Active phase: Phase 2 - Mobile Shell
-- Active slice: Scaffold iPad-first Expo shell with fixture data
+- Active slice: Prepare compact navigation for gesture-driven phone shell
 - Push policy: commit locally; do not push unless explicitly requested
 - Validation target: iPad/iOS simulator first
 
@@ -34,15 +34,15 @@ This file is the resumable working log for Tolaria mobile. The strategy and road
 - Added the first iPad-first/phone-ready shell using fixture notes, shared Markdown title/snippet helpers, Phosphor React Native icons, and responsive panels for sidebar, note list, editor, and properties.
 - Split mobile styles into small panel-specific StyleSheet modules so new mobile code starts at CodeScene `10.0`.
 - Pinned Expo runtime dependencies to the versions expected by Expo 55 after the initial generated versions failed iOS bundle export (`react-native@0.83.6`, `react@19.2.0`, matching safe-area/svg versions).
+- Extracted compact phone navigation into a pure tested state machine so future swipe gestures can dispatch explicit events instead of mutating panels ad hoc.
 
 ## Next Action
 
 Continue Phase 2 with the next mobile shell slice:
 
 1. Resolve the local CoreSimulator hang so `pnpm mobile:ios` can launch the app in an iPad simulator.
-2. Add a navigation-state test around the compact panel flow before introducing gestures.
-3. Add native gesture support for phone/tablet panel transitions.
-4. Start the storage/auth abstraction skeleton only after the shell has a reliable simulator loop.
+2. Add native gesture support for phone/tablet panel transitions once the simulator path is usable.
+3. Start the storage/auth abstraction skeleton after the shell has a reliable simulator loop.
 
 ## Verification Log
 
@@ -81,6 +81,10 @@ Continue Phase 2 with the next mobile shell slice:
 - CodeScene pre-commit safeguard passed for the current change set.
 - Codacy MCP can read repository analysis and security items for `refactoringhq/tolaria`; local Codacy CLI analysis is currently blocked because the Codacy CLI binary is not installed in this environment.
 - iOS simulator validation is blocked locally: Xcode is installed (`Xcode 26.3`), but `xcrun simctl list ...` hangs indefinitely even after opening `/Applications/Xcode.app/Contents/Developer/Applications/Simulator.app`.
+- `pnpm --filter @tolaria/mobile test` passed after compact navigation extraction: 2 files / 6 tests.
+- `pnpm --filter @tolaria/mobile typecheck` passed after compact navigation extraction.
+- CodeScene after compact navigation extraction: `apps/mobile/src/compactNavigation.ts`, `apps/mobile/src/compactNavigation.test.ts`, and the touched `apps/mobile/src/MobileApp.tsx` scored `10`.
+- `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after compact navigation extraction.
 
 ## Risks / Watch Items
 
