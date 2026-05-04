@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { createFixtureMobileVaultRepository } from './mobileVaultRepository'
+import { createMobileVaultConfig } from './mobileVaultConfig'
+import { createFixtureMobileVaultRepository, createStoredMobileVaultRepository } from './mobileVaultRepository'
+import { createMemoryMobileVaultStorage } from './mobileVaultStorage'
 import type { MobileNoteSource } from './mobileNoteProjection'
 
 const sources: MobileNoteSource[] = [
@@ -30,6 +32,24 @@ describe('mobile vault repository', () => {
 
     await expect(repository.readNote('missing')).resolves.toBeNull()
   })
+
+  it('projects notes from app-local markdown storage', async () => {
+    const repository = createStoredMobileVaultRepository({
+      storage: createMemoryMobileVaultStorage([
+        { path: 'inbox/workflow.md', content: '# Workflow\n\nStored markdown body.' },
+        { path: 'release.md', content: '# Release\n\nRelease body.' },
+      ]),
+      vault: createVault(),
+    })
+
+    const notes = await repository.listNotes()
+
+    expect(notes.map((note) => note.id)).toEqual(['inbox/workflow', 'release'])
+    await expect(repository.readNote('release')).resolves.toMatchObject({
+      id: 'release',
+      title: 'Release',
+    })
+  })
 })
 
 function createSource(id: string, title: string): MobileNoteSource {
@@ -43,4 +63,13 @@ function createSource(id: string, title: string): MobileNoteSource {
     tags: ['Tolaria MVP'],
     content: `---\ntitle: ${title}\n---\n\n# ${title}\n\nBody text for ${title}.`,
   }
+}
+
+function createVault() {
+  const result = createMobileVaultConfig({ id: 'personal', name: 'Personal Journal' })
+  if (!result.ok) {
+    throw new Error(result.error)
+  }
+
+  return result.config
 }
