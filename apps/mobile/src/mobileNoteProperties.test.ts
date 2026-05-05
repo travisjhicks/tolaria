@@ -11,11 +11,24 @@ import {
 describe('createMobileNoteFrontmatterPatch', () => {
   it('preserves note metadata while changing one property', () => {
     expect(createMobileNoteFrontmatterPatch({
-      note: { ...notes[0], date: 'May 5, 2026', icon: 'file-text', tags: ['Tolaria'], status: 'Draft' },
+      note: {
+        ...notes[0],
+        belongsTo: ['Tolaria MVP'],
+        date: 'May 5, 2026',
+        has: [],
+        icon: 'file-text',
+        relatedTo: ['release'],
+        status: 'Draft',
+        tags: ['Tolaria'],
+      },
       patch: { type: 'Project' },
     })).toEqual({
+      archived: false,
+      belongsTo: ['Tolaria MVP'],
       date: 'May 5, 2026',
+      has: [],
       icon: 'file-text',
+      relatedTo: ['release'],
       status: 'Draft',
       tags: ['Tolaria'],
       type: 'Project',
@@ -27,6 +40,17 @@ describe('createMobileNoteFrontmatterPatch', () => {
       note: { ...notes[0], status: 'Active' },
       patch: { status: '' },
     }).status).toBe('')
+  })
+
+  it('can archive notes while preserving relationship metadata', () => {
+    expect(createMobileNoteFrontmatterPatch({
+      note: { ...notes[0], belongsTo: ['Tolaria MVP'], relatedTo: ['release'] },
+      patch: { archived: true },
+    })).toMatchObject({
+      archived: true,
+      belongsTo: ['Tolaria MVP'],
+      relatedTo: ['release'],
+    })
   })
 })
 

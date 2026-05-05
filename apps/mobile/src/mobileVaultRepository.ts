@@ -58,12 +58,16 @@ function fileToSource(file: MobileVaultFile): MobileNoteSource {
 
   return {
     id: fileId(file.path),
+    archived: metadata.archived ?? false,
+    belongsTo: metadata.belongsTo,
     type: metadata.type ?? 'Note',
+    has: metadata.has,
     icon: metadata.icon ?? 'file-text',
     date: metadata.date ?? '',
     modified: '',
     filename: file.path,
     content: file.content,
+    relatedTo: metadata.relatedTo,
     status: metadata.status,
     tags: metadata.tags,
   }

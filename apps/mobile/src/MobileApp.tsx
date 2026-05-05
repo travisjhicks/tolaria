@@ -17,7 +17,7 @@ import {
   PencilSimple,
   Trash,
 } from 'phosphor-react-native'
-import { MobileNote, notes as fallbackNotes, sidebarSections } from './demoData'
+import { MobileNote, notes as fallbackNotes } from './demoData'
 import {
   createDemoVaultNote,
   deleteDemoVaultNote,
@@ -25,6 +25,7 @@ import {
   saveDemoVaultDraft,
   saveDemoVaultNoteFrontmatter,
 } from './mobileDemoVault'
+import { saveDemoVaultRawNote } from './mobileDemoVaultRawNote'
 import { createMobileAutosaveQueue } from './mobileAutosaveQueue'
 import type { MobileEditorDraft } from './mobileEditorDraft'
 import {
@@ -33,6 +34,7 @@ import {
 } from './mobileEditorSaveState'
 import { applySavedMobileEditorDraft } from './mobileSavedDraftProjection'
 import { MobileEditorAdapter } from './MobileEditorAdapter'
+import { MobileRawEditor } from './MobileRawEditor'
 import { MobileGitSyncStatusCard } from './MobileGitSyncStatusCard'
 import {
   createCompactNavigationState,
@@ -67,6 +69,15 @@ import type { MobileNotePropertyPatch } from './mobileNoteProperties'
 import { useMobileGitSyncFlow } from './useMobileGitSyncFlow'
 import { createNativeMobileGitTransport } from './mobileNativeGitTransport'
 import { loadExpoMobileGitNativeModule } from './mobileExpoNativeGitModule'
+import { applyMobileRawNoteContent } from './mobileRawNoteProjection'
+import {
+  createMobileSidebarSections,
+  defaultMobileSidebarSelection,
+  filterNotesForSidebarSelection,
+  isMobileSidebarSelectionActive,
+  mobileSidebarTitle,
+  type MobileSidebarSelection,
+} from './mobileSidebarNavigation'
 
 export function MobileApp() {
   const { width } = useWindowDimensions()
@@ -80,11 +91,20 @@ export function MobileApp() {
   const [activeVaultMetadata, setActiveVaultMetadata] = useState(defaultMobileVaultMetadata)
   const [availableNotes, setAvailableNotes] = useState(fallbackNotes)
   const [compactNavigation, setCompactNavigation] = useState(() => createCompactNavigationState(fallbackNotes[0].id))
+  const [editorModeByNoteId, setEditorModeByNoteId] = useState<Record<string, 'raw' | 'rich'>>({})
+  const [sidebarSelection, setSidebarSelection] = useState<MobileSidebarSelection>(defaultMobileSidebarSelection)
   const [saveStateByNoteId, setSaveStateByNoteId] = useState<Record<string, MobileEditorSaveState>>({})
+  const sidebarSections = useMemo(() => createMobileSidebarSections(availableNotes), [availableNotes])
+  const visibleNotes = useMemo(
+    () => filterNotesForSidebarSelection({ notes: availableNotes, selection: sidebarSelection }),
+    [availableNotes, sidebarSelection],
+  )
+  const listTitle = useMemo(() => mobileSidebarTitle(sidebarSelection), [sidebarSelection])
   const selectedNote = useMemo(
     () => availableNotes.find((note) => note.id === compactNavigation.selectedNoteId) ?? availableNotes[0],
     [availableNotes, compactNavigation.selectedNoteId],
   )
+  const selectedEditorMode = editorModeByNoteId[selectedNote.id] ?? 'rich'
   const selectedSaveState = saveStateByNoteId[selectedNote.id] ?? idleMobileEditorSaveState
   const gitSyncFlow = useMobileGitSyncFlow({
     createGitHubOAuthSession: createNativeMobileGitHubOAuthSessionFromEnvironment,
@@ -132,7 +152,39 @@ export function MobileApp() {
     void appStateStorage.save({ activeVaultId: activeVaultMetadata.id, selectedNoteId: noteId }).catch(() => {})
   }, [activeVaultMetadata.id, appStateStorage])
   const selectNote = useCallback((note: MobileNote) => selectNoteId(note.id), [selectNoteId])
+  const selectSidebar = useCallback((selection: MobileSidebarSelection) => {
+    setSidebarSelection(selection)
+
+    const nextNotes = filterNotesForSidebarSelection({ notes: availableNotes, selection })
+    if (nextNotes.length > 0 && !nextNotes.some((note) => note.id === selectedNote.id)) {
+      selectNoteId(nextNotes[0].id)
+    }
+  }, [availableNotes, selectNoteId, selectedNote.id])
+  const toggleEditorMode = useCallback(() => {
+    setEditorModeByNoteId((state) => ({
+      ...state,
+      [selectedNote.id]: selectedEditorMode === 'raw' ? 'rich' : 'raw',
+    }))
+  }, [selectedEditorMode, selectedNote.id])
   const saveDraft = useCallback((draft: MobileEditorDraft) => autosaveQueue.enqueue(draft), [autosaveQueue])
+  const saveRawMarkdown = useCallback((content: string) => {
+    const noteId = selectedNote.id
+    setSaveStateByNoteId((state) => ({ ...state, [noteId]: { label: 'Saving', state: 'saving' } }))
+    setAvailableNotes((notes) => applyMobileRawNoteContent({ content, noteId, notes }))
+
+    void saveDemoVaultRawNote({ content, noteId, vaultMetadata: activeVaultMetadata })
+      .then((result) => {
+        setSaveStateByNoteId((state) => ({
+          ...state,
+          [noteId]: result.status === 'saved'
+            ? { label: 'Saved', state: 'saved' }
+            : { label: 'Save failed', state: 'failed' },
+        }))
+      })
+      .catch(() => {
+        setSaveStateByNoteId((state) => ({ ...state, [noteId]: { label: 'Save failed', state: 'failed' } }))
+      })
+  }, [activeVaultMetadata, selectedNote.id])
   const deleteFlow = useMobileNoteDeleteFlow({
     deleteNote: (noteId) => deleteDemoVaultNote(noteId, activeVaultMetadata),
     loadNotes: () => loadDemoVaultNotes(activeVaultMetadata),
@@ -158,16 +210,28 @@ export function MobileApp() {
     }),
     selectedNote,
   })
+  const toggleSelectedArchive = useCallback(() => {
+    const archived = !selectedNote.archived
+    setAvailableNotes((notes) => notes.map((note) => (note.id === selectedNote.id ? { ...note, archived } : note)))
+    propertiesFlow.saveProperties({ archived })
+  }, [propertiesFlow, selectedNote.archived, selectedNote.id])
 
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.safeArea}>
         {isTablet ? (
           <View style={styles.tabletShell}>
-            <SidebarPanel activeVault={activeVaultMetadata} onOpenRemoteSetup={remoteSetupFlow.open} />
+            <SidebarPanel
+              activeVault={activeVaultMetadata}
+              activeSelection={sidebarSelection}
+              sections={sidebarSections}
+              onOpenRemoteSetup={remoteSetupFlow.open}
+              onSelect={selectSidebar}
+            />
             <NoteListPanel
               gitSyncPlan={gitSyncFlow.gitSyncPlan}
-              notes={availableNotes}
+              listTitle={listTitle}
+              notes={visibleNotes}
               selectedNoteId={compactNavigation.selectedNoteId}
               createNoteFailed={createFlow.failed}
               isCreatingNote={createFlow.isCreating}
@@ -178,17 +242,23 @@ export function MobileApp() {
               onSelectNote={selectNote}
             />
             <EditorPanel
+              editorMode={selectedEditorMode}
               note={selectedNote}
               saveState={selectedSaveState}
               onDeleteNote={deleteFlow.canDelete ? deleteFlow.deleteSelectedNote : undefined}
               onDraftChange={saveDraft}
+              onRawMarkdownChange={saveRawMarkdown}
+              onToggleArchive={toggleSelectedArchive}
+              onToggleEditorMode={toggleEditorMode}
             />
             {showsProperties ? (
               <MobilePropertiesPanel
                 failed={propertiesFlow.failed}
                 isSaving={propertiesFlow.isSaving}
+                notes={availableNotes}
                 note={selectedNote}
                 onChangeProperties={propertiesFlow.saveProperties}
+                onOpenNote={selectNoteId}
               />
             ) : null}
           </View>
@@ -196,14 +266,23 @@ export function MobileApp() {
           <CompactShell
             activePanel={compactNavigation.panel}
             activeVault={activeVaultMetadata}
+            activeSidebarSelection={sidebarSelection}
+            allNotes={availableNotes}
+            editorMode={selectedEditorMode}
             note={selectedNote}
             gitSyncPlan={gitSyncFlow.gitSyncPlan}
-            notes={availableNotes}
+            listTitle={listTitle}
+            notes={visibleNotes}
             saveState={selectedSaveState}
             selectedNoteId={compactNavigation.selectedNoteId}
+            sidebarSections={sidebarSections}
             onNavigate={(event) => setCompactNavigation((state) => transitionCompactNavigation(state, event))}
             onDeleteNote={deleteFlow.canDelete ? deleteFlow.deleteSelectedNote : undefined}
             onDraftChange={saveDraft}
+            onRawMarkdownChange={saveRawMarkdown}
+            onSelectSidebar={selectSidebar}
+            onToggleArchive={toggleSelectedArchive}
+            onToggleEditorMode={toggleEditorMode}
             createNoteFailed={createFlow.failed}
             isCreatingNote={createFlow.isCreating}
             runtimeLoadFailed={runtimeLoader.failed}
@@ -233,119 +312,154 @@ export function MobileApp() {
   )
 }
 
-function CompactShell({
-  activePanel,
-  activeVault,
-  note,
-  gitSyncPlan,
-  notes,
-  saveState,
-  onNavigate,
-  onDeleteNote,
-  onDraftChange,
-  createNoteFailed,
-  isCreatingNote,
-  runtimeLoadFailed,
-  onCreateNote,
-  onGitSyncAction,
-  onChangeProperties,
-  onOpenRemoteSetup,
-  onRetryRuntimeLoad,
-  onSelectNote,
-  propertiesFailed,
-  isSavingProperties,
-  selectedNoteId,
-}: {
+type CompactShellProps = {
   activePanel: CompactPanel
   activeVault: MobileVaultMetadata
+  activeSidebarSelection: MobileSidebarSelection
+  allNotes: MobileNote[]
+  editorMode: 'raw' | 'rich'
   note: MobileNote
   gitSyncPlan: MobileGitSyncPlan
+  listTitle: string
   notes: MobileNote[]
   saveState: MobileEditorSaveState
+  sidebarSections: ReturnType<typeof createMobileSidebarSections>
   createNoteFailed: boolean
   isCreatingNote: boolean
   runtimeLoadFailed: boolean
   onNavigate: (event: CompactNavigationEvent) => void
   onDeleteNote?: () => void
   onDraftChange: (draft: MobileEditorDraft) => void
+  onRawMarkdownChange: (markdown: string) => void
   onCreateNote: () => void
   onGitSyncAction: () => void
   onChangeProperties: (patch: MobileNotePropertyPatch) => void
   onOpenRemoteSetup: () => void
   onRetryRuntimeLoad: () => void
   onSelectNote: (note: MobileNote) => void
+  onSelectSidebar: (selection: MobileSidebarSelection) => void
+  onToggleArchive: () => void
+  onToggleEditorMode: () => void
   propertiesFailed: boolean
   isSavingProperties: boolean
   selectedNoteId: string
-}) {
-  if (activePanel === 'sidebar') {
-    return (
-      <SwipeSurface panel="sidebar" onNavigate={onNavigate}>
-        <SidebarPanel
-          activeVault={activeVault}
-          onClose={() => onNavigate({ type: 'closeSidebar' })}
-          onOpenRemoteSetup={onOpenRemoteSetup}
-        />
-      </SwipeSurface>
-    )
+}
+
+function CompactShell(props: CompactShellProps) {
+  if (props.activePanel === 'sidebar') {
+    return <CompactSidebarPanel {...props} />
   }
 
-  if (activePanel === 'note') {
-    return (
-      <SwipeSurface panel="note" onNavigate={onNavigate}>
-        <EditorPanel
-          note={note}
-          saveState={saveState}
-          onDeleteNote={onDeleteNote}
-          onDraftChange={onDraftChange}
-          onBack={() => onNavigate({ type: 'backToList' })}
-          onOpenProperties={() => onNavigate({ type: 'openProperties' })}
-        />
-      </SwipeSurface>
-    )
+  if (props.activePanel === 'note') {
+    return <CompactEditorPanel {...props} />
   }
 
-  if (activePanel === 'properties') {
-    return (
-      <SwipeSurface panel="properties" onNavigate={onNavigate}>
-        <MobilePropertiesPanel
-          failed={propertiesFailed}
-          isSaving={isSavingProperties}
-          note={note}
-          onChangeProperties={onChangeProperties}
-          onClose={() => onNavigate({ type: 'closeProperties' })}
-        />
-      </SwipeSurface>
-    )
+  if (props.activePanel === 'properties') {
+    return <CompactPropertiesPanel {...props} />
   }
 
+  return <CompactNoteListPanel {...props} />
+}
+
+function CompactSidebarPanel(props: CompactShellProps) {
   return (
-    <SwipeSurface panel="list" onNavigate={onNavigate}>
-      <NoteListPanel
-        gitSyncPlan={gitSyncPlan}
-        notes={notes}
-        selectedNoteId={selectedNoteId}
-        createNoteFailed={createNoteFailed}
-        isCreatingNote={isCreatingNote}
-        runtimeLoadFailed={runtimeLoadFailed}
-        onGitSyncAction={onGitSyncAction}
-        onCreateNote={onCreateNote}
-        onOpenSidebar={() => onNavigate({ type: 'openSidebar' })}
-        onRetryRuntimeLoad={onRetryRuntimeLoad}
-        onSelectNote={onSelectNote}
+    <SwipeSurface panel="sidebar" onNavigate={props.onNavigate}>
+      <SidebarPanel
+        activeVault={props.activeVault}
+        activeSelection={props.activeSidebarSelection}
+        onClose={() => props.onNavigate({ type: 'closeSidebar' })}
+        onOpenRemoteSetup={props.onOpenRemoteSetup}
+        onSelect={(selection) => {
+          props.onSelectSidebar(selection)
+          props.onNavigate({ type: 'closeSidebar' })
+        }}
+        sections={props.sidebarSections}
       />
     </SwipeSurface>
   )
 }
 
+function CompactEditorPanel(props: CompactShellProps) {
+  return (
+    <SwipeSurface panel="note" onNavigate={props.onNavigate}>
+      <EditorPanel
+        editorMode={props.editorMode}
+        note={props.note}
+        saveState={props.saveState}
+        onDeleteNote={props.onDeleteNote}
+        onDraftChange={props.onDraftChange}
+        onRawMarkdownChange={props.onRawMarkdownChange}
+        onBack={() => props.onNavigate({ type: 'backToList' })}
+        onOpenProperties={() => props.onNavigate({ type: 'openProperties' })}
+        onToggleArchive={props.onToggleArchive}
+        onToggleEditorMode={props.onToggleEditorMode}
+      />
+    </SwipeSurface>
+  )
+}
+
+function CompactPropertiesPanel(props: CompactShellProps) {
+  return (
+    <SwipeSurface panel="properties" onNavigate={props.onNavigate}>
+      <MobilePropertiesPanel
+        failed={props.propertiesFailed}
+        isSaving={props.isSavingProperties}
+        notes={props.allNotes}
+        note={props.note}
+        onChangeProperties={props.onChangeProperties}
+        onClose={() => props.onNavigate({ type: 'closeProperties' })}
+        onOpenNote={(noteId) => openCompactRelationship({ noteId, props })}
+      />
+    </SwipeSurface>
+  )
+}
+
+function CompactNoteListPanel(props: CompactShellProps) {
+  return (
+    <SwipeSurface panel="list" onNavigate={props.onNavigate}>
+      <NoteListPanel
+        gitSyncPlan={props.gitSyncPlan}
+        listTitle={props.listTitle}
+        notes={props.notes}
+        selectedNoteId={props.selectedNoteId}
+        createNoteFailed={props.createNoteFailed}
+        isCreatingNote={props.isCreatingNote}
+        runtimeLoadFailed={props.runtimeLoadFailed}
+        onGitSyncAction={props.onGitSyncAction}
+        onCreateNote={props.onCreateNote}
+        onOpenSidebar={() => props.onNavigate({ type: 'openSidebar' })}
+        onRetryRuntimeLoad={props.onRetryRuntimeLoad}
+        onSelectNote={props.onSelectNote}
+      />
+    </SwipeSurface>
+  )
+}
+
+function openCompactRelationship({
+  noteId,
+  props,
+}: {
+  noteId: string
+  props: CompactShellProps
+}) {
+  props.onNavigate({ type: 'closeProperties' })
+  props.onSelectNote(props.allNotes.find((item) => item.id === noteId) ?? props.note)
+}
+
 function SidebarPanel({
   activeVault,
+  activeSelection,
   onClose,
   onOpenRemoteSetup,
+  onSelect,
+  sections,
 }: {
   activeVault: MobileVaultMetadata
+  activeSelection: MobileSidebarSelection
   onClose?: () => void
   onOpenRemoteSetup: () => void
+  onSelect: (selection: MobileSidebarSelection) => void
+  sections: ReturnType<typeof createMobileSidebarSections>
 }) {
   return (
     <View style={styles.sidebar}>
@@ -355,19 +469,26 @@ function SidebarPanel({
       </Toolbar>
       <ScrollView contentContainerStyle={styles.sidebarContent}>
         <MobileVaultManagementCard vault={activeVault} onOpenRemoteSetup={onOpenRemoteSetup} />
-        {sidebarSections.map((section) => (
+        {sections.map((section) => (
           <View key={section.title} style={styles.sidebarSection}>
             <Text style={styles.sidebarSectionTitle}>{section.title}</Text>
             {section.items.map((item) => (
               <Pressable
-                key={item.id}
+                key={sidebarItemKey(item.selection)}
+                onPress={() => onSelect(item.selection)}
                 style={({ pressed }) => [
                   styles.sidebarItem,
-                  item.id === 'inbox' ? styles.sidebarItemSelected : null,
+                  isMobileSidebarSelectionActive({ candidate: item.selection, current: activeSelection })
+                    ? styles.sidebarItemSelected
+                    : null,
                   pressed ? styles.pressed : null,
                 ]}
               >
-                <NamedIcon name={item.icon as IconName} size={20} color={item.id === 'inbox' ? colors.primary : colors.iconMuted} />
+                <NamedIcon
+                  name={item.icon as IconName}
+                  size={20}
+                  color={isMobileSidebarSelectionActive({ candidate: item.selection, current: activeSelection }) ? colors.primary : colors.iconMuted}
+                />
                 <Text style={styles.sidebarItemText}>{item.label}</Text>
                 {item.count > 0 ? <Text style={styles.sidebarCount}>{item.count}</Text> : null}
               </Pressable>
@@ -379,8 +500,13 @@ function SidebarPanel({
   )
 }
 
+function sidebarItemKey(selection: MobileSidebarSelection) {
+  return selection.kind === 'type' ? `type:${selection.type}` : `library:${selection.id}`
+}
+
 function NoteListPanel({
   gitSyncPlan,
+  listTitle,
   notes,
   createNoteFailed,
   isCreatingNote,
@@ -393,6 +519,7 @@ function NoteListPanel({
   selectedNoteId,
 }: {
   gitSyncPlan: MobileGitSyncPlan
+  listTitle: string
   notes: MobileNote[]
   createNoteFailed: boolean
   isCreatingNote: boolean
@@ -408,7 +535,7 @@ function NoteListPanel({
     <View style={styles.noteList}>
       <Toolbar>
         {onOpenSidebar ? <IconButton icon={<List size={25} color={colors.textSoft} />} onPress={onOpenSidebar} /> : null}
-        <Text style={styles.listTitle}>Inbox</Text>
+        <Text style={styles.listTitle}>{listTitle}</Text>
         <View style={styles.toolbarSpacer} />
         <IconButton icon={<MagnifyingGlass size={23} color={colors.textSoft} />} />
       </Toolbar>
@@ -485,30 +612,46 @@ function selectLoadedNote(
 }
 
 function EditorPanel({
+  editorMode,
   note,
   saveState,
   onDeleteNote,
   onDraftChange,
   onBack,
   onOpenProperties,
+  onRawMarkdownChange,
+  onToggleArchive,
+  onToggleEditorMode,
 }: {
+  editorMode: 'raw' | 'rich'
   note: MobileNote
   saveState?: MobileEditorSaveState
   onDeleteNote?: () => void
   onDraftChange?: (draft: MobileEditorDraft) => void
   onBack?: () => void
   onOpenProperties?: () => void
+  onRawMarkdownChange: (markdown: string) => void
+  onToggleArchive: () => void
+  onToggleEditorMode: () => void
 }) {
   return (
     <View style={styles.editor}>
       <Toolbar>
         {onBack ? <IconButton icon={<CaretLeft size={25} color={colors.textSoft} />} onPress={onBack} /> : null}
-        <MobileEditorBreadcrumb note={note} saveState={saveState ?? idleMobileEditorSaveState} />
+        <MobileEditorBreadcrumb
+          isRawMode={editorMode === 'raw'}
+          note={note}
+          saveState={saveState ?? idleMobileEditorSaveState}
+          onToggleArchive={onToggleArchive}
+          onToggleRawMode={onToggleEditorMode}
+        />
         {onOpenProperties ? <IconButton icon={<Info size={23} color={colors.textSoft} />} onPress={onOpenProperties} /> : null}
         {onDeleteNote ? <IconButton icon={<Trash size={23} color={colors.textSoft} />} onPress={onDeleteNote} /> : null}
         <IconButton icon={<DotsThreeVertical size={23} color={colors.textSoft} />} />
       </Toolbar>
-      <MobileEditorAdapter note={note} onDraftChange={onDraftChange} />
+      {editorMode === 'raw'
+        ? <MobileRawEditor key={note.id} note={note} onRawMarkdownChange={onRawMarkdownChange} />
+        : <MobileEditorAdapter note={note} onDraftChange={onDraftChange} />}
     </View>
   )
 }

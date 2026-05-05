@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native'
+import { Platform, StyleSheet } from 'react-native'
 import { colors, spacing } from '../theme'
 
 export const editorStyles = StyleSheet.create({
@@ -45,6 +45,17 @@ export const editorStyles = StyleSheet.create({
   tentapEditor: {
     flex: 1,
     overflow: 'hidden',
+  },
+  rawEditorContent: {
+    flex: 1,
+    padding: spacing.xl,
+  },
+  rawEditorInput: {
+    flex: 1,
+    color: colors.text,
+    fontFamily: Platform.select({ ios: 'Menlo', default: 'monospace' }),
+    fontSize: 15,
+    lineHeight: 22,
   },
   tentapToolbar: {
     position: 'absolute',

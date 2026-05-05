@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { notes, sidebarSections } from './demoData'
+import { notes } from './demoData'
+import { createMobileSidebarSections } from './mobileSidebarNavigation'
 
 describe('mobile demo data', () => {
   it('derives note titles and snippets through shared markdown utilities', () => {
@@ -9,9 +10,11 @@ describe('mobile demo data', () => {
   })
 
   it('keeps the initial sidebar focused on inbox', () => {
+    const sidebarSections = createMobileSidebarSections(notes)
+
     expect(sidebarSections[0].items[0]).toMatchObject({
-      id: 'inbox',
       label: 'Inbox',
+      selection: { kind: 'library', id: 'inbox' },
     })
   })
 })

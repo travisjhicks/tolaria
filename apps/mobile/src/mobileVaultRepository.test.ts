@@ -59,10 +59,14 @@ describe('mobile vault repository', () => {
           content: [
             '---',
             'type: Essay',
+            'archived: true',
             'icon: pen-nib',
             'status: Active',
             'date: 2026-05-05',
             'tags: [Tolaria MVP, mobile]',
+            'belongs_to: [Tolaria MVP]',
+            'related_to: [release]',
+            'has: [migration]',
             '---',
             '# Workflow',
           ].join('\n'),
@@ -73,10 +77,14 @@ describe('mobile vault repository', () => {
 
     await expect(repository.readNote('workflow')).resolves.toMatchObject({
       id: 'workflow',
+      archived: true,
+      belongsTo: ['Tolaria MVP'],
       type: 'Essay',
+      has: ['migration'],
       icon: 'pen-nib',
       status: 'Active',
       date: '2026-05-05',
+      relatedTo: ['release'],
       tags: ['Tolaria MVP', 'mobile'],
     })
   })
@@ -99,12 +107,16 @@ describe('mobile vault repository', () => {
 
 function createSource(id: string, title: string): MobileNoteSource {
   return {
+    archived: false,
+    belongsTo: [],
     id,
     type: 'Essay',
+    has: [],
     icon: 'pen-nib',
     date: 'May 13, 2026',
     modified: '6h ago',
     filename: `${id}.md`,
+    relatedTo: [],
     tags: ['Tolaria MVP'],
     content: `---\ntitle: ${title}\n---\n\n# ${title}\n\nBody text for ${title}.`,
   }

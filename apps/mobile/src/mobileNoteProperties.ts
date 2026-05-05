@@ -16,8 +16,12 @@ export function createMobileNoteFrontmatterPatch({
   patch: MobileNotePropertyPatch
 }): WritableMobileNoteFrontmatter {
   return {
+    archived: patch.archived ?? note.archived,
+    belongsTo: patch.belongsTo ?? note.belongsTo,
     date: patch.date ?? note.date,
+    has: patch.has ?? note.has,
     icon: patch.icon ?? note.icon,
+    relatedTo: patch.relatedTo ?? note.relatedTo,
     status: patch.status ?? note.status,
     tags: patch.tags ?? note.tags,
     type: patch.type ?? note.type,

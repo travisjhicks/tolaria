@@ -18,6 +18,7 @@ export async function loadDemoVaultNotes(vaultMetadata = defaultMobileVaultMetad
   const storage = createNativeMobileVaultStorage()
   const demoVault = createDemoVaultConfig(vaultMetadata)
   await seedMobileVaultIfEmpty({ files: demoVaultFiles(), storage, vault: demoVault })
+  await addMissingDemoVaultFiles({ files: demoVaultFiles(), storage, vault: demoVault })
 
   return createStoredMobileVaultRepository({ storage, vault: demoVault }).listNotes()
 }
@@ -62,11 +63,9 @@ export function saveDemoVaultNoteFrontmatter({
   noteId: string
   vaultMetadata?: MobileVaultMetadata
 }) {
-  return saveMobileNoteFrontmatter({
-    metadata,
-    noteId,
-    storage: createNativeMobileVaultStorage(),
-    vault: createDemoVaultConfig(vaultMetadata),
+  return saveDemoVaultDocumentChange({
+    vaultMetadata,
+    write: ({ storage, vault }) => saveMobileNoteFrontmatter({ metadata, noteId, storage, vault }),
   })
 }
 
@@ -79,4 +78,35 @@ function demoVaultFiles(): MobileVaultFile[] {
 
 function createDemoVaultConfig(vaultMetadata: MobileVaultMetadata) {
   return createMobileVaultConfigFromMetadata(vaultMetadata)
+}
+
+function createDemoVaultStorageContext(vaultMetadata: MobileVaultMetadata) {
+  return {
+    storage: createNativeMobileVaultStorage(),
+    vault: createDemoVaultConfig(vaultMetadata),
+  }
+}
+
+function saveDemoVaultDocumentChange<T>({
+  vaultMetadata,
+  write,
+}: {
+  vaultMetadata: MobileVaultMetadata
+  write: (context: ReturnType<typeof createDemoVaultStorageContext>) => T
+}) {
+  return write(createDemoVaultStorageContext(vaultMetadata))
+}
+
+async function addMissingDemoVaultFiles({
+  files,
+  storage,
+  vault,
+}: {
+  files: MobileVaultFile[]
+  storage: ReturnType<typeof createNativeMobileVaultStorage>
+  vault: ReturnType<typeof createDemoVaultConfig>
+}) {
+  const existingPaths = new Set((await storage.listMarkdownFiles(vault)).map((file) => file.path))
+  const missingFiles = files.filter((file) => !existingPaths.has(file.path))
+  await Promise.all(missingFiles.map((file) => storage.writeMarkdownFile(vault, file.path, file.content)))
 }

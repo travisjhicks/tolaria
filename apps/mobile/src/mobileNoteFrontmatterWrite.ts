@@ -1,14 +1,18 @@
 import { splitFrontmatter } from '@tolaria/markdown'
 
 export type WritableMobileNoteFrontmatter = {
+  archived?: boolean
+  belongsTo?: string[]
   date?: string
+  has?: string[]
   icon?: string
+  relatedTo?: string[]
   status?: string
   tags?: string[]
   type?: string
 }
 
-const writableKeys = new Set(['date', 'icon', 'status', 'tags', 'type'])
+const writableKeys = new Set(['archived', 'belongs_to', 'date', 'has', 'icon', 'related_to', 'status', 'tags', 'type'])
 
 export function writeMobileNoteFrontmatter({
   content,
@@ -28,11 +32,15 @@ export function writeMobileNoteFrontmatter({
 
 function supportedFrontmatterLines(metadata: WritableMobileNoteFrontmatter) {
   return [
-    scalarLine('type', metadata.type),
-    scalarLine('status', metadata.status),
-    scalarLine('date', metadata.date),
-    scalarLine('icon', metadata.icon),
-    tagsLine(metadata.tags),
+    booleanLine({ key: 'archived', value: metadata.archived }),
+    scalarLine({ key: 'type', value: metadata.type }),
+    scalarLine({ key: 'status', value: metadata.status }),
+    scalarLine({ key: 'date', value: metadata.date }),
+    scalarLine({ key: 'icon', value: metadata.icon }),
+    listLine({ key: 'belongs_to', values: metadata.belongsTo }),
+    listLine({ key: 'related_to', values: metadata.relatedTo }),
+    listLine({ key: 'has', values: metadata.has }),
+    listLine({ key: 'tags', values: metadata.tags }),
   ].filter(isText)
 }
 
@@ -43,13 +51,17 @@ function unknownFrontmatterLines(frontmatter: string) {
     .filter(isUnknownFrontmatterLine)
 }
 
-function scalarLine(key: string, value: string | undefined) {
+function scalarLine({ key, value }: { key: string; value: string | undefined }) {
   return isText(value) ? `${key}: ${yamlValue(value.trim())}` : null
 }
 
-function tagsLine(tags: string[] | undefined) {
-  const values = tags?.map((tag) => tag.trim()).filter(isText) ?? []
-  return values.length > 0 ? `tags: [${values.map(yamlValue).join(', ')}]` : null
+function booleanLine({ key, value }: { key: string; value: boolean | undefined }) {
+  return value ? `${key}: true` : null
+}
+
+function listLine({ key, values }: { key: string; values: string[] | undefined }) {
+  const cleanedValues = values?.map((tag) => tag.trim()).filter(isText) ?? []
+  return cleanedValues.length > 0 ? `${key}: [${cleanedValues.map(yamlValue).join(', ')}]` : null
 }
 
 function yamlValue(value: string) {

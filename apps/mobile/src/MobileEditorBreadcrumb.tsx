@@ -1,21 +1,39 @@
-import { Text, View } from 'react-native'
+import { Archive, Code, PencilSimpleLine, Tray } from 'phosphor-react-native'
+import type { ReactNode } from 'react'
+import { Pressable, Text, View } from 'react-native'
 import type { MobileNote } from './demoData'
 import type { MobileEditorSaveState } from './mobileEditorSaveState'
 import { styles } from './styles'
+import { colors } from './theme'
 
 export function MobileEditorBreadcrumb({
+  isRawMode,
   note,
+  onToggleArchive,
+  onToggleRawMode,
   saveState,
 }: {
+  isRawMode: boolean
   note: MobileNote
+  onToggleArchive: () => void
+  onToggleRawMode: () => void
   saveState: MobileEditorSaveState
 }) {
+  const ArchiveIcon = note.archived ? Tray : Archive
+  const RawIcon = isRawMode ? PencilSimpleLine : Code
+
   return (
     <View style={styles.editorBreadcrumb}>
       <Text numberOfLines={1} style={styles.editorBreadcrumbText}>{note.type}</Text>
       <Text style={styles.editorBreadcrumbDivider}>/</Text>
       <Text numberOfLines={1} style={styles.editorBreadcrumbTitle}>{note.id}</Text>
       <Text style={[styles.editorSaveState, saveStateStyle(saveState)]}>{saveState.label}</Text>
+      <BreadcrumbButton label={isRawMode ? 'Rich editor' : 'Raw editor'} onPress={onToggleRawMode}>
+        <RawIcon color={isRawMode ? colors.primary : colors.textSoft} size={18} />
+      </BreadcrumbButton>
+      <BreadcrumbButton label={note.archived ? 'Move to inbox' : 'Archive'} onPress={onToggleArchive}>
+        <ArchiveIcon color={colors.textSoft} size={18} />
+      </BreadcrumbButton>
     </View>
   )
 }
@@ -35,4 +53,24 @@ function saveStateStyle(saveState: MobileEditorSaveState) {
     default:
       return styles.editorSaveState_idle
   }
+}
+
+function BreadcrumbButton({
+  children,
+  label,
+  onPress,
+}: {
+  children: ReactNode
+  label: string
+  onPress: () => void
+}) {
+  return (
+    <Pressable
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={({ pressed }) => [styles.editorBreadcrumbButton, pressed ? styles.pressed : null]}
+    >
+      {children}
+    </Pressable>
+  )
 }

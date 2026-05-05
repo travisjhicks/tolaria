@@ -1,8 +1,12 @@
 import { splitFrontmatter } from '@tolaria/markdown'
 
 export type MobileNoteFrontmatter = {
+  archived?: boolean
+  belongsTo: string[]
   date?: string
+  has: string[]
   icon?: string
+  relatedTo: string[]
   status?: string
   tags: string[]
   type?: string
@@ -13,27 +17,40 @@ export function readMobileNoteFrontmatter(content: string): MobileNoteFrontmatte
   const lines = frontmatterLines(frontmatter)
 
   return {
-    date: readScalarField({ key: 'date', lines }),
-    icon: readScalarField({ key: 'icon', lines }),
-    status: readScalarField({ key: 'status', lines }),
-    tags: readTags(lines),
-    type: readScalarField({ key: 'type', lines }),
+    archived: readField({ key: 'archived', lines, parse: parseBooleanField }),
+    belongsTo: readField({ key: 'belongs_to', lines, parse: parseListField }),
+    date: readField({ key: 'date', lines, parse: parseScalarField }),
+    has: readField({ key: 'has', lines, parse: parseListField }),
+    icon: readField({ key: 'icon', lines, parse: parseScalarField }),
+    relatedTo: readField({ key: 'related_to', lines, parse: parseListField }),
+    status: readField({ key: 'status', lines, parse: parseScalarField }),
+    tags: readField({ key: 'tags', lines, parse: parseListField }),
+    type: readField({ key: 'type', lines, parse: parseScalarField }),
   }
 }
 
-function readScalarField({
+function readField<T>({
   key,
   lines,
+  parse,
 }: {
   key: string
   lines: string[]
+  parse: (value: string | undefined) => T
 }) {
   const value = readRawField({ key, lines })
+  return parse(value)
+}
+
+function parseScalarField(value: string | undefined) {
   return value && !value.startsWith('[') ? unquote(value) : undefined
 }
 
-function readTags(lines: string[]) {
-  const value = readRawField({ key: 'tags', lines })
+function parseBooleanField(value: string | undefined) {
+  return value === 'true' ? true : undefined
+}
+
+function parseListField(value: string | undefined) {
   return value?.startsWith('[') ? readInlineList(value) : []
 }
 

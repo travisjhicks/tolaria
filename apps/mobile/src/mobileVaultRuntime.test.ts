@@ -52,15 +52,21 @@ function createAppStateStorage(calls: string[]): MobileAppStateStorage {
 
 function note({ id }: { id: string }): MobileNote {
   return {
-    id,
-    title: id,
-    snippet: '',
-    date: 'today',
-    modified: 'today',
-    tags: [],
-    type: 'Essay',
-    icon: 'essay',
-    words: 0,
+    archived: false,
+    backlinks: [],
+    belongsTo: [],
     content: '',
+    date: 'today',
+    has: [],
+    icon: 'essay',
+    id,
+    modified: 'today',
+    outgoingLinks: [],
+    relatedTo: [],
+    snippet: '',
+    tags: [],
+    title: id,
+    type: 'Essay',
+    words: 0,
   }
 }

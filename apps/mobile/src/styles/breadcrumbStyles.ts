@@ -25,4 +25,12 @@ export const breadcrumbStyles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+  editorBreadcrumbButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
+    backgroundColor: colors.canvas,
+  },
 })

@@ -34,9 +34,8 @@ export function MobileEditorAdapter({
   })
   useEffect(() => {
     const timer = setTimeout(() => {
-      editor.injectCSS(mobileEditorCss, 'tolaria-mobile-editor')
-      editor.injectJS('document.documentElement.lang = navigator.language || "en"; true;')
-    }, 100)
+      applyMobileEditorWebViewSetup(editor)
+    }, 250)
 
     return () => clearTimeout(timer)
   }, [editor, note.id])
@@ -44,7 +43,7 @@ export function MobileEditorAdapter({
   return (
     <View style={styles.editorAdapterContent}>
       <View style={styles.tentapEditor}>
-        <RichText key={note.id} editor={editor} />
+        <RichText key={note.id} editor={editor} onLoad={() => applyMobileEditorWebViewSetup(editor)} />
       </View>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -56,7 +55,16 @@ export function MobileEditorAdapter({
   )
 }
 
+function applyMobileEditorWebViewSetup(editor: ReturnType<typeof useEditorBridge>) {
+  editor.injectCSS(mobileEditorCss, 'tolaria-mobile-editor')
+  editor.injectJS('document.documentElement.lang = navigator.language || "en"; true;')
+}
+
 const mobileEditorCss = `
+  * {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif !important;
+  }
+
   html,
   body,
   #root,
