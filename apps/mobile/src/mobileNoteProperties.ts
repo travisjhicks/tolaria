@@ -15,16 +15,26 @@ export function createMobileNoteFrontmatterPatch({
   note: MobileNote
   patch: MobileNotePropertyPatch
 }): WritableMobileNoteFrontmatter {
-  return {
+  const metadata: WritableMobileNoteFrontmatter = {
     archived: patch.archived ?? note.archived,
     belongsTo: patch.belongsTo ?? note.belongsTo,
+    customProperties: patch.customProperties ?? note.customProperties,
     date: patch.date ?? note.date,
+    favorite: patch.favorite ?? note.favorite,
+    favoriteIndex: patch.favoriteIndex ?? note.favoriteIndex,
     has: patch.has ?? note.has,
     icon: patch.icon ?? note.icon,
     relatedTo: patch.relatedTo ?? note.relatedTo,
+    relationships: patch.relationships ?? note.relationships,
     status: patch.status ?? note.status,
     tags: patch.tags ?? note.tags,
     type: patch.type ?? note.type,
+  }
+
+  return {
+    ...metadata,
+    ...(patch.removedCustomPropertyKeys ? { removedCustomPropertyKeys: patch.removedCustomPropertyKeys } : {}),
+    ...(patch.removedRelationshipKeys ? { removedRelationshipKeys: patch.removedRelationshipKeys } : {}),
   }
 }
 

@@ -2,6 +2,7 @@ export type MobileShortcutCommand =
   | 'editToggleRawEditor'
   | 'fileNewNote'
   | 'noteDelete'
+  | 'noteToggleFavorite'
   | 'viewAll'
   | 'viewEditorList'
   | 'viewEditorOnly'
@@ -30,6 +31,7 @@ export const mobileShortcutBindings: MobileShortcutBinding[] = [
   { accelerator: 'CmdOrCtrl+Shift+I', command: 'viewToggleProperties' },
   { accelerator: 'CmdOrCtrl+Left', command: 'viewGoBack' },
   { accelerator: 'CmdOrCtrl+Backspace', command: 'noteDelete' },
+  { accelerator: 'CmdOrCtrl+D', command: 'noteToggleFavorite' },
 ]
 
 export function mobileShortcutCommandFromKeyPress(event: MobileShortcutKeyPress) {

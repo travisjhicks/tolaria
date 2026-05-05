@@ -8,6 +8,9 @@ export type MobileNoteRelationship = {
 export type MobileNoteSource = {
   archived?: boolean
   belongsTo?: string[]
+  customProperties?: Record<string, string>
+  favorite?: boolean
+  favoriteIndex?: number | null
   id: string
   type: string
   has?: string[]
@@ -17,6 +20,7 @@ export type MobileNoteSource = {
   filename: string
   content: string
   relatedTo?: string[]
+  relationships?: Record<string, string[]>
   status?: string
   tags: string[]
 }
@@ -25,9 +29,13 @@ export type MobileNote = Omit<MobileNoteSource, 'filename'> & {
   archived: boolean
   backlinks: MobileNoteRelationship[]
   belongsTo: string[]
+  customProperties: Record<string, string>
+  favorite: boolean
+  favoriteIndex: number | null
   has: string[]
   outgoingLinks: string[]
   relatedTo: string[]
+  relationships: Record<string, string[]>
   title: string
   snippet: string
   words: number
@@ -43,6 +51,9 @@ export function projectMobileNote(source: MobileNoteSource): MobileNote {
     id: source.id,
     archived: source.archived ?? false,
     belongsTo: source.belongsTo ?? [],
+    customProperties: source.customProperties ?? {},
+    favorite: source.favorite ?? false,
+    favoriteIndex: source.favoriteIndex ?? null,
     type: source.type,
     has: source.has ?? [],
     icon: source.icon,
@@ -50,6 +61,7 @@ export function projectMobileNote(source: MobileNoteSource): MobileNote {
     modified: source.modified,
     content: source.content,
     relatedTo: source.relatedTo ?? [],
+    relationships: source.relationships ?? {},
     status: source.status,
     tags: source.tags,
     backlinks: [],

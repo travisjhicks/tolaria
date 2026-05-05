@@ -16,6 +16,17 @@ describe('mobile sidebar navigation', () => {
     expect(filterNotesForSidebarSelection({ notes, selection: { kind: 'type', type: 'Project' } }).map((item) => item.id)).toEqual(['active'])
   })
 
+  it('filters favorites and saved nested views', () => {
+    const notes = [
+      note({ favorite: true, id: 'essay', status: 'Active', tags: ['mobile'], type: 'Essay' }),
+      note({ id: 'draft', relatedTo: ['mobile-roadmap'], status: 'Draft', type: 'Note' }),
+      note({ id: 'ignored', status: 'Done', type: 'Project' }),
+    ]
+
+    expect(filterNotesForSidebarSelection({ notes, selection: { kind: 'library', id: 'favorites' } }).map((item) => item.id)).toEqual(['essay'])
+    expect(filterNotesForSidebarSelection({ notes, selection: { kind: 'view', id: 'active-drafts' } }).map((item) => item.id)).toEqual(['draft'])
+  })
+
   it('builds sidebar sections from current local notes', () => {
     const sections = createMobileSidebarSections([
       note({ id: 'draft', status: 'Draft', type: 'Essay' }),
@@ -27,8 +38,9 @@ describe('mobile sidebar navigation', () => {
       ['Inbox', 1],
       ['All Notes', 2],
       ['Archive', 1],
+      ['Favorites', 0],
     ])
-    expect(sections[1].items.map((item) => item.label)).toEqual(['Essays', 'Projects'])
+    expect(sections[2].items.map((item) => item.label)).toEqual(['Essays', 'Projects'])
   })
 
   it('formats list titles for library and type selections', () => {
@@ -39,13 +51,19 @@ describe('mobile sidebar navigation', () => {
 
 function note({
   archived = false,
+  favorite = false,
   id,
+  relatedTo = [],
   status,
+  tags = [],
   type,
 }: {
   archived?: boolean
+  favorite?: boolean
   id: string
+  relatedTo?: string[]
   status?: string
+  tags?: string[]
   type: string
 }): MobileNote {
   return {
@@ -53,16 +71,20 @@ function note({
     backlinks: [],
     belongsTo: [],
     content: `# ${id}`,
+    customProperties: {},
     date: '',
+    favorite,
+    favoriteIndex: null,
     has: [],
     icon: 'file-text',
     id,
     modified: '',
     outgoingLinks: [],
-    relatedTo: [],
+    relatedTo,
+    relationships: {},
     snippet: '',
     status,
-    tags: [],
+    tags,
     title: id,
     type,
     words: 1,

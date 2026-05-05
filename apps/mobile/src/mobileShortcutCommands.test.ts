@@ -16,6 +16,7 @@ describe('mobile shortcut commands', () => {
     expect(mobileShortcutCommandFromKeyPress({ key: '\\', metaKey: true })).toBe('editToggleRawEditor')
     expect(mobileShortcutCommandFromKeyPress({ key: 'i', metaKey: true, shiftKey: true })).toBe('viewToggleProperties')
     expect(mobileShortcutCommandFromKeyPress({ key: 'Backspace', metaKey: true })).toBe('noteDelete')
+    expect(mobileShortcutCommandFromKeyPress({ key: 'd', metaKey: true })).toBe('noteToggleFavorite')
   })
 
   it('ignores unmodified and alternative-modified keys', () => {

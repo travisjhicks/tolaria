@@ -15,6 +15,8 @@ import {
   List,
   MagnifyingGlass,
   PencilSimple,
+  Robot,
+  Star,
   Trash,
 } from 'phosphor-react-native'
 import { MobileNote, notes as fallbackNotes } from './demoData'
@@ -48,6 +50,7 @@ import { styles } from './styles'
 import { colors } from './theme'
 import { MobileEditorBreadcrumb } from './MobileEditorBreadcrumb'
 import { MobilePropertiesPanel } from './MobilePropertiesPanel'
+import { MobileAiPanel } from './MobileAiPanel'
 import { MobileVaultManagementCard } from './MobileVaultManagementCard'
 import { MobileVaultRemotePrompt } from './MobileVaultRemotePrompt'
 import { useMobileNoteCreateFlow } from './useMobileNoteCreateFlow'
@@ -78,6 +81,7 @@ import {
   mobileSidebarTitle,
   type MobileSidebarSelection,
 } from './mobileSidebarNavigation'
+import { mobileTypeAppearance } from './mobileTypeAppearance'
 
 export function MobileApp() {
   const { width } = useWindowDimensions()
@@ -92,6 +96,7 @@ export function MobileApp() {
   const [availableNotes, setAvailableNotes] = useState(fallbackNotes)
   const [compactNavigation, setCompactNavigation] = useState(() => createCompactNavigationState(fallbackNotes[0].id))
   const [editorModeByNoteId, setEditorModeByNoteId] = useState<Record<string, 'raw' | 'rich'>>({})
+  const [rightPanel, setRightPanel] = useState<'ai' | 'properties'>('properties')
   const [sidebarSelection, setSidebarSelection] = useState<MobileSidebarSelection>(defaultMobileSidebarSelection)
   const [saveStateByNoteId, setSaveStateByNoteId] = useState<Record<string, MobileEditorSaveState>>({})
   const sidebarSections = useMemo(() => createMobileSidebarSections(availableNotes), [availableNotes])
@@ -215,6 +220,12 @@ export function MobileApp() {
     setAvailableNotes((notes) => notes.map((note) => (note.id === selectedNote.id ? { ...note, archived } : note)))
     propertiesFlow.saveProperties({ archived })
   }, [propertiesFlow, selectedNote.archived, selectedNote.id])
+  const toggleSelectedFavorite = useCallback(() => {
+    const favorite = !selectedNote.favorite
+    const favoriteIndex = favorite ? availableNotes.filter((note) => note.favorite).length : null
+    setAvailableNotes((notes) => notes.map((note) => (note.id === selectedNote.id ? { ...note, favorite, favoriteIndex } : note)))
+    propertiesFlow.saveProperties({ favorite, favoriteIndex })
+  }, [availableNotes, propertiesFlow, selectedNote.favorite, selectedNote.id])
 
   return (
     <SafeAreaProvider>
@@ -243,15 +254,19 @@ export function MobileApp() {
             />
             <EditorPanel
               editorMode={selectedEditorMode}
+              notes={availableNotes}
               note={selectedNote}
               saveState={selectedSaveState}
               onDeleteNote={deleteFlow.canDelete ? deleteFlow.deleteSelectedNote : undefined}
               onDraftChange={saveDraft}
+              onOpenAi={() => setRightPanel('ai')}
+              onOpenProperties={() => setRightPanel('properties')}
               onRawMarkdownChange={saveRawMarkdown}
               onToggleArchive={toggleSelectedArchive}
               onToggleEditorMode={toggleEditorMode}
+              onToggleFavorite={toggleSelectedFavorite}
             />
-            {showsProperties ? (
+            {showsProperties && rightPanel === 'properties' ? (
               <MobilePropertiesPanel
                 failed={propertiesFlow.failed}
                 isSaving={propertiesFlow.isSaving}
@@ -261,6 +276,7 @@ export function MobileApp() {
                 onOpenNote={selectNoteId}
               />
             ) : null}
+            {showsProperties && rightPanel === 'ai' ? <MobileAiPanel note={selectedNote} /> : null}
           </View>
         ) : (
           <CompactShell
@@ -283,6 +299,7 @@ export function MobileApp() {
             onSelectSidebar={selectSidebar}
             onToggleArchive={toggleSelectedArchive}
             onToggleEditorMode={toggleEditorMode}
+            onToggleFavorite={toggleSelectedFavorite}
             createNoteFailed={createFlow.failed}
             isCreatingNote={createFlow.isCreating}
             runtimeLoadFailed={runtimeLoader.failed}
@@ -330,6 +347,7 @@ type CompactShellProps = {
   onNavigate: (event: CompactNavigationEvent) => void
   onDeleteNote?: () => void
   onDraftChange: (draft: MobileEditorDraft) => void
+  onOpenAi?: () => void
   onRawMarkdownChange: (markdown: string) => void
   onCreateNote: () => void
   onGitSyncAction: () => void
@@ -340,6 +358,7 @@ type CompactShellProps = {
   onSelectSidebar: (selection: MobileSidebarSelection) => void
   onToggleArchive: () => void
   onToggleEditorMode: () => void
+  onToggleFavorite: () => void
   propertiesFailed: boolean
   isSavingProperties: boolean
   selectedNoteId: string
@@ -384,15 +403,18 @@ function CompactEditorPanel(props: CompactShellProps) {
     <SwipeSurface panel="note" onNavigate={props.onNavigate}>
       <EditorPanel
         editorMode={props.editorMode}
+        notes={props.allNotes}
         note={props.note}
         saveState={props.saveState}
         onDeleteNote={props.onDeleteNote}
         onDraftChange={props.onDraftChange}
+        onOpenAi={props.onOpenAi}
         onRawMarkdownChange={props.onRawMarkdownChange}
         onBack={() => props.onNavigate({ type: 'backToList' })}
         onOpenProperties={() => props.onNavigate({ type: 'openProperties' })}
         onToggleArchive={props.onToggleArchive}
         onToggleEditorMode={props.onToggleEditorMode}
+        onToggleFavorite={props.onToggleFavorite}
       />
     </SwipeSurface>
   )
@@ -501,7 +523,9 @@ function SidebarPanel({
 }
 
 function sidebarItemKey(selection: MobileSidebarSelection) {
-  return selection.kind === 'type' ? `type:${selection.type}` : `library:${selection.id}`
+  if (selection.kind === 'type') return `type:${selection.type}`
+  if (selection.kind === 'view') return `view:${selection.id}`
+  return `library:${selection.id}`
 }
 
 function NoteListPanel({
@@ -556,6 +580,7 @@ function NoteListPanel({
           >
             <View style={styles.noteRowHeader}>
               <Text style={styles.noteTitle}>{item.title}</Text>
+              {item.favorite ? <Star color={colors.primary} size={16} weight="fill" /> : null}
               <NamedIcon name={item.icon as IconName} size={18} color={colors.primary} />
             </View>
             <Text numberOfLines={2} style={styles.noteSnippet}>{item.snippet}</Text>
@@ -564,6 +589,7 @@ function NoteListPanel({
               <Text style={styles.noteMeta}>Created {item.date}</Text>
             </View>
             <View style={styles.tagRow}>
+              <TypeChip type={item.type} />
               {item.tags.slice(0, 2).map((tag) => <Tag key={tag} label={tag} />)}
             </View>
           </Pressable>
@@ -613,26 +639,32 @@ function selectLoadedNote(
 
 function EditorPanel({
   editorMode,
+  notes,
   note,
   saveState,
   onDeleteNote,
   onDraftChange,
+  onOpenAi,
   onBack,
   onOpenProperties,
   onRawMarkdownChange,
   onToggleArchive,
   onToggleEditorMode,
+  onToggleFavorite,
 }: {
   editorMode: 'raw' | 'rich'
+  notes: MobileNote[]
   note: MobileNote
   saveState?: MobileEditorSaveState
   onDeleteNote?: () => void
   onDraftChange?: (draft: MobileEditorDraft) => void
+  onOpenAi?: () => void
   onBack?: () => void
   onOpenProperties?: () => void
   onRawMarkdownChange: (markdown: string) => void
   onToggleArchive: () => void
   onToggleEditorMode: () => void
+  onToggleFavorite: () => void
 }) {
   return (
     <View style={styles.editor}>
@@ -643,14 +675,16 @@ function EditorPanel({
           note={note}
           saveState={saveState ?? idleMobileEditorSaveState}
           onToggleArchive={onToggleArchive}
+          onToggleFavorite={onToggleFavorite}
           onToggleRawMode={onToggleEditorMode}
         />
         {onOpenProperties ? <IconButton icon={<Info size={23} color={colors.textSoft} />} onPress={onOpenProperties} /> : null}
+        {onOpenAi ? <IconButton icon={<Robot size={23} color={colors.textSoft} />} onPress={onOpenAi} /> : null}
         {onDeleteNote ? <IconButton icon={<Trash size={23} color={colors.textSoft} />} onPress={onDeleteNote} /> : null}
         <IconButton icon={<DotsThreeVertical size={23} color={colors.textSoft} />} />
       </Toolbar>
       {editorMode === 'raw'
-        ? <MobileRawEditor key={note.id} note={note} onRawMarkdownChange={onRawMarkdownChange} />
+        ? <MobileRawEditor key={note.id} notes={notes} note={note} onRawMarkdownChange={onRawMarkdownChange} />
         : <MobileEditorAdapter note={note} onDraftChange={onDraftChange} />}
     </View>
   )
@@ -670,4 +704,22 @@ function IconButton({ icon, onPress }: { icon: React.ReactNode; onPress?: () => 
 
 function Tag({ label }: { label: string }) {
   return <Text style={styles.tag}>{label}</Text>
+}
+
+function TypeChip({ type }: { type: string }) {
+  const appearance = mobileTypeAppearance(type)
+  return (
+    <Text
+      style={[
+        styles.tag,
+        {
+          backgroundColor: appearance.backgroundColor,
+          borderColor: appearance.borderColor,
+          color: appearance.color,
+        },
+      ]}
+    >
+      {type}
+    </Text>
+  )
 }

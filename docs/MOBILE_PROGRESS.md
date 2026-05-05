@@ -8,7 +8,7 @@ This file is the resumable working log for Tolaria mobile. The strategy and road
 
 - Branch: `codex/mobile`
 - Active phase: Phase 4 - Editor V1
-- Active slice: Git credential/auth boundaries and editor durability
+- Active slice: Local workflow parity, relationships, views, favorites, and AI panel
 - Push policy: commit locally; do not push unless explicitly requested
 - Validation target: iPad/iOS simulator first
 
@@ -112,14 +112,23 @@ This file is the resumable working log for Tolaria mobile. The strategy and road
 - Upgraded the mobile properties prototype so type, status, date, and tags can be entered from the keyboard with quick chips as shortcuts, while icon editing stays chip-based.
 - Removed the now-unused title prompt component and kept the compose-button disabled state with the note-list styles.
 - Split new breadcrumb styles out of the shared toolbar styles and removed stale editor/property style entries so the CodeScene pre-commit safeguard stays green.
+- Added first-class mobile metadata projection for `_favorite`, `_favorite_index`, custom scalar properties, and dynamic relationship frontmatter fields.
+- Added editable mobile relationship groups with inline note autocomplete, removable relationship chips, addable custom relationship groups, and add/remove custom scalar properties.
+- Added raw Markdown wikilink autocomplete that detects active `[[...` queries, suggests local notes, and inserts canonical aliased wikilinks.
+- Added Favorites to the mobile sidebar and breadcrumb star toggle, including the desktop-aligned `CmdOrCtrl+D` shortcut command.
+- Added mobile saved views with nested `all` / `any` filter groups and desktop-like relationship/wikilink comparison semantics.
+- Added desktop-inspired type/relationship chip coloring for the mobile note list and properties panel.
+- Added an API-key-only AI side panel using an OpenAI-compatible `/chat/completions` request path, with no agents and no local models.
+- Set the booted iPad simulator keyboard preferences to Italian (`it_IT@sw=QWERTY;hw=Automatic`).
 
 ## Next Action
 
-Continue Phase 4 with editor durability:
+Continue Phase 4 with local workflow parity and native QA:
 
-1. Continue TenTap Markdown serialization coverage for any editor output observed in simulator QA.
-2. Implement the native Git module behind `createNativeMobileGitTransport`, preferably Rust/libgit2 unless Expo native-module constraints block it.
-3. Retry the iOS development-client build after installing an iOS 26.2 simulator runtime in Xcode.
+1. Install a simulator runtime matching the active Xcode SDK, or switch Xcode to one matching the installed iOS 17.5/18.6 runtimes, then retry the iOS development-client build.
+2. Run iPad simulator QA over sidebar filters, favorites, editable properties, relationship add/remove, raw wikilink autocomplete, saved views, and AI panel input states.
+3. Continue TenTap Markdown serialization coverage for any editor output observed in simulator QA.
+4. Implement the native Git module behind `createNativeMobileGitTransport`, preferably Rust/libgit2 unless Expo native-module constraints block it.
 
 ## Verification Log
 
@@ -178,6 +187,13 @@ Continue Phase 4 with editor durability:
 - `xcrun simctl boot 40724AA3-A793-41D8-9C66-79745DA28DE4` booted `iPad Pro 13-inch (M4)`.
 - `pnpm --filter @tolaria/mobile exec expo start --ios` installed/opened Expo Go and launched Tolaria on the booted iPad simulator.
 - Simulator screenshot captured at `/tmp/tolaria-mobile-ipad.png`; the Tolaria shell renders behind Expo Go's first-run tools modal.
+- `pnpm --filter @tolaria/mobile typecheck` passed after local workflow parity additions.
+- `VITEST_MAX_THREADS=1 VITEST_MIN_THREADS=1 pnpm --filter @tolaria/mobile test` passed after local workflow parity additions: 52 files / 172 tests.
+- `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export-workflow` passed after local workflow parity additions.
+- CodeScene touched-file checks passed at `10.0` for mobile metadata, sidebar navigation, raw wikilink autocomplete, saved view filters, AI client/panel, type appearance, style modules, and touched app/panel components; non-scorable fixture/style aggregation files returned no score.
+- CodeScene pre-commit safeguard passed for the current local change set.
+- iPad simulator keyboard preference now reads `KeyboardsCurrentAndNext = (it_IT@sw=QWERTY;hw=Automatic, it_IT@sw=QWERTY;hw=Automatic)`.
+- Native simulator QA is currently blocked by local platform tooling: Xcode has only the iOS 26.2 SDK installed, while CoreSimulator has iOS 17.5 and 18.6 runtimes, so `expo run:ios --device "iPad Pro 13-inch (M4)"` fails with xcodebuild error 70 because no matching destination is eligible.
 - `pnpm --filter @tolaria/mobile test` passed after adding gesture support: 5 files / 15 tests.
 - `pnpm --filter @tolaria/mobile typecheck` passed after adding gesture support.
 - CodeScene after gesture support: `apps/mobile/src/compactGestures.ts`, `apps/mobile/src/compactGestures.test.ts`, `apps/mobile/src/SwipeSurface.tsx`, touched app/root files, and touched style module scored `10`; `apps/mobile/index.ts` returned no scorable code.

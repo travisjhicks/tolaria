@@ -13,6 +13,9 @@ export const relationshipStyles = StyleSheet.create({
   },
   relationshipChip: {
     minHeight: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
     justifyContent: 'center',
     borderColor: colors.border,
     borderRadius: 999,
@@ -24,5 +27,11 @@ export const relationshipStyles = StyleSheet.create({
     color: colors.primary,
     fontSize: 13,
     fontWeight: '700',
+  },
+  relationshipRemoveButton: {
+    width: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 })

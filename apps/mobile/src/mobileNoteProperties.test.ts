@@ -25,10 +25,17 @@ describe('createMobileNoteFrontmatterPatch', () => {
     })).toEqual({
       archived: false,
       belongsTo: ['Tolaria MVP'],
+      customProperties: { review_stage: 'Draft outline' },
       date: 'May 5, 2026',
+      favorite: true,
+      favoriteIndex: 0,
       has: [],
       icon: 'file-text',
       relatedTo: ['release'],
+      relationships: {
+        people: ['Malte Ubl'],
+        topics: ['workflow orchestration'],
+      },
       status: 'Draft',
       tags: ['Tolaria'],
       type: 'Project',

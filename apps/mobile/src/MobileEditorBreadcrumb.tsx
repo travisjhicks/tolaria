@@ -1,4 +1,4 @@
-import { Archive, Code, PencilSimpleLine, Tray } from 'phosphor-react-native'
+import { Archive, Code, PencilSimpleLine, Star, Tray } from 'phosphor-react-native'
 import type { ReactNode } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import type { MobileNote } from './demoData'
@@ -10,12 +10,14 @@ export function MobileEditorBreadcrumb({
   isRawMode,
   note,
   onToggleArchive,
+  onToggleFavorite,
   onToggleRawMode,
   saveState,
 }: {
   isRawMode: boolean
   note: MobileNote
   onToggleArchive: () => void
+  onToggleFavorite: () => void
   onToggleRawMode: () => void
   saveState: MobileEditorSaveState
 }) {
@@ -30,6 +32,9 @@ export function MobileEditorBreadcrumb({
       <Text style={[styles.editorSaveState, saveStateStyle(saveState)]}>{saveState.label}</Text>
       <BreadcrumbButton label={isRawMode ? 'Rich editor' : 'Raw editor'} onPress={onToggleRawMode}>
         <RawIcon color={isRawMode ? colors.primary : colors.textSoft} size={18} />
+      </BreadcrumbButton>
+      <BreadcrumbButton label={note.favorite ? 'Remove favorite' : 'Add favorite'} onPress={onToggleFavorite}>
+        <Star color={note.favorite ? colors.primary : colors.textSoft} size={18} weight={note.favorite ? 'fill' : 'regular'} />
       </BreadcrumbButton>
       <BreadcrumbButton label={note.archived ? 'Move to inbox' : 'Archive'} onPress={onToggleArchive}>
         <ArchiveIcon color={colors.textSoft} size={18} />

@@ -16,17 +16,21 @@ export function applyMobileRawNoteContent({
 
     return {
       archived: metadata.archived ?? note.archived,
-      belongsTo: metadata.belongsTo.length > 0 ? metadata.belongsTo : note.belongsTo,
+      belongsTo: metadata.belongsTo,
       content: updatedContent,
+      customProperties: metadata.customProperties,
       date: metadata.date ?? note.date,
+      favorite: metadata.favorite ?? note.favorite,
+      favoriteIndex: metadata.favoriteIndex ?? note.favoriteIndex,
       filename: `${note.id}.md`,
-      has: metadata.has.length > 0 ? metadata.has : note.has,
+      has: metadata.has,
       icon: metadata.icon ?? note.icon,
       id: note.id,
       modified: note.id === noteId ? 'Saved now' : note.modified,
-      relatedTo: metadata.relatedTo.length > 0 ? metadata.relatedTo : note.relatedTo,
+      relatedTo: metadata.relatedTo,
+      relationships: metadata.relationships,
       status: metadata.status ?? note.status,
-      tags: metadata.tags.length > 0 ? metadata.tags : note.tags,
+      tags: metadata.tags,
       type: metadata.type ?? note.type,
     }
   })

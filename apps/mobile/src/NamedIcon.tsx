@@ -6,12 +6,14 @@ import {
   Flag,
   GitBranch,
   PenNib,
+  Robot,
+  Star,
   Sun,
   Tray,
   Wrench,
 } from 'phosphor-react-native'
 
-export type IconName = 'archive' | 'books' | 'drop' | 'file-text' | 'flag' | 'git-branch' | 'pen-nib' | 'sun' | 'tray' | 'wrench'
+export type IconName = 'archive' | 'books' | 'drop' | 'file-text' | 'flag' | 'git-branch' | 'pen-nib' | 'robot' | 'star' | 'sun' | 'tray' | 'wrench'
 
 const iconByName = {
   archive: Archive,
@@ -21,6 +23,8 @@ const iconByName = {
   flag: Flag,
   'git-branch': GitBranch,
   'pen-nib': PenNib,
+  robot: Robot,
+  star: Star,
   sun: Sun,
   tray: Tray,
   wrench: Wrench,

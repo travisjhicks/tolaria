@@ -60,6 +60,9 @@ function fileToSource(file: MobileVaultFile): MobileNoteSource {
     id: fileId(file.path),
     archived: metadata.archived ?? false,
     belongsTo: metadata.belongsTo,
+    customProperties: metadata.customProperties,
+    favorite: metadata.favorite ?? false,
+    favoriteIndex: metadata.favoriteIndex ?? null,
     type: metadata.type ?? 'Note',
     has: metadata.has,
     icon: metadata.icon ?? 'file-text',
@@ -68,6 +71,7 @@ function fileToSource(file: MobileVaultFile): MobileNoteSource {
     filename: file.path,
     content: file.content,
     relatedTo: metadata.relatedTo,
+    relationships: metadata.relationships,
     status: metadata.status,
     tags: metadata.tags,
   }

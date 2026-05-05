@@ -1,9 +1,11 @@
 import type { IconName } from './NamedIcon'
 import type { MobileNote } from './mobileNoteProjection'
+import { evaluateMobileView, mobileViewDefinitions } from './mobileViewFilters'
 
 export type MobileSidebarSelection =
-  | { kind: 'library'; id: 'all' | 'archive' | 'inbox' }
+  | { kind: 'library'; id: 'all' | 'archive' | 'favorites' | 'inbox' }
   | { kind: 'type'; type: string }
+  | { kind: 'view'; id: string }
 
 export type MobileSidebarItem = {
   count: number
@@ -27,7 +29,17 @@ export function createMobileSidebarSections(notes: MobileNote[]): MobileSidebarS
         libraryItem({ count: inboxNotes(notes).length, icon: 'tray', id: 'inbox', label: 'Inbox' }),
         libraryItem({ count: activeNotes(notes).length, icon: 'file-text', id: 'all', label: 'All Notes' }),
         libraryItem({ count: archivedNotes(notes).length, icon: 'archive', id: 'archive', label: 'Archive' }),
+        libraryItem({ count: favoriteNotes(notes).length, icon: 'star', id: 'favorites', label: 'Favorites' }),
       ],
+    },
+    {
+      title: 'Views',
+      items: mobileViewDefinitions.map((view) => ({
+        count: evaluateMobileView({ notes: activeNotes(notes), view }).length,
+        icon: view.icon as IconName,
+        label: view.name,
+        selection: { kind: 'view', id: view.id },
+      })),
     },
     {
       title: 'Types',
@@ -52,18 +64,33 @@ export function filterNotesForSidebarSelection({
     return activeNotes(notes).filter((note) => note.type === selection.type)
   }
 
+  if (selection.kind === 'view') {
+    const view = mobileViewDefinitions.find((definition) => definition.id === selection.id)
+    return view ? evaluateMobileView({ notes: activeNotes(notes), view }) : []
+  }
+
   switch (selection.id) {
     case 'all':
       return activeNotes(notes)
     case 'archive':
       return archivedNotes(notes)
+    case 'favorites':
+      return favoriteNotes(notes)
     default:
       return inboxNotes(notes)
   }
 }
 
 export function mobileSidebarTitle(selection: MobileSidebarSelection) {
-  return selection.kind === 'type' ? pluralTypeLabel(selection.type) : libraryTitle(selection.id)
+  if (selection.kind === 'type') {
+    return pluralTypeLabel(selection.type)
+  }
+
+  if (selection.kind === 'view') {
+    return mobileViewDefinitions.find((definition) => definition.id === selection.id)?.name ?? 'View'
+  }
+
+  return libraryTitle(selection.id)
 }
 
 export function isMobileSidebarSelectionActive({
@@ -85,7 +112,7 @@ function libraryItem({
 }: {
   count: number
   icon: IconName
-  id: 'all' | 'archive' | 'inbox'
+  id: 'all' | 'archive' | 'favorites' | 'inbox'
   label: string
 }): MobileSidebarItem {
   return {
@@ -108,12 +135,21 @@ function archivedNotes(notes: MobileNote[]) {
   return notes.filter((note) => note.archived)
 }
 
+function favoriteNotes(notes: MobileNote[]) {
+  return activeNotes(notes)
+    .filter((note) => note.favorite)
+    .sort((left, right) => (left.favoriteIndex ?? Number.MAX_SAFE_INTEGER) - (right.favoriteIndex ?? Number.MAX_SAFE_INTEGER))
+}
+
 function noteTypes(notes: MobileNote[]) {
   return [...new Set(activeNotes(notes).map((note) => note.type))].sort()
 }
 
-function libraryTitle(id: 'all' | 'archive' | 'inbox') {
-  return id === 'all' ? 'All Notes' : id === 'archive' ? 'Archive' : 'Inbox'
+function libraryTitle(id: 'all' | 'archive' | 'favorites' | 'inbox') {
+  if (id === 'all') return 'All Notes'
+  if (id === 'archive') return 'Archive'
+  if (id === 'favorites') return 'Favorites'
+  return 'Inbox'
 }
 
 function pluralTypeLabel(type: string) {
