@@ -686,7 +686,7 @@ Rationale:
 The default happy path should be:
 
 1. User taps "Connect GitHub".
-2. App opens system browser / native auth session with PKCE.
+2. App opens system browser / native auth session with PKCE through `expo-auth-session`.
 3. User authorizes Tolaria.
 4. User creates or selects a vault repository.
 5. App stores credentials through the `expo-secure-store` boundary, backed by Keychain / Android secure storage.
@@ -731,6 +731,7 @@ Rules:
 
 - Store tokens and private keys only in Keychain / Android Keystore.
 - Keep the JavaScript-facing credential contract at `available` / `missing` plus provider metadata; raw tokens and SSH material stay behind the secure storage and native Git credential callback boundary.
+- Use the `tolaria://oauth/github` redirect scheme for development builds; production redirect registration must match the final app scheme/bundle identity.
 - Do not persist credentials inside Git remote URLs.
 - Use credential callbacks at operation time.
 - Redact credentials from logs, analytics, crash reports, and support bundles.

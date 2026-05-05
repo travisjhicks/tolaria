@@ -90,12 +90,14 @@ This file is the resumable working log for Tolaria mobile. The strategy and road
 - Wired the mobile Git sync plan into the note-list UI through a visible status card for remote-backed vaults while local-only vaults remain chrome-free.
 - Added the first mobile Git credential storage boundary backed by Expo SecureStore, with host/strategy-scoped credential presence records for future GitHub OAuth and SSH flows.
 - Created [ADR-0113](./adr/0113-expo-secure-store-for-mobile-git-credentials.md) for the mobile secure credential storage dependency.
+- Added the mobile GitHub OAuth session boundary with Expo AuthSession/WebBrowser, PKCE request shaping, code exchange, SecureStore handoff, and the `tolaria://oauth/github` redirect scheme.
+- Created [ADR-0114](./adr/0114-expo-auth-session-for-mobile-github-oauth.md) for the mobile GitHub OAuth native dependency and redirect scheme.
 
 ## Next Action
 
 Continue Phase 4 with editor durability:
 
-1. Add the GitHub OAuth session facade and connect successful auth to the secure credential storage boundary, still behind model-only Git operations until the native git adapter is selected.
+1. Wire remote-backed vault status actions to the GitHub OAuth flow so tapping Connect can populate credential state, still behind model-only Git operations until the native git adapter is selected.
 2. Continue TenTap Markdown serialization coverage for any editor output observed in simulator QA.
 3. Retry the iOS development-client build after installing an iOS 26.2 simulator runtime in Xcode.
 
@@ -334,6 +336,11 @@ Continue Phase 4 with editor durability:
 - `pnpm --filter @tolaria/mobile typecheck` passed after mobile Git credential storage.
 - CodeScene after mobile Git credential storage: `apps/mobile/src/mobileGitCredentialStorage.ts`, `apps/mobile/src/mobileGitCredentialStorage.test.ts`, `apps/mobile/src/mobileSecureGitCredentialStorage.ts`, `apps/mobile/src/mobileSecureGitCredentialStorage.test.ts`, and `apps/mobile/src/mobileNativeGitCredentialStorage.ts` scored `10`.
 - `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after mobile Git credential storage.
+- `pnpm --filter @tolaria/mobile exec expo install expo-auth-session expo-web-browser` installed `expo-auth-session@~55.0.15` and `expo-web-browser@~55.0.14`, adding the Expo WebBrowser config plugin.
+- `pnpm --filter @tolaria/mobile test -- src/mobileGitHubOAuth.test.ts src/mobileGitHubOAuthFlow.test.ts src/mobileGitCredentialStorage.test.ts src/mobileSecureGitCredentialStorage.test.ts` passed after mobile GitHub OAuth boundary: 35 files / 121 tests.
+- `pnpm --filter @tolaria/mobile typecheck` passed after mobile GitHub OAuth boundary.
+- CodeScene after mobile GitHub OAuth boundary: `apps/mobile/src/mobileGitCredentialStorage.ts`, `apps/mobile/src/mobileGitCredentialStorage.test.ts`, `apps/mobile/src/mobileGitHubOAuth.ts`, `apps/mobile/src/mobileGitHubOAuth.test.ts`, `apps/mobile/src/mobileGitHubOAuthFlow.ts`, `apps/mobile/src/mobileGitHubOAuthFlow.test.ts`, and `apps/mobile/src/mobileNativeGitHubOAuthSession.ts` scored `10`.
+- `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after mobile GitHub OAuth boundary.
 
 ## Risks / Watch Items
 

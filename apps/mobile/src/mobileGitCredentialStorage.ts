@@ -4,9 +4,16 @@ import type { MobileVaultAuthRequirement } from './mobileVaultConfig'
 
 export type MobileGitCredentialKind = 'githubOAuthToken' | 'sshKeyReference'
 
+export type MobileGitCredentialSecret = {
+  accessToken: string
+  scope?: string
+  tokenType: string
+}
+
 export type MobileGitCredentialRecord = {
   host: string
   kind: MobileGitCredentialKind
+  secret?: MobileGitCredentialSecret
   strategy: MobileGitAuthStrategy
   storedAt: string
 }
@@ -19,14 +26,17 @@ export type MobileGitCredentialStorage = {
 
 export function createMobileGitCredentialRecord({
   requirement,
+  secret,
   storedAt,
 }: {
   requirement: MobileVaultAuthRequirement
+  secret?: MobileGitCredentialSecret
   storedAt: string
 }): MobileGitCredentialRecord {
   return {
     host: normalizeCredentialHost(requirement.host),
     kind: credentialKind(requirement.strategy),
+    ...(secret ? { secret } : {}),
     strategy: requirement.strategy,
     storedAt,
   }
@@ -77,6 +87,7 @@ function normalizeMobileGitCredentialRecord(value: unknown): MobileGitCredential
   return {
     host: normalizeCredentialHost(value.host),
     kind: value.kind,
+    ...(isCredentialSecret(value.secret) ? { secret: value.secret } : {}),
     strategy: value.strategy,
     storedAt: value.storedAt,
   }
@@ -121,4 +132,16 @@ function isCredentialKind(value: unknown): value is MobileGitCredentialKind {
 
 function isCredentialStrategy(value: unknown): value is MobileGitAuthStrategy {
   return value === 'githubOAuth' || value === 'sshKey'
+}
+
+function isCredentialSecret(value: unknown): value is MobileGitCredentialSecret {
+  return typeof value === 'object'
+    && value !== null
+    && hasText((value as MobileGitCredentialSecret).accessToken)
+    && hasText((value as MobileGitCredentialSecret).tokenType)
+    && isOptionalText((value as MobileGitCredentialSecret).scope)
+}
+
+function isOptionalText(value: unknown): value is string | undefined {
+  return value === undefined || hasText(value)
 }
