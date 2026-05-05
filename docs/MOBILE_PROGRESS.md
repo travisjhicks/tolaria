@@ -106,6 +106,12 @@ This file is the resumable working log for Tolaria mobile. The strategy and road
 - Added the optional Expo native-module resolver for `TolariaGit`, so the JavaScript Git transport automatically binds to future development builds that include the native module and keeps the current unavailable-module failure everywhere else.
 - Created [ADR-0115](./adr/0115-expo-native-module-boundary-for-mobile-git.md) for the mobile Git native module discovery boundary.
 - Added remote host and auth strategy to the native Git transport request so native Git can select credential callbacks without reparsing remote URLs.
+- Reworked the prototype compose flow so tapping the pencil immediately creates and opens an app-local `Untitled` note instead of blocking on a title modal.
+- Moved the editor breadcrumb and save state into the top editor toolbar, matching the desktop/Bear-style bar placement instead of rendering it inside the editor body.
+- Injected system-font CSS into TenTap so the editor uses iOS-native typography instead of the browser/WebView serif default, while leaving keyboard layout to the OS/simulator input source.
+- Upgraded the mobile properties prototype so type, status, date, and tags can be entered from the keyboard with quick chips as shortcuts, while icon editing stays chip-based.
+- Removed the now-unused title prompt component and kept the compose-button disabled state with the note-list styles.
+- Split new breadcrumb styles out of the shared toolbar styles and removed stale editor/property style entries so the CodeScene pre-commit safeguard stays green.
 
 ## Next Action
 
@@ -408,6 +414,11 @@ Continue Phase 4 with editor durability:
 - `pnpm --filter @tolaria/mobile typecheck` passed after adding remote host/auth strategy to native Git requests.
 - CodeScene after adding remote host/auth strategy to native Git requests: `apps/mobile/src/mobileNativeGitTransport.ts` and `apps/mobile/src/mobileNativeGitTransport.test.ts` scored `10`.
 - `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after adding remote host/auth strategy to native Git requests; Metro recovered from a cache deserialize warning by doing a full crawl.
+- `pnpm --filter @tolaria/mobile test` passed after the direct-create/properties editability update: 46 files / 153 tests.
+- `pnpm --filter @tolaria/mobile typecheck` passed after the direct-create/properties editability update.
+- CodeScene after the direct-create/properties editability update: `apps/mobile/src/MobileApp.tsx`, `apps/mobile/src/MobileEditablePropertyPickers.tsx`, `apps/mobile/src/MobileEditorAdapter.tsx`, `apps/mobile/src/MobileEditorBreadcrumb.tsx`, `apps/mobile/src/MobilePropertiesPanel.tsx`, `apps/mobile/src/mobileNoteProperties.ts`, `apps/mobile/src/mobilePropertyPicker.ts`, `apps/mobile/src/styles/breadcrumbStyles.ts`, `apps/mobile/src/styles/commonStyles.ts`, `apps/mobile/src/styles/editorStyles.ts`, `apps/mobile/src/styles/noteListStyles.ts`, `apps/mobile/src/styles/propertyChipStyles.ts`, and `apps/mobile/src/useMobileNoteCreateFlow.ts` scored `10`; `apps/mobile/src/styles.ts` reported no scorable score.
+- CodeScene pre-commit safeguard passed after splitting the new styles.
+- `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after the direct-create/properties editability update.
 
 ## Risks / Watch Items
 

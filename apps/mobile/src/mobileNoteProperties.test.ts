@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { notes } from './demoData'
 import {
   createMobileNoteFrontmatterPatch,
+  formatMobileNoteTags,
   isMobileNotePropertySelected,
+  parseMobileNoteTags,
   toggleMobileNoteTag,
 } from './mobileNoteProperties'
 
@@ -39,5 +41,12 @@ describe('toggleMobileNoteTag', () => {
   it('adds and removes a tag without disturbing the other tags', () => {
     expect(toggleMobileNoteTag(['Tolaria MVP'], 'mobile')).toEqual(['Tolaria MVP', 'mobile'])
     expect(toggleMobileNoteTag(['Tolaria MVP', 'mobile'], 'mobile')).toEqual(['Tolaria MVP'])
+  })
+})
+
+describe('mobile note tag text helpers', () => {
+  it('formats and parses keyboard-entered tag lists', () => {
+    expect(formatMobileNoteTags(['Tolaria MVP', 'mobile'])).toBe('Tolaria MVP, mobile')
+    expect(parseMobileNoteTags(' Tolaria MVP, mobile, mobile, ')).toEqual(['Tolaria MVP', 'mobile'])
   })
 })

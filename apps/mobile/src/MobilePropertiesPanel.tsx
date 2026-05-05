@@ -21,7 +21,6 @@ export function MobilePropertiesPanel({
   onChangeProperties?: (patch: MobileNotePropertyPatch) => void
   onClose?: () => void
 }) {
-  const today = formatMobilePropertyDate(new Date())
   const [openPicker, setOpenPicker] = useState<MobilePropertyPickerKey | null>(null)
   const selectPicker = (selected: MobilePropertyPickerKey) => {
     setOpenPicker((current) => nextMobilePropertyPicker({ current, selected }))
@@ -38,13 +37,6 @@ export function MobilePropertiesPanel({
           openPicker={openPicker}
           onChangeProperties={onChangeProperties}
           onSelectPicker={selectPicker}
-        />
-        <PropertyRow
-          actionLabel="Today"
-          disabled={isSaving}
-          label="Date"
-          value={note.date || 'None'}
-          onPress={() => onChangeProperties?.({ date: today })}
         />
         <PropertyRow label="Words" value={String(note.words)} />
         <PropertyRow label="Modified" value={note.modified} />
@@ -70,44 +62,17 @@ function PanelToolbar({ onClose }: { onClose?: () => void }) {
   )
 }
 
-function formatMobilePropertyDate(date: Date) {
-  return new Intl.DateTimeFormat('en-US', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }).format(date)
-}
-
 function PropertyRow({
-  actionLabel,
-  disabled = false,
   label,
-  onPress,
   value,
 }: {
-  actionLabel?: string
-  disabled?: boolean
   label: string
-  onPress?: () => void
   value: string
 }) {
-  const content = (
-    <>
+  return (
+    <View style={styles.propertyRow}>
       <Text style={styles.propertyLabel}>{label}</Text>
       <Text style={styles.propertyValue}>{value}</Text>
-      {actionLabel ? <Text style={styles.propertyAction}>{actionLabel}</Text> : null}
-    </>
-  )
-
-  return onPress ? (
-    <Pressable
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => [styles.propertyRow, disabled ? styles.propertyDisabled : null, pressed ? styles.pressed : null]}
-    >
-      {content}
-    </Pressable>
-  ) : (
-    <View style={styles.propertyRow}>{content}</View>
+    </View>
   )
 }

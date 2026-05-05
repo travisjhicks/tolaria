@@ -1,14 +1,16 @@
 import { CaretDown, CaretRight } from 'phosphor-react-native'
-import type { ReactNode } from 'react'
-import { Pressable, Text, View, type StyleProp, type ViewStyle } from 'react-native'
+import { useState, type ReactNode } from 'react'
+import { Pressable, Text, TextInput, View, type StyleProp, type ViewStyle } from 'react-native'
 import type { MobileNote } from './demoData'
 import { NamedIcon, type IconName } from './NamedIcon'
 import {
+  formatMobileNoteTags,
   isMobileNotePropertySelected,
   mobileNoteIconOptions,
   mobileNoteStatusOptions,
   mobileNoteTagOptions,
   mobileNoteTypeOptions,
+  parseMobileNoteTags,
   toggleMobileNoteTag,
   type MobileNotePropertyPatch,
 } from './mobileNoteProperties'
@@ -29,72 +31,199 @@ export function MobileEditablePropertyPickers({
   onSelectPicker: (selected: MobilePropertyPickerKey) => void
   openPicker: MobilePropertyPickerKey | null
 }) {
+  const today = formatMobilePropertyDate(new Date())
+
   return (
     <>
-      <PropertyPickerSection
+      <EditableTextProperty
         disabled={disabled}
         isOpen={openPicker === 'type'}
+        key={`type:${note.id}:${note.type}`}
         label="Type"
-        value={mobilePropertyDisplayValue({ value: note.type })}
+        placeholder="Type"
+        suggestions={mobileNoteTypeOptions}
+        value={note.type}
+        onCommit={(type) => onChangeProperties?.({ type })}
         onOpen={() => onSelectPicker('type')}
-      >
-        <PropertyChipOptions>
-          {mobileNoteTypeOptions.map((option) => (
-            <PropertyTextChip
-              disabled={disabled}
-              key={option}
-              option={option}
-              value={note.type}
-              onSelect={(type) => onChangeProperties?.({ type })}
-            />
-          ))}
-        </PropertyChipOptions>
-      </PropertyPickerSection>
-      <PropertyPickerSection
+      />
+      <EditableTextProperty
         disabled={disabled}
         isOpen={openPicker === 'status'}
+        key={`status:${note.id}:${note.status ?? ''}`}
         label="Status"
-        value={mobilePropertyDisplayValue({ value: note.status })}
+        placeholder="Status"
+        suggestions={mobileNoteStatusOptions}
+        value={note.status ?? ''}
+        onCommit={(status) => onChangeProperties?.({ status })}
         onOpen={() => onSelectPicker('status')}
-      >
+      />
+      <EditableTextProperty
+        disabled={disabled}
+        isOpen={openPicker === 'date'}
+        key={`date:${note.id}:${note.date}`}
+        label="Date"
+        placeholder="Date"
+        suggestions={[today, '']}
+        value={note.date}
+        onCommit={(date) => onChangeProperties?.({ date })}
+        onOpen={() => onSelectPicker('date')}
+      />
+      <IconProperty
+        disabled={disabled}
+        isOpen={openPicker === 'icon'}
+        note={note}
+        onChangeProperties={onChangeProperties}
+        onOpen={() => onSelectPicker('icon')}
+      />
+      <TagsProperty
+        disabled={disabled}
+        isOpen={openPicker === 'tags'}
+        key={`tags:${note.id}:${formatMobileNoteTags(note.tags)}`}
+        note={note}
+        onChangeProperties={onChangeProperties}
+        onOpen={() => onSelectPicker('tags')}
+      />
+    </>
+  )
+}
+
+function EditableTextProperty({
+  disabled,
+  isOpen,
+  label,
+  onCommit,
+  onOpen,
+  placeholder,
+  suggestions,
+  value,
+}: {
+  disabled: boolean
+  isOpen: boolean
+  label: string
+  onCommit: (value: string) => void
+  onOpen: () => void
+  placeholder: string
+  suggestions: readonly string[]
+  value: string
+}) {
+  const [draft, setDraft] = useState(value)
+  const commitDraft = () => commitTextValue({ current: value, next: draft, onCommit })
+
+  return (
+    <PropertyPickerSection
+      disabled={disabled}
+      isOpen={isOpen}
+      label={label}
+      value={mobilePropertyDisplayValue({ value })}
+      onOpen={onOpen}
+    >
+      <View style={styles.propertyPickerOptions}>
+        <TextInput
+          autoCapitalize="sentences"
+          editable={!disabled}
+          keyboardType="default"
+          onBlur={commitDraft}
+          onChangeText={setDraft}
+          onSubmitEditing={commitDraft}
+          placeholder={placeholder}
+          placeholderTextColor={colors.mutedText}
+          returnKeyType="done"
+          style={styles.propertyTextInput}
+          value={draft}
+        />
         <PropertyChipOptions>
-          {mobileNoteStatusOptions.map((option) => (
+          {suggestions.map((option) => (
             <PropertyTextChip
               disabled={disabled}
               key={option || 'none'}
               option={option}
-              value={note.status}
-              onSelect={(status) => onChangeProperties?.({ status })}
+              value={value}
+              onSelect={(selected) => {
+                setDraft(selected)
+                onCommit(selected)
+              }}
             />
           ))}
         </PropertyChipOptions>
-      </PropertyPickerSection>
-      <PropertyPickerSection
-        disabled={disabled}
-        isOpen={openPicker === 'icon'}
-        label="Icon"
-        value={mobilePropertyDisplayValue({ value: note.icon })}
-        onOpen={() => onSelectPicker('icon')}
-      >
-        <PropertyChipOptions>
-          {mobileNoteIconOptions.map((option) => (
-            <PropertyIconChip
-              disabled={disabled}
-              key={option}
-              option={option}
-              value={note.icon}
-              onSelect={(icon) => onChangeProperties?.({ icon })}
-            />
-          ))}
-        </PropertyChipOptions>
-      </PropertyPickerSection>
-      <PropertyPickerSection
-        disabled={disabled}
-        isOpen={openPicker === 'tags'}
-        label="Tags"
-        value={note.tags.length > 0 ? `${note.tags.length} selected` : 'None'}
-        onOpen={() => onSelectPicker('tags')}
-      >
+      </View>
+    </PropertyPickerSection>
+  )
+}
+
+function IconProperty({
+  disabled,
+  isOpen,
+  note,
+  onChangeProperties,
+  onOpen,
+}: {
+  disabled: boolean
+  isOpen: boolean
+  note: MobileNote
+  onChangeProperties?: (patch: MobileNotePropertyPatch) => void
+  onOpen: () => void
+}) {
+  return (
+    <PropertyPickerSection
+      disabled={disabled}
+      isOpen={isOpen}
+      label="Icon"
+      value={mobilePropertyDisplayValue({ value: note.icon })}
+      onOpen={onOpen}
+    >
+      <PropertyChipOptions>
+        {mobileNoteIconOptions.map((option) => (
+          <PropertyIconChip
+            disabled={disabled}
+            key={option}
+            option={option}
+            value={note.icon}
+            onSelect={(icon) => onChangeProperties?.({ icon })}
+          />
+        ))}
+      </PropertyChipOptions>
+    </PropertyPickerSection>
+  )
+}
+
+function TagsProperty({
+  disabled,
+  isOpen,
+  note,
+  onChangeProperties,
+  onOpen,
+}: {
+  disabled: boolean
+  isOpen: boolean
+  note: MobileNote
+  onChangeProperties?: (patch: MobileNotePropertyPatch) => void
+  onOpen: () => void
+}) {
+  const [draft, setDraft] = useState(formatMobileNoteTags(note.tags))
+  const commitDraft = () => onChangeProperties?.({ tags: parseMobileNoteTags(draft) })
+
+  return (
+    <PropertyPickerSection
+      disabled={disabled}
+      isOpen={isOpen}
+      label="Tags"
+      value={note.tags.length > 0 ? formatMobileNoteTags(note.tags) : 'None'}
+      onOpen={onOpen}
+    >
+      <View style={styles.propertyPickerOptions}>
+        <TextInput
+          autoCapitalize="none"
+          editable={!disabled}
+          keyboardType="default"
+          onBlur={commitDraft}
+          onChangeText={setDraft}
+          onSubmitEditing={commitDraft}
+          placeholder="Tags"
+          placeholderTextColor={colors.mutedText}
+          returnKeyType="done"
+          style={styles.propertyTextInput}
+          value={draft}
+        />
         <PropertyChipOptions>
           {mobileNoteTagOptions.map((option) => (
             <PropertyTextChip
@@ -102,12 +231,16 @@ export function MobileEditablePropertyPickers({
               key={option}
               option={option}
               value={note.tags}
-              onSelect={(tag) => onChangeProperties?.({ tags: toggleMobileNoteTag(note.tags, tag) })}
+              onSelect={(tag) => {
+                const tags = toggleMobileNoteTag(note.tags, tag)
+                setDraft(formatMobileNoteTags(tags))
+                onChangeProperties?.({ tags })
+              }}
             />
           ))}
         </PropertyChipOptions>
-      </PropertyPickerSection>
-    </>
+      </View>
+    </PropertyPickerSection>
   )
 }
 
@@ -156,7 +289,7 @@ function PropertyPickerRow({
       style={({ pressed }) => [styles.propertyRow, disabled ? styles.propertyDisabled : null, pressed ? styles.pressed : null]}
     >
       <Text style={styles.propertyLabel}>{label}</Text>
-      <Text style={styles.propertyValue}>{value}</Text>
+      <Text numberOfLines={1} style={styles.propertyValue}>{value}</Text>
       <Caret size={16} color={colors.textSoft} />
     </Pressable>
   )
@@ -189,10 +322,8 @@ function PropertyIconChip({
 
 function PropertyChipOptions({ children }: { children: ReactNode }) {
   return (
-    <View style={styles.propertyPickerOptions}>
-      <View style={styles.propertyChipRow}>
-        {children}
-      </View>
+    <View style={styles.propertyChipRow}>
+      {children}
     </View>
   )
 }
@@ -253,4 +384,27 @@ function SelectablePropertyChip({
       {children}
     </Pressable>
   )
+}
+
+function commitTextValue({
+  current,
+  next,
+  onCommit,
+}: {
+  current: string
+  next: string
+  onCommit: (value: string) => void
+}) {
+  const normalized = next.trim()
+  if (normalized !== current) {
+    onCommit(normalized)
+  }
+}
+
+function formatMobilePropertyDate(date: Date) {
+  return new Intl.DateTimeFormat(undefined, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(date)
 }

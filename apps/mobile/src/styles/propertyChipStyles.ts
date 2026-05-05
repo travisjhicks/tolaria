@@ -2,12 +2,6 @@ import { StyleSheet } from 'react-native'
 import { colors, spacing } from '../theme'
 
 export const propertyChipStyles = StyleSheet.create({
-  propertyAction: {
-    marginLeft: spacing.sm,
-    color: colors.primary,
-    fontSize: 13,
-    fontWeight: '700',
-  },
   propertyDisabled: {
     opacity: 0.55,
   },
@@ -16,12 +10,6 @@ export const propertyChipStyles = StyleSheet.create({
     color: '#b74234',
     fontSize: 13,
     fontWeight: '700',
-  },
-  propertyOptionGroup: {
-    minHeight: 58,
-    paddingVertical: spacing.sm,
-    borderBottomColor: colors.border,
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   propertyChipRow: {
     flexDirection: 'row',
@@ -33,6 +21,17 @@ export const propertyChipStyles = StyleSheet.create({
     paddingBottom: spacing.md,
     borderBottomColor: colors.border,
     borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  propertyTextInput: {
+    minHeight: 38,
+    marginTop: spacing.sm,
+    borderColor: colors.border,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '600',
+    paddingHorizontal: spacing.md,
   },
   propertyChip: {
     minHeight: 30,

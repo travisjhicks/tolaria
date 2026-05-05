@@ -66,4 +66,7 @@ export const noteListStyles = StyleSheet.create({
     borderRadius: 32,
     backgroundColor: colors.primary,
   },
+  composeButtonDisabled: {
+    opacity: 0.55,
+  },
 })

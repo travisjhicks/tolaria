@@ -37,3 +37,14 @@ export function isMobileNotePropertySelected({
 export function toggleMobileNoteTag(tags: string[], tag: string) {
   return tags.includes(tag) ? tags.filter((item) => item !== tag) : [...tags, tag]
 }
+
+export function formatMobileNoteTags(tags: readonly string[]) {
+  return tags.join(', ')
+}
+
+export function parseMobileNoteTags(value: string) {
+  return value
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter((tag, index, tags) => tag.length > 0 && tags.indexOf(tag) === index)
+}

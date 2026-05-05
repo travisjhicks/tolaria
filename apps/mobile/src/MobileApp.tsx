@@ -44,7 +44,7 @@ import { NamedIcon, type IconName } from './NamedIcon'
 import { SwipeSurface } from './SwipeSurface'
 import { styles } from './styles'
 import { colors } from './theme'
-import { MobileNoteCreatePrompt } from './MobileNoteCreatePrompt'
+import { MobileEditorBreadcrumb } from './MobileEditorBreadcrumb'
 import { MobilePropertiesPanel } from './MobilePropertiesPanel'
 import { MobileVaultManagementCard } from './MobileVaultManagementCard'
 import { MobileVaultRemotePrompt } from './MobileVaultRemotePrompt'
@@ -170,16 +170,11 @@ export function MobileApp() {
               notes={availableNotes}
               selectedNoteId={compactNavigation.selectedNoteId}
               createNoteFailed={createFlow.failed}
-              createNoteTitle={createFlow.title}
-              isCreatePromptOpen={createFlow.isPromptOpen}
               isCreatingNote={createFlow.isCreating}
               runtimeLoadFailed={runtimeLoader.failed}
-              onCancelCreateNote={createFlow.cancel}
-              onChangeCreateNoteTitle={createFlow.setTitle}
-              onOpenCreateNote={createFlow.open}
+              onCreateNote={createFlow.create}
               onGitSyncAction={gitSyncFlow.runPrimaryAction}
               onRetryRuntimeLoad={runtimeLoader.retry}
-              onSubmitCreateNote={createFlow.submit}
               onSelectNote={selectNote}
             />
             <EditorPanel
@@ -210,16 +205,11 @@ export function MobileApp() {
             onDeleteNote={deleteFlow.canDelete ? deleteFlow.deleteSelectedNote : undefined}
             onDraftChange={saveDraft}
             createNoteFailed={createFlow.failed}
-            createNoteTitle={createFlow.title}
-            isCreatePromptOpen={createFlow.isPromptOpen}
             isCreatingNote={createFlow.isCreating}
             runtimeLoadFailed={runtimeLoader.failed}
-            onCancelCreateNote={createFlow.cancel}
-            onChangeCreateNoteTitle={createFlow.setTitle}
-            onOpenCreateNote={createFlow.open}
+            onCreateNote={createFlow.create}
             onGitSyncAction={gitSyncFlow.runPrimaryAction}
             onRetryRuntimeLoad={runtimeLoader.retry}
-            onSubmitCreateNote={createFlow.submit}
             onSelectNote={selectNote}
             propertiesFailed={propertiesFlow.failed}
             isSavingProperties={propertiesFlow.isSaving}
@@ -254,18 +244,13 @@ function CompactShell({
   onDeleteNote,
   onDraftChange,
   createNoteFailed,
-  createNoteTitle,
-  isCreatePromptOpen,
   isCreatingNote,
   runtimeLoadFailed,
-  onCancelCreateNote,
-  onChangeCreateNoteTitle,
-  onOpenCreateNote,
+  onCreateNote,
   onGitSyncAction,
   onChangeProperties,
   onOpenRemoteSetup,
   onRetryRuntimeLoad,
-  onSubmitCreateNote,
   onSelectNote,
   propertiesFailed,
   isSavingProperties,
@@ -278,21 +263,16 @@ function CompactShell({
   notes: MobileNote[]
   saveState: MobileEditorSaveState
   createNoteFailed: boolean
-  createNoteTitle: string
-  isCreatePromptOpen: boolean
   isCreatingNote: boolean
   runtimeLoadFailed: boolean
   onNavigate: (event: CompactNavigationEvent) => void
   onDeleteNote?: () => void
   onDraftChange: (draft: MobileEditorDraft) => void
-  onCancelCreateNote: () => void
-  onChangeCreateNoteTitle: (title: string) => void
-  onOpenCreateNote: () => void
+  onCreateNote: () => void
   onGitSyncAction: () => void
   onChangeProperties: (patch: MobileNotePropertyPatch) => void
   onOpenRemoteSetup: () => void
   onRetryRuntimeLoad: () => void
-  onSubmitCreateNote: () => void
   onSelectNote: (note: MobileNote) => void
   propertiesFailed: boolean
   isSavingProperties: boolean
@@ -346,18 +326,13 @@ function CompactShell({
         notes={notes}
         selectedNoteId={selectedNoteId}
         createNoteFailed={createNoteFailed}
-        createNoteTitle={createNoteTitle}
-        isCreatePromptOpen={isCreatePromptOpen}
         isCreatingNote={isCreatingNote}
         runtimeLoadFailed={runtimeLoadFailed}
-        onCancelCreateNote={onCancelCreateNote}
-        onChangeCreateNoteTitle={onChangeCreateNoteTitle}
         onGitSyncAction={onGitSyncAction}
-        onOpenCreateNote={onOpenCreateNote}
+        onCreateNote={onCreateNote}
         onOpenSidebar={() => onNavigate({ type: 'openSidebar' })}
         onRetryRuntimeLoad={onRetryRuntimeLoad}
         onSelectNote={onSelectNote}
-        onSubmitCreateNote={onSubmitCreateNote}
       />
     </SwipeSurface>
   )
@@ -408,35 +383,25 @@ function NoteListPanel({
   gitSyncPlan,
   notes,
   createNoteFailed,
-  createNoteTitle,
-  isCreatePromptOpen,
   isCreatingNote,
   runtimeLoadFailed,
-  onCancelCreateNote,
-  onChangeCreateNoteTitle,
   onGitSyncAction,
-  onOpenCreateNote,
+  onCreateNote,
   onOpenSidebar,
   onRetryRuntimeLoad,
   onSelectNote,
-  onSubmitCreateNote,
   selectedNoteId,
 }: {
   gitSyncPlan: MobileGitSyncPlan
   notes: MobileNote[]
   createNoteFailed: boolean
-  createNoteTitle: string
-  isCreatePromptOpen: boolean
   isCreatingNote: boolean
   runtimeLoadFailed: boolean
-  onCancelCreateNote: () => void
-  onChangeCreateNoteTitle: (title: string) => void
   onGitSyncAction: () => void
-  onOpenCreateNote: () => void
+  onCreateNote: () => void
   onOpenSidebar?: () => void
   onRetryRuntimeLoad: () => void
   onSelectNote: (note: MobileNote) => void
-  onSubmitCreateNote: () => void
   selectedNoteId: string
 }) {
   return (
@@ -477,20 +442,11 @@ function NoteListPanel({
           </Pressable>
         )}
       />
-      {isCreatePromptOpen ? (
-        <MobileNoteCreatePrompt
-          failed={createNoteFailed}
-          isCreating={isCreatingNote}
-          onCancel={onCancelCreateNote}
-          onChangeTitle={onChangeCreateNoteTitle}
-          onSubmit={onSubmitCreateNote}
-          title={createNoteTitle}
-        />
-      ) : null}
+      {createNoteFailed ? <Text style={styles.propertyError}>Could not create note.</Text> : null}
       <Pressable
         accessibilityLabel="Create note"
         disabled={isCreatingNote}
-        onPress={onOpenCreateNote}
+        onPress={onCreateNote}
         style={({ pressed }) => [
           styles.composeButton,
           isCreatingNote ? styles.composeButtonDisabled : null,
@@ -547,12 +503,12 @@ function EditorPanel({
     <View style={styles.editor}>
       <Toolbar>
         {onBack ? <IconButton icon={<CaretLeft size={25} color={colors.textSoft} />} onPress={onBack} /> : null}
-        <View style={styles.toolbarSpacer} />
+        <MobileEditorBreadcrumb note={note} saveState={saveState ?? idleMobileEditorSaveState} />
         {onOpenProperties ? <IconButton icon={<Info size={23} color={colors.textSoft} />} onPress={onOpenProperties} /> : null}
         {onDeleteNote ? <IconButton icon={<Trash size={23} color={colors.textSoft} />} onPress={onDeleteNote} /> : null}
         <IconButton icon={<DotsThreeVertical size={23} color={colors.textSoft} />} />
       </Toolbar>
-      <MobileEditorAdapter note={note} saveState={saveState} onDraftChange={onDraftChange} />
+      <MobileEditorAdapter note={note} onDraftChange={onDraftChange} />
     </View>
   )
 }

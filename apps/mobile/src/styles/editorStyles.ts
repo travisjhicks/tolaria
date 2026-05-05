@@ -12,6 +12,7 @@ export const editorStyles = StyleSheet.create({
     maxWidth: 760,
     alignSelf: 'center',
     paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
     paddingBottom: 96,
   },
   editorAdapterContent: {
@@ -21,21 +22,6 @@ export const editorStyles = StyleSheet.create({
     alignSelf: 'center',
     paddingHorizontal: spacing.xl,
     paddingBottom: 96,
-  },
-  breadcrumbRow: {
-    marginBottom: spacing.xl,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  breadcrumbText: {
-    color: colors.mutedText,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  breadcrumbDivider: {
-    color: colors.border,
-    fontSize: 14,
   },
   editorTitle: {
     marginBottom: spacing.xl,

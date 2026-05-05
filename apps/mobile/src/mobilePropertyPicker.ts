@@ -1,4 +1,4 @@
-export type MobilePropertyPickerKey = 'icon' | 'status' | 'tags' | 'type'
+export type MobilePropertyPickerKey = 'date' | 'icon' | 'status' | 'tags' | 'type'
 
 export function nextMobilePropertyPicker({
   current,

@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef } from 'react'
-import { KeyboardAvoidingView, Platform, Text, View } from 'react-native'
+import { KeyboardAvoidingView, Platform, View } from 'react-native'
 import { RichText, Toolbar, useEditorBridge } from '@10play/tentap-editor'
 import type { MobileNote } from './mobileNoteProjection'
 import { createMobileEditorDraft, type MobileEditorDraft } from './mobileEditorDraft'
-import { idleMobileEditorSaveState, type MobileEditorSaveState } from './mobileEditorSaveState'
 import {
   createMobileEditorDocument,
   createMobileEditorHtml,
@@ -13,11 +12,9 @@ import { styles } from './styles'
 export function MobileEditorAdapter({
   note,
   onDraftChange,
-  saveState = idleMobileEditorSaveState,
 }: {
   note: MobileNote
   onDraftChange?: (draft: MobileEditorDraft) => void
-  saveState?: MobileEditorSaveState
 }) {
   const document = useMemo(() => createMobileEditorDocument(note), [note])
   const initialContent = useMemo(() => createMobileEditorHtml(document), [document])
@@ -35,15 +32,17 @@ export function MobileEditorAdapter({
       })
     },
   })
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      editor.injectCSS(mobileEditorCss, 'tolaria-mobile-editor')
+      editor.injectJS('document.documentElement.lang = navigator.language || "en"; true;')
+    }, 100)
+
+    return () => clearTimeout(timer)
+  }, [editor, note.id])
 
   return (
     <View style={styles.editorAdapterContent}>
-      <View style={styles.breadcrumbRow}>
-        <Text style={styles.breadcrumbText}>{note.type}</Text>
-        <Text style={styles.breadcrumbDivider}>/</Text>
-        <Text style={styles.breadcrumbText}>{note.id}</Text>
-        <Text style={[styles.editorSaveState, saveStateStyle(saveState)]}>{saveState.label}</Text>
-      </View>
       <View style={styles.tentapEditor}>
         <RichText key={note.id} editor={editor} />
       </View>
@@ -57,19 +56,33 @@ export function MobileEditorAdapter({
   )
 }
 
-function saveStateStyle(saveState: MobileEditorSaveState) {
-  switch (saveState.state) {
-    case 'blocked':
-      return styles.editorSaveState_blocked
-    case 'failed':
-      return styles.editorSaveState_failed
-    case 'queued':
-      return styles.editorSaveState_queued
-    case 'saved':
-      return styles.editorSaveState_saved
-    case 'saving':
-      return styles.editorSaveState_saving
-    default:
-      return styles.editorSaveState_idle
+const mobileEditorCss = `
+  html,
+  body,
+  #root,
+  .ProseMirror {
+    color: #292825;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    font-size: 18px;
+    line-height: 1.55;
   }
-}
+
+  .ProseMirror {
+    padding: 0;
+  }
+
+  .ProseMirror h1 {
+    font-family: inherit;
+    font-size: 42px;
+    font-weight: 760;
+    letter-spacing: 0;
+    line-height: 1.08;
+    margin: 18px 0 28px;
+  }
+
+  .ProseMirror p,
+  .ProseMirror li,
+  .ProseMirror blockquote {
+    font-family: inherit;
+  }
+`

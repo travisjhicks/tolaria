@@ -10,36 +10,17 @@ export function useMobileNoteCreateFlow({
 }) {
   const [failed, setFailed] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
-  const [isPromptOpen, setIsPromptOpen] = useState(false)
-  const [title, setTitle] = useState('')
 
-  const cancel = useCallback(() => {
-    if (isCreating) {
-      return
-    }
-
-    setFailed(false)
-    setIsPromptOpen(false)
-    setTitle('')
-  }, [isCreating])
-
-  const open = useCallback(() => {
-    setFailed(false)
-    setIsPromptOpen(true)
-  }, [])
-
-  const submit = useCallback(() => {
+  const create = useCallback(() => {
     if (isCreating) {
       return
     }
 
     setFailed(false)
     setIsCreating(true)
-    void createNote(title)
+    void createNote('')
       .then((note) => {
         if (note) {
-          setIsPromptOpen(false)
-          setTitle('')
           onCreated(note)
         }
       })
@@ -49,16 +30,11 @@ export function useMobileNoteCreateFlow({
       .finally(() => {
         setIsCreating(false)
       })
-  }, [createNote, isCreating, onCreated, title])
+  }, [createNote, isCreating, onCreated])
 
   return {
-    cancel,
+    create,
     failed,
     isCreating,
-    isPromptOpen,
-    open,
-    setTitle,
-    submit,
-    title,
   }
 }
