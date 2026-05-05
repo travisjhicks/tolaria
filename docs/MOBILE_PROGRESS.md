@@ -86,14 +86,15 @@ This file is the resumable working log for Tolaria mobile. The strategy and road
 - Added safe TenTap image serialization for persisted relative/remote image sources while continuing to block transient image sources such as `blob:` URLs.
 - Added simple TenTap table serialization for rectangular tables, including entity decoding and escaped pipe characters, while continuing to block malformed table shapes.
 - Reworked the mobile properties panel into expandable Type/Status/Icon/Tags picker rows that show current values first and reveal chip choices on demand.
+- Added the first mobile Git sync plan model, covering local-only vaults, auth-required remotes, ready pull/push actions, active sync operations, and retryable failures.
 
 ## Next Action
 
 Continue Phase 4 with editor durability:
 
-1. Continue TenTap Markdown serialization coverage for any editor output observed in simulator QA.
-2. Retry the iOS development-client build after installing an iOS 26.2 simulator runtime in Xcode.
-3. Start the Git sync/auth vertical slice for app-local vaults.
+1. Wire the Git sync plan into the mobile runtime/status UI, still behind model-only operations until the native git adapter is selected.
+2. Continue TenTap Markdown serialization coverage for any editor output observed in simulator QA.
+3. Retry the iOS development-client build after installing an iOS 26.2 simulator runtime in Xcode.
 
 ## Verification Log
 
@@ -317,6 +318,10 @@ Continue Phase 4 with editor durability:
 - `pnpm --filter @tolaria/mobile typecheck` passed after expandable mobile property pickers.
 - CodeScene after expandable mobile property pickers: `apps/mobile/src/MobilePropertiesPanel.tsx`, `apps/mobile/src/MobileEditablePropertyPickers.tsx`, `apps/mobile/src/mobilePropertyPicker.ts`, `apps/mobile/src/mobilePropertyPicker.test.ts`, and `apps/mobile/src/styles/propertyChipStyles.ts` scored `10`.
 - `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after expandable mobile property pickers.
+- `pnpm --filter @tolaria/mobile test -- src/mobileGitSyncPlan.test.ts src/mobileVaultConfig.test.ts src/mobileGitRemote.test.ts` passed after mobile Git sync planning: 29 files / 98 tests.
+- `pnpm --filter @tolaria/mobile typecheck` passed after mobile Git sync planning.
+- CodeScene after mobile Git sync planning: `apps/mobile/src/mobileGitSyncPlan.ts` and `apps/mobile/src/mobileGitSyncPlan.test.ts` scored `10`.
+- `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after mobile Git sync planning.
 
 ## Risks / Watch Items
 
