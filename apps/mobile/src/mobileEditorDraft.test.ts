@@ -80,6 +80,35 @@ describe('mobile editor draft', () => {
     })
   })
 
+  it('serializes blockquotes, code blocks, and strikethrough', () => {
+    const draft = createMobileEditorDraft({
+      note: {
+        id: 'formatting',
+        title: 'Formatting',
+        content: '# Formatting',
+      },
+      editorHtml: [
+        '<blockquote><p>Quoted idea</p><p>Second line</p></blockquote>',
+        '<pre><code class="language-ts">const value = &lt;string&gt;input</code></pre>',
+        '<p>Keep <s>stale</s> text visible.</p>',
+      ].join(''),
+    })
+
+    expect(draft).toMatchObject({
+      persistable: true,
+      canonicalMarkdown: [
+        '> Quoted idea',
+        '> Second line',
+        '',
+        '```ts',
+        'const value = <string>input',
+        '```',
+        '',
+        'Keep ~~stale~~ text visible.',
+      ].join('\n'),
+    })
+  })
+
   it('serializes TenTap-style task list items', () => {
     const draft = createMobileEditorDraft({
       note: {
@@ -109,12 +138,29 @@ describe('mobile editor draft', () => {
           title: 'Workflow',
           content: '# Workflow\n\nOriginal markdown',
         },
-        editorHtml: '<blockquote><p>Not yet supported</p></blockquote>',
+        editorHtml: '<table><tbody><tr><td>Not yet supported</td></tr></tbody></table>',
       }),
     ).toEqual({
       noteId: 'workflow',
       sourceMarkdown: '# Workflow\n\nOriginal markdown',
-      editorHtml: '<blockquote><p>Not yet supported</p></blockquote>',
+      editorHtml: '<table><tbody><tr><td>Not yet supported</td></tr></tbody></table>',
+      persistable: false,
+      blockedReason: 'unsupportedEditorHtml',
+    })
+  })
+
+  it('blocks unsupported inline HTML inside otherwise supported blocks', () => {
+    expect(
+      createMobileEditorDraft({
+        note: {
+          id: 'image',
+          title: 'Image',
+          content: '# Image',
+        },
+        editorHtml: '<p><img src="attachment.png" alt="Attachment"></p>',
+      }),
+    ).toMatchObject({
+      noteId: 'image',
       persistable: false,
       blockedReason: 'unsupportedEditorHtml',
     })

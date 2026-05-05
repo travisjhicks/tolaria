@@ -79,13 +79,14 @@ This file is the resumable working log for Tolaria mobile. The strategy and road
 - Added mobile frontmatter serialization helpers that can create/update supported type/status/date/icon/tags fields while preserving unknown metadata lines.
 - Added a mobile frontmatter save boundary that updates persisted note metadata through the vault storage driver and exposes the same path through the demo vault facade for future properties UI calls.
 - Wired the iPad/mobile properties panel to the frontmatter save boundary for type, status, icon, date, and tags; successful saves reload projected notes from app-local storage, and large iPads now show the right properties column.
+- Expanded supported TenTap HTML serialization to include blockquotes, fenced code blocks with language classes, strikethrough, and an unsupported inline-tag guard so image/table output stays blocked until explicitly handled.
 
 ## Next Action
 
 Continue Phase 4 with editor durability:
 
-1. Expand TenTap Markdown serialization coverage for common writing constructs and preserve unsupported blocks without corrupting files.
-2. Add simulator interaction coverage for create/open/edit/autosave/delete using a development-client path or another route that avoids Expo Go's overlay controls.
+1. Add simulator interaction coverage for create/open/edit/autosave/delete using a development-client path or another route that avoids Expo Go's overlay controls.
+2. Continue TenTap Markdown serialization coverage for attachments/images, tables, and any editor output observed in simulator QA.
 3. Replace the first property chips with richer desktop-compatible pickers once the mobile metadata schema is finalized.
 
 ## Verification Log
@@ -284,6 +285,11 @@ Continue Phase 4 with editor durability:
 - `pnpm --filter @tolaria/mobile test` passed after properties persistence wiring: 26 files / 84 tests.
 - `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after properties persistence wiring.
 - iPad simulator screenshot captured at `/tmp/tolaria-mobile-properties-ipad-visible.png`; the large iPad layout renders the properties column with save-backed type/status/icon/date/tag controls and no red runtime error overlay.
+- `pnpm --filter @tolaria/mobile test -- src/mobileEditorDraft.test.ts src/mobileEditorDraftSave.test.ts` passed after expanded TenTap serialization: 26 files / 86 tests.
+- `pnpm --filter @tolaria/mobile typecheck` passed after expanded TenTap serialization.
+- CodeScene after expanded TenTap serialization: `apps/mobile/src/mobileEditorHtmlMarkdown.ts`, `apps/mobile/src/mobileEditorDraft.test.ts`, and `apps/mobile/src/mobileEditorDraftSave.test.ts` scored `10`.
+- `pnpm --filter @tolaria/mobile test` passed after expanded TenTap serialization: 26 files / 86 tests.
+- `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after expanded TenTap serialization.
 
 ## Risks / Watch Items
 
