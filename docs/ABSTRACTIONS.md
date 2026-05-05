@@ -462,6 +462,14 @@ interface PulseCommit {
 | `conflict.rs` | Conflict resolution | Detect conflicts, resolve with ours/theirs/manual |
 | `pulse.rs` | Activity feed | `git log` with `--name-status` for file changes |
 
+### Mobile Git Transport
+
+The mobile app routes Git pull/push through `MobileGitTransport`. React Native UI and sync state code depend only on this TypeScript contract; the native implementation is introduced behind `createNativeMobileGitTransport`.
+
+Until a native module is wired into Expo development builds, the native transport adapter returns a clear unavailable-module failure. This keeps authentication, sync status, retry UI, and future libgit2/Rust work testable without pretending that a JavaScript fallback is production Git.
+
+The native boundary request is intentionally narrow for the first spike: active vault id plus remote URL. Credentials stay behind SecureStore/OAuth/native Git credential callbacks, and remote URLs must not embed tokens.
+
 ### Auto-Sync
 
 `useAutoSync` hook handles automatic git sync:

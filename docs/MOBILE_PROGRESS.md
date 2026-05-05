@@ -99,13 +99,14 @@ This file is the resumable working log for Tolaria mobile. The strategy and road
 - Added a sidebar vault-management card that shows the active app-local vault, Git sync state, and an explicit Git remote action on iPad and compact sidebar surfaces.
 - Added the first mobile Git transport execution boundary behind the existing sync/auth plan, including explicit pull/push routing and a visible unavailable-transport failure until the native Git implementation lands.
 - Hardened TenTap link serialization so safe HTTP, mailto, and relative links persist while unsafe link destinations block draft persistence.
+- Added the first native mobile Git transport adapter contract, wiring the app to a native-module-shaped boundary that currently fails clearly until the real implementation is present.
 
 ## Next Action
 
 Continue Phase 4 with editor durability:
 
 1. Continue TenTap Markdown serialization coverage for any editor output observed in simulator QA.
-2. Start the native Git engine spike behind `MobileGitTransport`, preferably Rust/libgit2 unless Expo native-module constraints block it.
+2. Implement the native Git module behind `createNativeMobileGitTransport`, preferably Rust/libgit2 unless Expo native-module constraints block it.
 3. Retry the iOS development-client build after installing an iOS 26.2 simulator runtime in Xcode.
 
 ## Verification Log
@@ -376,6 +377,10 @@ Continue Phase 4 with editor durability:
 - `pnpm --filter @tolaria/mobile typecheck` passed after hardening TenTap link serialization.
 - CodeScene after hardening TenTap link serialization: `apps/mobile/src/mobileEditorHtmlMarkdown.ts` and `apps/mobile/src/mobileEditorDraft.test.ts` scored `10`.
 - `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after hardening TenTap link serialization.
+- `pnpm --filter @tolaria/mobile test -- src/mobileNativeGitTransport.test.ts src/mobileGitTransport.test.ts src/mobileGitSyncFlowAction.test.ts` passed after adding the native Git transport adapter contract: 44 files / 148 tests.
+- `pnpm --filter @tolaria/mobile typecheck` passed after adding the native Git transport adapter contract.
+- CodeScene after adding the native Git transport adapter contract: `apps/mobile/src/MobileApp.tsx`, `apps/mobile/src/mobileNativeGitTransport.ts`, and `apps/mobile/src/mobileNativeGitTransport.test.ts` scored `10`.
+- `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after adding the native Git transport adapter contract; Metro recovered from a cache deserialize warning by doing a full crawl.
 
 ## Risks / Watch Items
 

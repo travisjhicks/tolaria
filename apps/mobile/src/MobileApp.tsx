@@ -65,7 +65,7 @@ import type { MobileVaultRuntime } from './mobileVaultRuntime'
 import { useMobileVaultRuntimeLoader } from './useMobileVaultRuntimeLoader'
 import type { MobileNotePropertyPatch } from './mobileNoteProperties'
 import { useMobileGitSyncFlow } from './useMobileGitSyncFlow'
-import { createUnavailableMobileGitTransport } from './mobileGitTransport'
+import { createNativeMobileGitTransport } from './mobileNativeGitTransport'
 
 export function MobileApp() {
   const { width } = useWindowDimensions()
@@ -73,7 +73,7 @@ export function MobileApp() {
   const showsProperties = width >= 1000
   const appStateStorage = useMemo(() => createNativeMobileAppStateStorage(), [])
   const gitCredentialStorage = useMemo(() => createNativeMobileGitCredentialStorage(), [])
-  const gitTransport = useMemo(() => createUnavailableMobileGitTransport(), [])
+  const gitTransport = useMemo(() => createNativeMobileGitTransport(), [])
   const gitHubOAuthClientIdState = useMemo(() => currentMobileGitHubOAuthClientIdState(), [])
   const vaultMetadataStorage = useMemo(() => createNativeMobileVaultMetadataStorage(), [])
   const [activeVaultMetadata, setActiveVaultMetadata] = useState(defaultMobileVaultMetadata)
