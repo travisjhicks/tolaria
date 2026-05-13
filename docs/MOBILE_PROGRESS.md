@@ -460,4 +460,22 @@ Continue Phase 4 as a quality remediation pass before new feature work:
 - Shared package extraction must not destabilize active desktop work.
 - Desktop alpha release currently triggers on every push to `main`; this branch is safe, but release path filters should be added before mobile work merges to `main`.
 - Codacy analyzes committed/pushed repository state; local edits still need local lint/test/CodeScene discipline before remote checks exist.
-- TenTap's package graph currently reports a `react-dom` peer warning because its bundled web editor path depends on React DOM 18 while the native app uses React 19; simulator launch and iOS export pass, but this should be tracked during the editor spike.
+- TenTap declares a React DOM 18 dependency, but the mobile workspace now overrides that nested dependency to `react-dom@19.1.0` so Expo SDK 54 runs with a single mobile React DOM version. Keep this override under review when upgrading TenTap or Expo.
+
+## 2026-05-13 Review-Driven Quality Pass
+
+- Downgraded the mobile Expo runtime to SDK 54 for compatibility with the currently available physical-iPad Expo Go runtime, then added a mobile Metro resolver so the native bundle resolves mobile `react@19.1.0` / `react-dom@19.1.0` instead of the desktop root React.
+- Preserved notes that no longer start with an H1 in the rich editor; the TenTap initial document no longer re-inserts a title heading after the user removes it.
+- Added rich wikilink rendering for persisted wikilinks and serialization back to desktop-compatible wikilink Markdown.
+- Routed rich wikilink taps from the TenTap WebView back to mobile note navigation.
+- Added a WebView keyboard hook for hardware Tab indentation/outdentation inside the rich editor.
+- Added a WebView shortcut hook for `Cmd+N` while focus is inside the rich editor.
+- Replaced the Type property chip picker with a combobox-style option list.
+- Reworked relationship target adding to use a modal note picker rather than an inline always-visible suggestion list.
+- Added custom relationship group creation with an initial target, custom relationship group deletion, relationship chip removal, and custom property deletion.
+- Added initial iPad split-panel drag handles: sidebar/list can collapse left, properties can collapse right, and edge handles restore hidden panels.
+- Updated [MOBILE_STRATEGY.md](./MOBILE_STRATEGY.md) with the iPad feature-parity roadmap and [MOBILE_QUALITY_AUDIT.md](./MOBILE_QUALITY_AUDIT.md) with the current gap inventory.
+- `pnpm --filter @tolaria/mobile typecheck` passed.
+- `pnpm --filter @tolaria/mobile test` passed: 59 files / 194 tests.
+- `pnpm --filter @tolaria/mobile exec expo install --check --json` passed.
+- `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export-quality-pass` passed.

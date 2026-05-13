@@ -4,6 +4,7 @@ import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import type { MobileNote } from './demoData'
 import { mobileDerivedRelationshipGroups } from './mobileDerivedRelationships'
 import { MobileEditablePropertyPickers } from './MobileEditablePropertyPickers'
+import { MobileRelationshipNotePicker } from './MobileRelationshipNotePicker'
 import type { MobileNotePropertyPatch } from './mobileNoteProperties'
 import { nextMobilePropertyPicker, type MobilePropertyPickerKey } from './mobilePropertyPicker'
 import {
@@ -11,10 +12,10 @@ import {
   filterMobileRelationshipRef,
   hasMobileRelationshipRef,
   mobileRelationshipDisplayLabel,
+  mobileWikilinkForNote,
   resolveMobileRelationshipNote,
   uniqueMobileRelationshipRefs,
 } from './mobileRelationshipRefs'
-import { mobileNoteSuggestions } from './mobileWikilinkAutocomplete'
 import { mobileRelationshipAppearance } from './mobileTypeAppearance'
 import { styles } from './styles'
 import { colors } from './theme'
@@ -59,7 +60,7 @@ export function MobilePropertiesPanel({
           <EditableRelationships note={note} notes={notes} onChangeProperties={onChangeProperties} onOpenNote={onOpenNote} />
           <DerivedRelationships note={note} notes={notes} onOpenNote={onOpenNote} />
         </PropertySection>
-        <CustomProperties note={note} />
+        <CustomProperties note={note} onChangeProperties={onChangeProperties} />
         <PropertySection title="Info">
           <BacklinkGroup backlinks={note.backlinks} onOpenNote={onOpenNote} />
           <PropertyRow label="Words" value={String(note.words)} />
@@ -129,6 +130,10 @@ function EditableRelationships({
           key={key}
           label={formatRelationshipLabel(key)}
           notes={notes}
+          onDeleteGroup={() => onChangeProperties?.({
+            relationships: removeRelationshipKey({ key, relationships: note.relationships }),
+            removedRelationshipKeys: [key],
+          })}
           targets={targets}
           onChangeTargets={(nextTargets) => onChangeProperties?.({
             relationships: { ...note.relationships, [key]: nextTargets },
@@ -139,7 +144,8 @@ function EditableRelationships({
       ))}
       <AddRelationshipGroup
         note={note}
-        onAdd={(key) => onChangeProperties?.({ relationships: { ...note.relationships, [key]: [] } })}
+        notes={notes}
+        onAdd={(key, target) => onChangeProperties?.({ relationships: { ...note.relationships, [key]: [target] } })}
       />
     </>
   )
@@ -174,6 +180,7 @@ function RelationshipGroup({
   label,
   notes,
   onChangeTargets,
+  onDeleteGroup,
   onOpenNote,
   targets,
   writableTargets = targets,
@@ -181,26 +188,30 @@ function RelationshipGroup({
   label: string
   notes: MobileNote[]
   onChangeTargets?: (targets: string[]) => void
+  onDeleteGroup?: () => void
   onOpenNote?: (noteId: string) => void
   targets: string[]
   writableTargets?: string[]
 }) {
-  const [query, setQuery] = useState('')
   const [isAdding, setIsAdding] = useState(false)
   const uniqueTargets = uniqueMobileRelationshipRefs(targets)
-  const suggestions = isAdding ? mobileNoteSuggestions({ notes, query }) : []
-  const addTarget = (value: string) => {
-    const target = canonicalMobileRelationshipRef({ notes, value })
+  const addTarget = (selectedNote: MobileNote) => {
+    const target = canonicalMobileRelationshipRef({ notes, value: mobileWikilinkForNote(selectedNote) })
     if (!target) return
 
     onChangeTargets?.(uniqueMobileRelationshipRefs([...writableTargets, target]))
-    setQuery('')
     setIsAdding(false)
   }
 
   return (
     <View style={styles.relationshipGroup}>
-      <RelationshipHeader canAdd={Boolean(onChangeTargets)} label={label} onAdd={() => setIsAdding(true)} />
+      <RelationshipHeader
+        canAdd={Boolean(onChangeTargets)}
+        canDelete={Boolean(onDeleteGroup)}
+        label={label}
+        onAdd={() => setIsAdding(true)}
+        onDelete={onDeleteGroup}
+      />
       <View style={styles.relationshipChipRow}>
         {uniqueTargets.length === 0 ? <Text style={styles.relationshipEmpty}>None</Text> : null}
         {uniqueTargets.map((target) => (
@@ -215,80 +226,66 @@ function RelationshipGroup({
           />
         ))}
       </View>
-      {isAdding ? <RelationshipAddBox onAddTarget={addTarget} onChangeQuery={setQuery} query={query} suggestions={suggestions} /> : null}
+      <MobileRelationshipNotePicker
+        notes={notes}
+        title={`Add ${label}`}
+        visible={isAdding}
+        onClose={() => setIsAdding(false)}
+        onSelectNote={addTarget}
+      />
     </View>
   )
 }
 
 function RelationshipHeader({
   canAdd,
+  canDelete,
   label,
   onAdd,
+  onDelete,
 }: {
   canAdd: boolean
+  canDelete: boolean
   label: string
   onAdd: () => void
+  onDelete?: () => void
 }) {
   return (
     <View style={styles.relationshipHeader}>
       <Text style={styles.propertyGroupTitle}>{label}</Text>
-      {canAdd ? (
-        <Pressable onPress={onAdd} style={({ pressed }) => [styles.relationshipAddButton, pressed ? styles.pressed : null]}>
-          <Plus color={colors.textSoft} size={14} />
-        </Pressable>
-      ) : null}
-    </View>
-  )
-}
-
-function RelationshipAddBox({
-  onAddTarget,
-  onChangeQuery,
-  query,
-  suggestions,
-}: {
-  onAddTarget: (target: string) => void
-  onChangeQuery: (query: string) => void
-  query: string
-  suggestions: MobileNote[]
-}) {
-  return (
-    <View style={styles.relationshipAddBox}>
-      <TextInput
-        autoCapitalize="none"
-        autoCorrect={false}
-        onChangeText={onChangeQuery}
-        onSubmitEditing={() => {
-          if (query.trim().length > 0) {
-            onAddTarget(query.trim())
-          }
-        }}
-        placeholder="Add note"
-        placeholderTextColor={colors.mutedText}
-        style={styles.relationshipInput}
-        value={query}
-      />
-      {suggestions.map((suggestion) => (
-        <Pressable
-          key={suggestion.id}
-          onPress={() => onAddTarget(suggestion.title)}
-          style={({ pressed }) => [styles.relationshipSuggestion, pressed ? styles.pressed : null]}
-        >
-          <Text style={styles.relationshipSuggestionText}>{suggestion.title}</Text>
-        </Pressable>
-      ))}
+      <View style={styles.relationshipHeaderActions}>
+        {canDelete ? (
+          <Pressable onPress={onDelete} style={({ pressed }) => [styles.relationshipAddButton, pressed ? styles.pressed : null]}>
+            <X color={colors.textSoft} size={14} />
+          </Pressable>
+        ) : null}
+        {canAdd ? (
+          <Pressable onPress={onAdd} style={({ pressed }) => [styles.relationshipAddButton, pressed ? styles.pressed : null]}>
+            <Plus color={colors.textSoft} size={14} />
+          </Pressable>
+        ) : null}
+      </View>
     </View>
   )
 }
 
 function AddRelationshipGroup({
   note,
+  notes,
   onAdd,
 }: {
   note: MobileNote
-  onAdd: (key: string) => void
+  notes: MobileNote[]
+  onAdd: (key: string, target: string) => void
 }) {
   const [name, setName] = useState('')
+  const [pendingKey, setPendingKey] = useState<string | null>(null)
+  const openTargetPicker = () => {
+    const key = relationshipKeyFromLabel(name)
+    if (key && !note.relationships[key]) {
+      setPendingKey(key)
+    }
+  }
 
   return (
     <View style={styles.relationshipGroup}>
@@ -296,17 +293,24 @@ function AddRelationshipGroup({
         autoCapitalize="none"
         autoCorrect={false}
         onChangeText={setName}
-        onSubmitEditing={() => {
-          const key = relationshipKeyFromLabel(name)
-          if (key && !note.relationships[key]) {
-            onAdd(key)
-            setName('')
-          }
-        }}
+        onSubmitEditing={openTargetPicker}
         placeholder="+ Add relationship"
         placeholderTextColor={colors.mutedText}
         style={styles.relationshipInput}
         value={name}
+      />
+      <MobileRelationshipNotePicker
+        notes={notes}
+        title={`Add ${formatRelationshipLabel(pendingKey ?? 'relationship')}`}
+        visible={Boolean(pendingKey)}
+        onClose={() => setPendingKey(null)}
+        onSelectNote={(targetNote) => {
+          if (!pendingKey) return
+
+          onAdd(pendingKey, mobileWikilinkForNote(targetNote))
+          setName('')
+          setPendingKey(null)
+        }}
       />
     </View>
   )
@@ -314,15 +318,27 @@ function AddRelationshipGroup({
 
 function CustomProperties({
   note,
+  onChangeProperties,
 }: {
   note: MobileNote
+  onChangeProperties?: (patch: MobileNotePropertyPatch) => void
 }) {
   const entries = Object.entries(note.customProperties)
 
   return (
     <PropertySection title="Custom properties">
       {entries.length === 0 ? <Text style={styles.relationshipEmpty}>None</Text> : null}
-      {entries.map(([key, value]) => <PropertyRow key={key} label={formatRelationshipLabel(key)} value={value} />)}
+      {entries.map(([key, value]) => (
+        <PropertyRow
+          key={key}
+          label={formatRelationshipLabel(key)}
+          value={value}
+          onDelete={() => onChangeProperties?.({
+            customProperties: removeCustomPropertyKey({ customProperties: note.customProperties, key }),
+            removedCustomPropertyKeys: [key],
+          })}
+        />
+      ))}
     </PropertySection>
   )
 }
@@ -420,15 +436,42 @@ function PanelToolbar({ onClose }: { onClose?: () => void }) {
 
 function PropertyRow({
   label,
+  onDelete,
   value,
 }: {
   label: string
+  onDelete?: () => void
   value: string
 }) {
   return (
     <View style={styles.propertyRow}>
       <Text style={styles.propertyLabel}>{label}</Text>
       <Text style={styles.propertyValue}>{value}</Text>
+      {onDelete ? (
+        <Pressable onPress={onDelete} style={styles.relationshipRemoveButton}>
+          <X color={colors.textSoft} size={14} />
+        </Pressable>
+      ) : null}
     </View>
   )
+}
+
+function removeRelationshipKey({
+  key,
+  relationships,
+}: {
+  key: string
+  relationships: Record<string, string[]>
+}) {
+  return Object.fromEntries(Object.entries(relationships).filter(([relationshipKey]) => relationshipKey !== key))
+}
+
+function removeCustomPropertyKey({
+  customProperties,
+  key,
+}: {
+  customProperties: Record<string, string>
+  key: string
+}) {
+  return Object.fromEntries(Object.entries(customProperties).filter(([propertyKey]) => propertyKey !== key))
 }

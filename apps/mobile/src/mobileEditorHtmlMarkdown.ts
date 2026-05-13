@@ -235,8 +235,28 @@ function imageSource(input: { tag: string }) {
 }
 
 function linkMarkdown(input: { tag: string; label: string }) {
+  const wikilink = wikilinkMarkdown(input)
+  if (wikilink) {
+    return wikilink
+  }
+
   const href = linkDestination(input)
   return href ? `[${input.label}](${href})` : null
+}
+
+function wikilinkMarkdown(input: { tag: string; label: string }) {
+  const href = htmlAttribute({ tag: input.tag, name: 'href' })
+  if (!href?.startsWith('tolaria-note:')) {
+    return null
+  }
+
+  const target = decodeURIComponent(href.slice('tolaria-note:'.length)).trim()
+  const label = decodeMobileHtmlEntities({ text: input.label }).trim()
+  if (!target) {
+    return null
+  }
+
+  return label && label !== target ? `[[${target}|${label}]]` : `[[${target}]]`
 }
 
 function linkDestination(input: { tag: string }) {
@@ -271,7 +291,7 @@ function isPersistableLinkDestination(input: { href: string }) {
     return false
   }
 
-  return isRemoteLinkDestination({ href }) || isMailLinkDestination({ href }) || isRelativeLinkDestination({ href })
+  return isRemoteLinkDestination({ href }) || isMailLinkDestination({ href }) || isRelativeLinkDestination({ href }) || isWikilinkDestination({ href })
 }
 
 function isRemoteLinkDestination(input: { href: string }) {
@@ -284,6 +304,10 @@ function isMailLinkDestination(input: { href: string }) {
 
 function isRelativeLinkDestination(input: { href: string }) {
   return !input.href.startsWith('/') && !input.href.startsWith('//') && !input.href.match(/^[A-Za-z][A-Za-z0-9+.-]*:/)
+}
+
+function isWikilinkDestination(input: { href: string }) {
+  return input.href.startsWith('tolaria-note:') && input.href.length > 'tolaria-note:'.length
 }
 
 function stripRemainingTags(value: string) {

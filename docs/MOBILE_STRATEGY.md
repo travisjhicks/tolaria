@@ -1,6 +1,6 @@
 # Mobile Strategy
 
-Last updated: 2026-05-03
+Last updated: 2026-05-13
 
 This document is the working plan for building Tolaria as a universal mobile app. It is intended to be detailed enough that a future implementation session can pick up the work autonomously while desktop Tolaria continues in parallel.
 
@@ -94,6 +94,124 @@ iPad must support:
 - Native-feeling split-view transitions.
 - Readable editor width, not full-bleed text on very wide screens.
 - Quick switching between note list, editor, and properties.
+
+## iPad Feature-Parity Roadmap
+
+The iPad version should converge toward desktop parity in product journeys, not by copying every desktop component. Work in this order so each layer can be judged independently.
+
+### 1. Vault Safety And Local Correctness
+
+Acceptance target:
+
+- Open a local/app-managed vault and keep all writes desktop-compatible.
+- Create, edit, rename/title, archive, delete, and restore notes without data loss.
+- Preserve unknown frontmatter and non-note files.
+- Run a copied real vault through load/edit/save tests before connecting a real remote.
+
+Current state:
+
+- App-local vault storage exists.
+- Git sync/auth boundaries exist.
+- A real-vault compatibility suite is still required before using the production vault.
+
+### 2. Core Navigation And Shell
+
+Acceptance target:
+
+- Sidebar, note list, editor, and properties are all reachable through touch, trackpad, and keyboard.
+- iPad panels collapse/expand through direct split-view gestures and do not lose selection.
+- iPhone keeps the Bear-style adjacent-surface navigation.
+
+Current state:
+
+- iPhone/compact swipes exist.
+- iPad panel drag handles exist as an initial implementation and need device QA/polish.
+
+### 3. Editor
+
+Acceptance target:
+
+- TenTap can edit notes with and without leading H1s.
+- Markdown round-trips for the supported desktop subset: headings, paragraphs, lists, tasks, blockquotes, code, links, images, tables, wikilinks.
+- Hardware keyboard behavior covers Tab indentation and the core desktop shortcuts.
+- Rich wikilinks render as type-colored links, navigate on tap/click, and support `[[` autocomplete.
+
+Current state:
+
+- The supported serializer subset is growing and tested.
+- Leading-H1 removal is preserved.
+- Rich wikilinks render and navigate.
+- Rich `[[` autocomplete still needs a proper TenTap extension.
+
+### 4. Properties, Types, And Relationships
+
+Acceptance target:
+
+- System properties use typed controls: type combobox, status selector, date picker, icon picker, tag picker.
+- Relationship values are canonical wikilinks with desktop-compatible target resolution.
+- Relationship add/remove uses a modal note picker, not inline always-open lists.
+- Custom properties are separate from system properties and support safe add/edit/delete once value typing is defined.
+
+Current state:
+
+- System, relationship, custom, info, and history sections are separated.
+- Type uses a combobox-style row instead of chips.
+- Relationship add uses a modal note picker and custom relationship groups can be deleted.
+- Custom property deletion exists; full typed editing remains open.
+
+### 5. Sidebar, Favorites, And Views
+
+Acceptance target:
+
+- Inbox, All Notes, Archive, Favorites, Types, Folders, and Views match desktop semantics.
+- Favorites persist `_favorite` and `_favorite_index`, including ordering.
+- Views load desktop-compatible nested conditions and can eventually be edited.
+- Type colors/icons are loaded from desktop-compatible type metadata.
+
+Current state:
+
+- Inbox/All/Archive/Favorites/Types are present.
+- Nested saved views and type metadata parity remain open.
+
+### 6. AI
+
+Acceptance target:
+
+- API providers are configured in Settings, not in the chat panel.
+- API keys are stored in SecureStore.
+- Provider test/default-selection flows match desktop expectations.
+- The panel can send prompt + note context through configured API providers only.
+
+Current state:
+
+- Settings/API-key separation exists.
+- Provider test/default-selection depth remains open.
+
+### 7. Git Sync
+
+Acceptance target:
+
+- GitHub OAuth clone/pull/commit/push works against a throwaway real-vault repo.
+- Sync status and errors are explicit.
+- Conflicts are detected and presented safely.
+- Real vault usage is allowed only after the compatibility suite passes.
+
+Current state:
+
+- Isomorphic-git transport is in place for the current Expo runtime.
+- Real-vault end-to-end QA remains the next major sync milestone.
+
+### 8. Android Readiness
+
+Acceptance target:
+
+- Shared packages avoid iOS-only assumptions.
+- Gesture and auth abstractions can map to Android back/navigation behavior.
+- Native Git/auth/storage modules have Android implementation plans before iOS-only APIs harden.
+
+Current state:
+
+- Architecture still preserves an Android path, but no Android QA should be treated as done yet.
 
 ### iPhone
 

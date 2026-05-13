@@ -1,6 +1,6 @@
 # Mobile Quality Audit
 
-Last updated: 2026-05-05
+Last updated: 2026-05-13
 
 This audit records where the current mobile implementation falls below the desktop Tolaria product bar. The goal is not feature parity by count; it is parity in product boundaries, data semantics, interaction quality, and visual discipline for every feature we choose to ship on iPad/iPhone.
 
@@ -53,7 +53,7 @@ Remaining correction:
 
 ### Properties And Relationships
 
-Status: relationship additions and read-only inverse groups corrected; deeper desktop parity still open.
+Status: relationship additions, note-picker UX, read-only inverse groups, and custom deletion are partially corrected; deeper desktop parity still open.
 
 Desktop reference:
 
@@ -65,9 +65,9 @@ Desktop reference:
 Mobile current state:
 
 - Relationship chips are visually closer than before, and new relationship additions now canonicalize selected/typed targets to wikilink refs before saving.
-- Add/remove works locally but lacks create-and-open, full alias/path matching parity, and desktop-grade picker behavior.
+- Add/remove works locally through a modal note picker for target selection. It still lacks create-and-open, full alias/path matching parity, and desktop-grade picker behavior.
 - Derived inverse relationship groups are now shown read-only when other notes point at the active note.
-- Custom properties are shown read-only until mobile has typed controls equivalent to desktop property editing.
+- Custom properties are separate from system metadata and can be deleted. Full typed editing is still deferred until mobile has controls equivalent to desktop property editing.
 - The panel is grouped into system metadata, relationships, custom properties, info, and history, but the visual density still needs simulator QA.
 
 Required correction:
@@ -89,7 +89,7 @@ Desktop reference:
 Mobile current state:
 
 - Raw editor detects `[[` and inserts aliased links, but suggestions are basic and do not share desktop ranking, aliases, keyboard behavior, or relative path semantics.
-- Rich editor wikilink insertion/navigation is still incomplete.
+- Rich editor now renders persisted wikilinks as colored clickable links and routes taps back to mobile note navigation. Rich `[[` autocomplete is still incomplete and needs a TenTap extension rather than ad hoc DOM overlays.
 - Relationship add currently reuses note suggestions but does not guarantee canonical wikilink output.
 
 Required correction:
@@ -136,8 +136,28 @@ Mobile current state:
 
 - Layout works, but text sizing/rotation/simulator orientation issues reveal insufficient visual QA.
 - The raw editor is functional but not polished.
-- TenTap persistence covers a useful subset but is not yet a mature markdown editor experience.
+- TenTap persistence covers a useful subset but is not yet a mature markdown editor experience. The editor now preserves the user's choice to remove the leading H1 rather than re-inserting it on reload.
+- Hardware Tab inside the rich editor is handled in the WebView for list indentation/outdentation, but it needs physical iPad keyboard QA.
 - Some actions exist as icons without the depth expected from the desktop workflow.
+
+### iPad Panel Navigation
+
+Desktop reference:
+
+- Sidebar, note list, editor, and properties can be shown/hidden without losing selection or context.
+- Resizing/collapsing panels should feel direct and should not require hunting for tiny buttons.
+
+Mobile current state:
+
+- Compact phone navigation keeps Bear-style horizontal panel transitions.
+- iPad now has gesture handles between panels: sidebar and note list can collapse left, the right panel can collapse right, and edge handles restore hidden panels.
+- The gesture model is functional but needs simulator/device tuning for handle hit targets, Stage Manager widths, and trackpad affordances.
+
+Required correction:
+
+- Add persistent layout state per device/window size once the gesture model feels right.
+- Replace raw divider handles with visually intentional desktop-like split handles.
+- Add iPad simulator screenshot QA for collapsed-sidebar, collapsed-list, and collapsed-properties states.
 
 Required correction:
 
@@ -164,25 +184,32 @@ Required correction:
 
 ## Immediate Remediation Order
 
-1. Fix AI model configuration boundaries.
-   - Add mobile settings model/storage for API model providers.
-   - Store API keys in SecureStore.
-   - Refactor AI panel to consume configured providers and show empty/configure state.
+1. Finish the editor parity slice.
+   - Rich `[[` autocomplete through a TenTap extension.
+   - Clickable wikilinks with path/alias resolution matching desktop.
+   - Hardware keyboard shortcuts and Tab behavior verified on physical iPad keyboard.
+   - No-crash behavior for empty notes, notes without H1, and title changes through breadcrumb.
 
-2. Rework relationship persistence and UI.
+2. Finish relationship/property parity.
    - Canonical wikilinks only.
-   - Proper suggested/empty states and derived inverse relationship groups.
-   - Remove weak custom-property editing until type semantics are clear, or make it explicitly correct.
+   - Desktop-grade note picker behavior, including create/open later.
+   - Delete custom properties and custom relationship groups safely.
+   - Add typed custom property editing only when value semantics are clear.
 
-3. Rework saved views.
+3. Fix AI model configuration depth.
+   - Add a provider test action equivalent to desktop's model test flow.
+   - Add explicit default-provider selection.
+   - Move Settings into a broader app-level surface instead of only a right-panel replacement.
+
+4. Rework saved views.
    - Replace hardcoded views with loaded view definitions or label them as sample fixtures in code only.
    - Do not expose view editing until persistence is real.
 
-4. Visual QA pass.
+5. Visual QA pass.
    - Fix iPad orientation/layout issues.
    - Verify note list, sidebar, editor, properties, and AI/settings across iPad landscape/portrait and iPhone.
 
-5. Resume feature work only when each existing surface has an explicit acceptance checklist and passes simulator QA.
+6. Resume feature expansion only when each existing surface has an explicit acceptance checklist and passes simulator QA.
 
 ## Acceptance Bar
 

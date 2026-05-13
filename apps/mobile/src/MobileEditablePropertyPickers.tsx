@@ -45,6 +45,7 @@ export function MobileEditablePropertyPickers({
         value={note.type}
         onCommit={(type) => onChangeProperties?.({ type })}
         onOpen={() => onSelectPicker('type')}
+        variant="combo"
       />
       <EditableTextProperty
         disabled={disabled}
@@ -96,6 +97,7 @@ function EditableTextProperty({
   placeholder,
   suggestions,
   value,
+  variant = 'chips',
 }: {
   disabled: boolean
   isOpen: boolean
@@ -105,6 +107,7 @@ function EditableTextProperty({
   placeholder: string
   suggestions: readonly string[]
   value: string
+  variant?: 'chips' | 'combo'
 }) {
   const [draft, setDraft] = useState(value)
   const commitDraft = () => commitTextValue({ current: value, next: draft, onCommit })
@@ -131,20 +134,34 @@ function EditableTextProperty({
           style={styles.propertyTextInput}
           value={draft}
         />
-        <PropertyChipOptions>
-          {suggestions.map((option) => (
-            <PropertyTextChip
+        {variant === 'combo'
+          ? (
+            <PropertyComboOptions
               disabled={disabled}
-              key={option || 'none'}
-              option={option}
+              suggestions={suggestions}
               value={value}
               onSelect={(selected) => {
                 setDraft(selected)
                 onCommit(selected)
               }}
             />
-          ))}
-        </PropertyChipOptions>
+          )
+          : (
+            <PropertyChipOptions>
+              {suggestions.map((option) => (
+                <PropertyTextChip
+                  disabled={disabled}
+                  key={option || 'none'}
+                  option={option}
+                  value={value}
+                  onSelect={(selected) => {
+                    setDraft(selected)
+                    onCommit(selected)
+                  }}
+                />
+              ))}
+            </PropertyChipOptions>
+          )}
       </View>
     </PropertyPickerSection>
   )
@@ -324,6 +341,44 @@ function PropertyChipOptions({ children }: { children: ReactNode }) {
   return (
     <View style={styles.propertyChipRow}>
       {children}
+    </View>
+  )
+}
+
+function PropertyComboOptions({
+  disabled,
+  onSelect,
+  suggestions,
+  value,
+}: {
+  disabled: boolean
+  onSelect: (option: string) => void
+  suggestions: readonly string[]
+  value: string
+}) {
+  return (
+    <View style={styles.propertyComboBox}>
+      {suggestions.map((option) => {
+        const isSelected = isMobileNotePropertySelected({ current: value, option })
+
+        return (
+          <Pressable
+            disabled={disabled}
+            key={option || 'none'}
+            onPress={() => onSelect(option)}
+            style={({ pressed }) => [
+              styles.propertyComboOption,
+              isSelected ? styles.propertyComboOptionSelected : null,
+              disabled ? styles.propertyDisabled : null,
+              pressed ? styles.pressed : null,
+            ]}
+          >
+            <Text style={[styles.propertyComboOptionText, isSelected ? styles.propertyComboOptionTextSelected : null]}>
+              {option || 'None'}
+            </Text>
+          </Pressable>
+        )
+      })}
     </View>
   )
 }

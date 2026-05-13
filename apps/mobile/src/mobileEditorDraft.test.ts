@@ -106,6 +106,22 @@ describe('mobile editor draft', () => {
     })
   })
 
+  it('serializes rich wikilinks back to desktop-compatible wikilink markdown', () => {
+    const draft = createMobileEditorDraft({
+      note: {
+        id: 'links',
+        title: 'Links',
+        content: '# Links',
+      },
+      editorHtml: '<p>See <a data-tolaria-wikilink="true" href="tolaria-note:mobile-roadmap">Mobile Roadmap</a>.</p>',
+    })
+
+    expect(draft).toMatchObject({
+      persistable: true,
+      canonicalMarkdown: 'See [[mobile-roadmap|Mobile Roadmap]].',
+    })
+  })
+
   it('serializes blockquotes, code blocks, and strikethrough', () => {
     const draft = createMobileEditorDraft({
       note: {

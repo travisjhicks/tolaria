@@ -7,6 +7,10 @@ export const relationshipEditingStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  relationshipHeaderActions: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
   relationshipAddButton: {
     width: 26,
     height: 26,

@@ -7,6 +7,11 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native'
+import {
+  PanGestureHandler,
+  State,
+  type PanGestureHandlerStateChangeEvent,
+} from 'react-native-gesture-handler'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import {
   CaretLeft,
@@ -46,6 +51,7 @@ import {
 } from './compactNavigation'
 import { NamedIcon, type IconName } from './NamedIcon'
 import { SwipeSurface } from './SwipeSurface'
+import { detectHorizontalSwipe, type SwipeDirection } from './compactGestures'
 import { styles } from './styles'
 import { colors } from './theme'
 import { MobileEditorBreadcrumb } from './MobileEditorBreadcrumb'
@@ -302,6 +308,7 @@ export function MobileApp() {
     onNavigate: (event) => setCompactNavigation((state) => transitionCompactNavigation(state, event)),
     onOpenAi: () => setRightPanel('ai'),
     onOpenAiSettings: () => setRightPanel('settings'),
+    onOpenNote: selectNoteId,
     onOpenProperties: () => setRightPanel('properties'),
     onOpenRemoteSetup: remoteSetupFlow.open,
     onRawMarkdownChange: saveRawMarkdown,
@@ -363,6 +370,7 @@ type MobileAppShellProps = {
   onNavigate: (event: CompactNavigationEvent) => void
   onOpenAi: () => void
   onOpenAiSettings: () => void
+  onOpenNote: (noteId: string) => void
   onOpenProperties: () => void
   onOpenRemoteSetup: () => void
   onRawMarkdownChange: (markdown: string) => void
@@ -390,45 +398,119 @@ function MobileAppShell(props: MobileAppShellProps) {
 }
 
 function TabletShell(props: MobileAppShellProps) {
+  const [layout, setLayout] = useState({ list: true, right: true, sidebar: true })
+  const openLeftPanel = () => {
+    setLayout((current) => current.list ? { ...current, sidebar: true } : { ...current, list: true })
+  }
+  const openRightPanel = () => setLayout((current) => ({ ...current, right: true }))
+  const closeSidebar = () => setLayout((current) => ({ ...current, sidebar: false }))
+  const closeList = () => setLayout((current) => ({ ...current, list: false }))
+  const closeRightPanel = () => setLayout((current) => ({ ...current, right: false }))
+  const showRightPanel = props.showsProperties && layout.right
+
   return (
     <View style={styles.tabletShell}>
-      <SidebarPanel
-        activeVault={props.activeVault}
-        activeSelection={props.sidebarSelection}
-        sections={props.sidebarSections}
-        onOpenRemoteSetup={props.onOpenRemoteSetup}
-        onSelect={props.onSelectSidebar}
-      />
-      <NoteListPanel
-        gitSyncPlan={props.gitSyncPlan}
-        listTitle={props.listTitle}
-        notes={props.notes}
-        selectedNoteId={props.selectedNoteId}
-        createNoteFailed={props.createNoteFailed}
-        isCreatingNote={props.isCreatingNote}
-        runtimeLoadFailed={props.runtimeLoadFailed}
-        onCreateNote={props.onCreateNote}
-        onGitSyncAction={props.onGitSyncAction}
-        onRetryRuntimeLoad={props.onRetryRuntimeLoad}
-        onSelectNote={props.onSelectNote}
-      />
+      {!layout.sidebar || !layout.list ? <TabletPanelDragHandle onSwipeRight={openLeftPanel} /> : null}
+      {layout.sidebar ? (
+        <>
+          <SidebarPanel
+            activeVault={props.activeVault}
+            activeSelection={props.sidebarSelection}
+            sections={props.sidebarSections}
+            onOpenRemoteSetup={props.onOpenRemoteSetup}
+            onSelect={props.onSelectSidebar}
+          />
+          <TabletPanelDragHandle onSwipeLeft={closeSidebar} />
+        </>
+      ) : null}
+      {layout.list ? (
+        <>
+          <NoteListPanel
+            gitSyncPlan={props.gitSyncPlan}
+            listTitle={props.listTitle}
+            notes={props.notes}
+            selectedNoteId={props.selectedNoteId}
+            createNoteFailed={props.createNoteFailed}
+            isCreatingNote={props.isCreatingNote}
+            runtimeLoadFailed={props.runtimeLoadFailed}
+            onCreateNote={props.onCreateNote}
+            onGitSyncAction={props.onGitSyncAction}
+            onRetryRuntimeLoad={props.onRetryRuntimeLoad}
+            onSelectNote={props.onSelectNote}
+          />
+          <TabletPanelDragHandle onSwipeLeft={closeList} />
+        </>
+      ) : null}
       <EditorPanel
         editorMode={props.editorMode}
         notes={props.allNotes}
         note={props.selectedNote}
         saveState={props.saveState}
         onDeleteNote={props.onDeleteNote}
+        onCreateNote={props.onCreateNote}
         onDraftChange={props.onDraftChange}
-        onOpenAi={props.onOpenAi}
-        onOpenProperties={props.onOpenProperties}
+        onOpenAi={() => {
+          openRightPanel()
+          props.onOpenAi()
+        }}
+        onOpenNote={props.onOpenNote}
+        onOpenProperties={() => {
+          openRightPanel()
+          props.onOpenProperties()
+        }}
         onRawMarkdownChange={props.onRawMarkdownChange}
         onToggleArchive={props.onToggleArchive}
         onToggleEditorMode={props.onToggleEditorMode}
         onToggleFavorite={props.onToggleFavorite}
       />
-      <TabletRightPanel {...props} />
+      {showRightPanel ? (
+        <>
+          <TabletPanelDragHandle onSwipeRight={closeRightPanel} />
+          <TabletRightPanel {...props} />
+        </>
+      ) : <TabletPanelDragHandle onSwipeLeft={openRightPanel} />}
     </View>
   )
+}
+
+function TabletPanelDragHandle({
+  onSwipeLeft,
+  onSwipeRight,
+}: {
+  onSwipeLeft?: () => void
+  onSwipeRight?: () => void
+}) {
+  const handleStateChange = (event: PanGestureHandlerStateChangeEvent) => {
+    if (event.nativeEvent.state !== State.END) {
+      return
+    }
+
+    const direction = detectHorizontalSwipe(event.nativeEvent)
+    handleTabletPanelSwipe({ direction, onSwipeLeft, onSwipeRight })
+  }
+
+  return (
+    <PanGestureHandler activeOffsetX={[-8, 8]} failOffsetY={[-24, 24]} onHandlerStateChange={handleStateChange}>
+      <View style={styles.tabletPanelDragHandle} />
+    </PanGestureHandler>
+  )
+}
+
+function handleTabletPanelSwipe({
+  direction,
+  onSwipeLeft,
+  onSwipeRight,
+}: {
+  direction: SwipeDirection | null
+  onSwipeLeft?: () => void
+  onSwipeRight?: () => void
+}) {
+  if (direction === 'left') {
+    onSwipeLeft?.()
+  }
+  if (direction === 'right') {
+    onSwipeRight?.()
+  }
 }
 
 function TabletRightPanel(props: MobileAppShellProps) {
@@ -488,6 +570,7 @@ function CompactAppShell(props: MobileAppShellProps) {
       onNavigate={props.onNavigate}
       onDeleteNote={props.onDeleteNote}
       onDraftChange={props.onDraftChange}
+      onOpenNote={props.onOpenNote}
       onRawMarkdownChange={props.onRawMarkdownChange}
       onSelectSidebar={props.onSelectSidebar}
       onToggleArchive={props.onToggleArchive}
@@ -543,6 +626,7 @@ type CompactShellProps = {
   onDeleteNote?: () => void
   onDraftChange: (draft: MobileEditorDraft) => void
   onOpenAi?: () => void
+  onOpenNote: (noteId: string) => void
   onRawMarkdownChange: (markdown: string) => void
   onCreateNote: () => void
   onGitSyncAction: () => void
@@ -602,8 +686,10 @@ function CompactEditorPanel(props: CompactShellProps) {
         note={props.note}
         saveState={props.saveState}
         onDeleteNote={props.onDeleteNote}
+        onCreateNote={props.onCreateNote}
         onDraftChange={props.onDraftChange}
         onOpenAi={props.onOpenAi}
+        onOpenNote={props.onOpenNote}
         onRawMarkdownChange={props.onRawMarkdownChange}
         onBack={() => props.onNavigate({ type: 'backToList' })}
         onOpenProperties={() => props.onNavigate({ type: 'openProperties' })}
@@ -838,8 +924,10 @@ function EditorPanel({
   note,
   saveState,
   onDeleteNote,
+  onCreateNote,
   onDraftChange,
   onOpenAi,
+  onOpenNote,
   onBack,
   onOpenProperties,
   onRawMarkdownChange,
@@ -852,8 +940,10 @@ function EditorPanel({
   note: MobileNote
   saveState?: MobileEditorSaveState
   onDeleteNote?: () => void
+  onCreateNote: () => void
   onDraftChange?: (draft: MobileEditorDraft) => void
   onOpenAi?: () => void
+  onOpenNote: (noteId: string) => void
   onBack?: () => void
   onOpenProperties?: () => void
   onRawMarkdownChange: (markdown: string) => void
@@ -880,7 +970,7 @@ function EditorPanel({
       </Toolbar>
       {editorMode === 'raw'
         ? <MobileRawEditor key={note.id} notes={notes} note={note} onRawMarkdownChange={onRawMarkdownChange} />
-        : <MobileEditorAdapter note={note} onDraftChange={onDraftChange} />}
+        : <MobileEditorAdapter notes={notes} note={note} onCreateNote={onCreateNote} onDraftChange={onDraftChange} onOpenNote={onOpenNote} />}
     </View>
   )
 }

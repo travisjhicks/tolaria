@@ -11,6 +11,12 @@ export const commonStyles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: colors.canvas,
   },
+  tabletPanelDragHandle: {
+    width: 10,
+    borderLeftColor: colors.border,
+    borderLeftWidth: StyleSheet.hairlineWidth,
+    backgroundColor: colors.appBackground,
+  },
   toolbar: {
     minHeight: 58,
     flexDirection: 'row',

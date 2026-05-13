@@ -18,7 +18,7 @@ describe('mobile editor document', () => {
         ].join('\n'),
       }),
     ).toEqual({
-      title: 'Workflow Orchestration Essay',
+      leadingTitle: 'Workflow Orchestration Essay',
       blocks: [
         {
           id: '0:The current narrative: everything routed through an LLM.',
@@ -68,7 +68,7 @@ describe('mobile editor document', () => {
 
   it('creates escaped HTML for TenTap initial content', () => {
     const html = createMobileEditorHtml({
-      title: 'Tolaria <mobile>',
+      leadingTitle: 'Tolaria <mobile>',
       blocks: [
         {
           id: '0:Use TenTap',
@@ -85,6 +85,29 @@ describe('mobile editor document', () => {
 
     expect(html).toBe(
       '<h1>Tolaria &lt;mobile&gt;</h1><p>Use TenTap &amp; keep markdown durable</p><ul><li>Escape &quot;quotes&quot;</li></ul>',
+    )
+  })
+
+  it('does not reinsert an H1 after the note body no longer starts with the title heading', () => {
+    const document = createMobileEditorDocument({
+      id: 'untitled',
+      title: 'Untitled',
+      content: 'Body without a leading heading',
+    })
+
+    expect(document.leadingTitle).toBeNull()
+    expect(createMobileEditorHtml(document)).toBe('<p>Body without a leading heading</p>')
+  })
+
+  it('renders wikilinks as clickable rich links in the editor HTML', () => {
+    const document = createMobileEditorDocument({
+      id: 'links',
+      title: 'Links',
+      content: '# Links\n\nSee [[mobile-roadmap|Mobile Roadmap]] next.',
+    })
+
+    expect(createMobileEditorHtml(document)).toContain(
+      '<a data-tolaria-wikilink="true" href="tolaria-note:mobile-roadmap">Mobile Roadmap</a>',
     )
   })
 

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { KeyboardAvoidingView, Platform, View } from 'react-native'
+import type { WebViewMessageEvent } from 'react-native-webview'
 import { RichText, Toolbar, useEditorBridge } from '@10play/tentap-editor'
 import type { MobileNote } from './mobileNoteProjection'
 import { createMobileEditorDraft, type MobileEditorDraft } from './mobileEditorDraft'
@@ -7,14 +8,21 @@ import {
   createMobileEditorDocument,
   createMobileEditorHtml,
 } from './mobileEditorDocument'
+import { resolveMobileRelationshipNote } from './mobileRelationshipRefs'
 import { styles } from './styles'
 
 export function MobileEditorAdapter({
+  notes,
   note,
+  onCreateNote,
   onDraftChange,
+  onOpenNote,
 }: {
+  notes: MobileNote[]
   note: MobileNote
+  onCreateNote: () => void
   onDraftChange?: (draft: MobileEditorDraft) => void
+  onOpenNote?: (noteId: string) => void
 }) {
   const document = useMemo(() => createMobileEditorDocument(note), [note])
   const initialContent = useMemo(() => createMobileEditorHtml(document), [document])
@@ -32,6 +40,21 @@ export function MobileEditorAdapter({
       })
     },
   })
+  const handleMessage = (event: WebViewMessageEvent) => {
+    const message = parseEditorMessage(event.nativeEvent.data)
+    if (!message) return
+
+    if (message.type === 'shortcut' && message.command === 'fileNewNote') {
+      onCreateNote()
+      return
+    }
+    if (message.type !== 'openWikilink') return
+
+    const targetNote = resolveMobileRelationshipNote({ notes, target: message.target })
+    if (targetNote) {
+      onOpenNote?.(targetNote.id)
+    }
+  }
   useEffect(() => {
     const timer = setTimeout(() => {
       applyMobileEditorWebViewSetup(editor)
@@ -43,7 +66,7 @@ export function MobileEditorAdapter({
   return (
     <View style={styles.editorAdapterContent}>
       <View style={styles.tentapEditor}>
-        <RichText key={note.id} editor={editor} onLoad={() => applyMobileEditorWebViewSetup(editor)} />
+        <RichText key={note.id} editor={editor} onLoad={() => applyMobileEditorWebViewSetup(editor)} onMessage={handleMessage} />
       </View>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -57,8 +80,58 @@ export function MobileEditorAdapter({
 
 function applyMobileEditorWebViewSetup(editor: ReturnType<typeof useEditorBridge>) {
   editor.injectCSS(mobileEditorCss, 'tolaria-mobile-editor')
-  editor.injectJS('document.documentElement.lang = navigator.language || "en"; true;')
+  editor.injectJS(mobileEditorSetupScript)
 }
+
+type MobileEditorMessage =
+  | { target: string; type: 'openWikilink' }
+  | { command: 'fileNewNote'; type: 'shortcut' }
+
+function parseEditorMessage(data: string): MobileEditorMessage | null {
+  try {
+    const parsed = JSON.parse(data) as { command?: unknown; target?: unknown; type?: unknown }
+    if (parsed.type === 'openWikilink' && typeof parsed.target === 'string') {
+      return { target: parsed.target, type: 'openWikilink' }
+    }
+    if (parsed.type === 'shortcut' && parsed.command === 'fileNewNote') {
+      return { command: 'fileNewNote', type: 'shortcut' }
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+const mobileEditorSetupScript = `
+  document.documentElement.lang = navigator.language || "en";
+  document.addEventListener("keydown", function(event) {
+    if ((event.metaKey || event.ctrlKey) && !event.altKey && String(event.key).toLowerCase() === "n") {
+      event.preventDefault();
+      window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({
+        type: "shortcut",
+        command: "fileNewNote"
+      }));
+      return;
+    }
+    if (event.key !== "Tab") return;
+    var selection = window.getSelection();
+    var node = selection && selection.anchorNode;
+    var editor = document.querySelector(".ProseMirror");
+    if (!editor || !node || !editor.contains(node.nodeType === 1 ? node : node.parentNode)) return;
+    event.preventDefault();
+    document.execCommand(event.shiftKey ? "outdent" : "indent");
+  }, true);
+  document.addEventListener("click", function(event) {
+    var link = event.target && event.target.closest && event.target.closest("a[data-tolaria-wikilink='true']");
+    if (!link) return;
+    event.preventDefault();
+    window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({
+      type: "openWikilink",
+      target: decodeURIComponent(String(link.getAttribute("href") || "").replace(/^tolaria-note:/, ""))
+    }));
+  }, true);
+  true;
+`
 
 const mobileEditorCss = `
   * {
@@ -92,5 +165,14 @@ const mobileEditorCss = `
   .ProseMirror li,
   .ProseMirror blockquote {
     font-family: inherit;
+  }
+
+  .ProseMirror a[data-tolaria-wikilink="true"] {
+    color: #3367f6;
+    font-weight: 650;
+    text-decoration: none;
+    border-radius: 5px;
+    background: #e8eeff;
+    padding: 1px 4px;
   }
 `

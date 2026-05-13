@@ -11,8 +11,11 @@ import { gitSyncStyles } from './styles/gitSyncStyles'
 import { noteListStyles } from './styles/noteListStyles'
 import { propertiesStyles } from './styles/propertiesStyles'
 import { propertyChipStyles } from './styles/propertyChipStyles'
+import { propertyComboStyles } from './styles/propertyComboStyles'
 import { rawEditorSuggestionStyles } from './styles/rawEditorSuggestionStyles'
 import { relationshipEditingStyles } from './styles/relationshipEditingStyles'
+import { relationshipPickerStyles } from './styles/relationshipPickerStyles'
+import { relationshipPickerResultStyles } from './styles/relationshipPickerResultStyles'
 import { relationshipStyles } from './styles/relationshipStyles'
 import { remotePromptStyles } from './styles/remotePromptStyles'
 import { sidebarStyles } from './styles/sidebarStyles'
@@ -33,8 +36,11 @@ export const styles = {
   ...noteListStyles,
   ...propertiesStyles,
   ...propertyChipStyles,
+  ...propertyComboStyles,
   ...rawEditorSuggestionStyles,
   ...relationshipEditingStyles,
+  ...relationshipPickerStyles,
+  ...relationshipPickerResultStyles,
   ...relationshipStyles,
   ...remotePromptStyles,
   ...sidebarStyles,

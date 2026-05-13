@@ -7,7 +7,7 @@ export type MobileEditorBlock = {
 }
 
 export type MobileEditorDocument = {
-  title: string
+  leadingTitle: string | null
   blocks: MobileEditorBlock[]
 }
 
@@ -21,13 +21,18 @@ export function createMobileEditorDocument(input: MobileEditorDocumentInput): Mo
   const [, body] = splitFrontmatter(input.content)
 
   return {
-    title: input.title,
+    leadingTitle: leadingTitle({ body, title: input.title }),
     blocks: createBlocks({ body, title: input.title }),
   }
 }
 
 export function createMobileEditorHtml(document: MobileEditorDocument) {
-  return `<h1>${escapeHtml({ value: document.title })}</h1>${document.blocks.map(blockToHtml).join('')}`
+  return `${titleHtml(document.leadingTitle)}${document.blocks.map(blockToHtml).join('') || '<p></p>'}`
+}
+
+function leadingTitle({ body, title }: { body: string; title: string }) {
+  const firstLine = body.split('\n').find((line) => line.trim().length > 0)?.trim()
+  return firstLine && isTitleHeading({ line: firstLine, title }) ? title : null
 }
 
 function createBlocks({ body, title }: { body: string; title: string }) {
@@ -58,8 +63,20 @@ function isTitleHeading({ line, title }: { line: string; title: string }) {
 }
 
 function blockToHtml(block: MobileEditorBlock) {
-  const text = escapeHtml({ value: block.text })
+  const text = inlineTextToHtml(block.text)
   return block.kind === 'bullet' ? `<ul><li>${text}</li></ul>` : `<p>${text}</p>`
+}
+
+function titleHtml(title: string | null) {
+  return title ? `<h1>${escapeHtml({ value: title })}</h1>` : ''
+}
+
+function inlineTextToHtml(value: string) {
+  return escapeHtml({ value }).replace(/\[\[([^[\]]+?)\]\]/g, (_match, inner: string) => {
+    const [target, alias] = inner.split('|')
+    const label = alias?.trim() || target.trim()
+    return `<a data-tolaria-wikilink="true" href="tolaria-note:${encodeURIComponent(target.trim())}">${label}</a>`
+  })
 }
 
 function escapeHtml({ value }: { value: string }) {
