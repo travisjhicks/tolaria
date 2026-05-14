@@ -496,3 +496,12 @@ Continue Phase 4 as a quality remediation pass before new feature work:
 - `pnpm --filter @tolaria/mobile typecheck` passed.
 - `pnpm --filter @tolaria/mobile test -- src/tabletPanelLayout.test.ts src/compactGestures.test.ts` passed; the mobile test runner executed 60 files / 198 tests.
 - `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export-panel-drag` passed.
+
+## 2026-05-14 Hardware Tab Indent Follow-Up
+
+- Replaced the rich editor WebView `document.execCommand("indent")` Tab handler with explicit `listIndent` messages.
+- Routed Tab to TenTap `editor.sink()` and Shift+Tab to `editor.lift()` so hardware keyboard indentation uses ProseMirror list commands.
+- Added mobile editor message parsing coverage for valid and malformed list indentation messages.
+- `pnpm --filter @tolaria/mobile typecheck` passed.
+- `pnpm --filter @tolaria/mobile test -- src/mobileEditorMessages.test.ts src/mobileShortcutCommands.test.ts src/mobileEditorDraft.test.ts` passed; the mobile test runner executed 61 files / 200 tests.
+- `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export-tab-indent` passed.

@@ -8,7 +8,10 @@ export const mobileEditorSetupScript = `
     }
     if (!isTabInsideEditor(event)) return;
     event.preventDefault();
-    document.execCommand(event.shiftKey ? "outdent" : "indent");
+    postEditorMessage({
+      type: "listIndent",
+      direction: event.shiftKey ? "out" : "in"
+    });
   }, true);
   document.addEventListener("click", function(event) {
     var link = event.target && event.target.closest && event.target.closest("a[href^='tolaria-note:']");

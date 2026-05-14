@@ -58,6 +58,10 @@ export function MobileEditorAdapter({
       setWikilinkQuery(message.query)
       return
     }
+    if (message.type === 'listIndent') {
+      handleListIndent({ direction: message.direction, editor })
+      return
+    }
     if (message.type !== 'openWikilink') return
 
     const targetNote = resolveMobileRelationshipNote({ notes, target: message.target })
@@ -100,4 +104,19 @@ export function MobileEditorAdapter({
 function applyMobileEditorWebViewSetup(editor: ReturnType<typeof useEditorBridge>) {
   editor.injectCSS(mobileEditorCss, 'tolaria-mobile-editor')
   editor.injectJS(mobileEditorSetupScript)
+}
+
+function handleListIndent({
+  direction,
+  editor,
+}: {
+  direction: 'in' | 'out'
+  editor: ReturnType<typeof useEditorBridge>
+}) {
+  if (direction === 'in') {
+    editor.sink()
+    return
+  }
+
+  editor.lift()
 }
