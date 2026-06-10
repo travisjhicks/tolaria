@@ -48,6 +48,19 @@ const phoneStates = [
   },
 ]
 
+const phoneScenarioStates = [
+  {
+    description: 'long-title-list',
+    expectedText: 'A Very Long Note Title That Should Stay Readable',
+    query: '?scenario=long-title',
+  },
+  {
+    description: 'property-heavy-editor',
+    expectedText: 'Mobile UI Parity Review',
+    query: '?scenario=property-heavy&phoneState=editor',
+  },
+]
+
 const tabletProjectNames = ['tablet-landscape', 'tablet-portrait'] as const
 const currentScreenshotNames = new Set([
   ...tabletProjectNames.flatMap((projectName) => [
@@ -59,6 +72,7 @@ const currentScreenshotNames = new Set([
   ]),
   'phone-portrait-initial.png',
   ...phoneStates.map((phoneState) => `phone-portrait-${phoneState.description}.png`),
+  ...phoneScenarioStates.map((phoneState) => `phone-portrait-${phoneState.description}.png`),
 ])
 
 async function recordScreenshot(record: ScreenshotRecord) {
@@ -152,6 +166,22 @@ test.describe('mobile UI lab screenshots', () => {
   for (const phoneState of phoneStates) {
     test(`captures the phone ${phoneState.description} state`, async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== 'phone-portrait', 'Phone shell states are captured only in the phone viewport.')
+
+      await page.goto(phoneState.query)
+
+      await expect(page.getByText(phoneState.expectedText).first()).toBeVisible()
+
+      await captureUiState({
+        description: phoneState.description,
+        page,
+        projectName: testInfo.project.name,
+      })
+    })
+  }
+
+  for (const phoneState of phoneScenarioStates) {
+    test(`captures the phone ${phoneState.description} scenario`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== 'phone-portrait', 'Phone shell scenarios are captured only in the phone viewport.')
 
       await page.goto(phoneState.query)
 

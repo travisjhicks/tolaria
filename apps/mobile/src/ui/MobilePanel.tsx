@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
-import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native'
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
+import { Text } from '../components/ui/text'
 import { mobileColors, mobileSpace, mobileType } from './tokens'
 
 export function MobilePanel({
@@ -21,7 +22,7 @@ export function MobileToolbar({
 }
 
 export function MobileToolbarTitle({ title }: { title: string }) {
-  return <Text numberOfLines={1} style={styles.title}>{title}</Text>
+  return <Text className="font-bold text-foreground" numberOfLines={1} style={styles.title}>{title}</Text>
 }
 
 export function MobileToolbarSpacer() {

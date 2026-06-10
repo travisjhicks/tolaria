@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
-import { Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native'
-import { mobileColors, mobileRadius, mobileSpace, mobileType } from './tokens'
+import { type StyleProp, type ViewStyle } from 'react-native'
+import { Button, type ButtonProps } from '../components/ui/button'
+import { Text } from '../components/ui/text'
+import { cn } from '../components/ui/utils'
 
 type MobileButtonVariant = 'primary' | 'secondary' | 'ghost'
 
@@ -19,67 +21,37 @@ export function MobileButton({
   style?: StyleProp<ViewStyle>
   variant?: MobileButtonVariant
 }) {
+  const buttonVariant = buttonVariantByMobileVariant[variant]
+
   return (
-    <Pressable
-      accessibilityRole="button"
+    <Button
+      className={cn('min-h-9 rounded-md px-3 active:opacity-75', buttonClassNames[variant])}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.base,
-        variantStyles[variant],
-        pressed ? styles.pressed : null,
-        disabled ? styles.disabled : null,
-        style,
-      ]}
+      size="sm"
+      style={style}
+      variant={buttonVariant}
     >
       {icon}
-      <Text style={[styles.label, labelStyles[variant]]}>{label}</Text>
-    </Pressable>
+      <Text className={cn('text-sm font-semibold', labelClassNames[variant])} numberOfLines={1}>{label}</Text>
+    </Button>
   )
 }
 
-const styles = StyleSheet.create({
-  base: {
-    minHeight: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: mobileSpace.sm,
-    borderRadius: mobileRadius.md,
-    paddingHorizontal: mobileSpace.md,
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  label: {
-    fontSize: mobileType.body,
-    fontWeight: '600',
-  },
-  pressed: {
-    opacity: 0.72,
-  },
-})
+const buttonVariantByMobileVariant: Record<MobileButtonVariant, ButtonProps['variant']> = {
+  ghost: 'ghost',
+  primary: 'default',
+  secondary: 'secondary',
+}
 
-const variantStyles = StyleSheet.create({
-  ghost: {
-    backgroundColor: 'transparent',
-  },
-  primary: {
-    backgroundColor: mobileColors.primary,
-  },
-  secondary: {
-    backgroundColor: mobileColors.control,
-  },
-})
+const buttonClassNames: Record<MobileButtonVariant, string> = {
+  ghost: 'bg-transparent px-2 shadow-none',
+  primary: '',
+  secondary: 'bg-secondary',
+}
 
-const labelStyles = StyleSheet.create({
-  ghost: {
-    color: mobileColors.textMuted,
-  },
-  primary: {
-    color: mobileColors.textInverse,
-  },
-  secondary: {
-    color: mobileColors.text,
-  },
-})
+const labelClassNames: Record<MobileButtonVariant, string> = {
+  ghost: 'text-muted-foreground',
+  primary: 'text-primary-foreground',
+  secondary: 'text-secondary-foreground',
+}

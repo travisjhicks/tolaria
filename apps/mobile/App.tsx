@@ -1,3 +1,4 @@
+import './global.css'
 import { StatusBar } from 'expo-status-bar'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { MobileUiLab } from './src/screens/MobileUiLab'

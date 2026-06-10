@@ -7,12 +7,15 @@ import {
   FileText,
   FolderOpen,
   Info,
+  List,
   MagnifyingGlass,
-  SidebarSimple,
   StackSimple,
 } from 'phosphor-react-native'
-import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native'
 import type { FixtureNote, FixtureSidebarSection, WorkspaceScenario } from '../fixtures/workspaceFixtures'
+import { Button } from '../components/ui/button'
+import { Text } from '../components/ui/text'
+import { cn } from '../components/ui/utils'
 import { mobileCopy, mobileText } from '../i18n/mobileText'
 import { mobileColors, mobileRadius, mobileSpace, mobileType } from '../ui/tokens'
 
@@ -62,7 +65,7 @@ function PhoneListHeader({ onOpenSidebar }: { onOpenSidebar: () => void }) {
   return (
     <View style={phoneStyles.header}>
       <CircleButton accessibilityLabel={mobileText('sidebar.action.expand')} onPress={onOpenSidebar}>
-        <SidebarSimple color={mobileColors.textMuted} size={30} />
+        <List color={mobileColors.textMuted} size={30} />
       </CircleButton>
       <View style={phoneStyles.headerTitleGroup}>
         <Text style={phoneStyles.headerTitle}>{mobileCopy.inbox}</Text>
@@ -208,18 +211,19 @@ function CircleButton({
   onPress?: () => void
 }) {
   return (
-    <Pressable
+    <Button
       accessibilityLabel={accessibilityLabel}
-      accessibilityRole="button"
+      className={cn(
+        'h-[62px] w-[62px] rounded-full bg-white p-0 shadow-lg shadow-black/10 active:opacity-75 [&_svg]:!h-[30px] [&_svg]:!w-[30px]',
+        dark ? 'border border-[#343A3A] bg-[#222727] shadow-none' : null,
+      )}
       onPress={onPress}
-      style={({ pressed }) => [
-        phoneStyles.circleButton,
-        dark ? phoneStyles.circleButtonDark : null,
-        pressed ? phoneStyles.pressed : null,
-      ]}
+      size="icon"
+      style={phoneStyles.circleButtonShadow}
+      variant="ghost"
     >
       {children}
-    </Pressable>
+    </Button>
   )
 }
 
@@ -248,22 +252,11 @@ const phoneColors = {
 }
 
 const sharedPhoneStyles = StyleSheet.create({
-  circleButton: {
-    width: 62,
-    height: 62,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: mobileRadius.pill,
-    backgroundColor: mobileColors.card,
+  circleButtonShadow: {
     shadowColor: '#000000',
     shadowOffset: { height: 8, width: 0 },
     shadowOpacity: 0.08,
     shadowRadius: 20,
-  },
-  circleButtonDark: {
-    backgroundColor: '#222727',
-    borderColor: '#343A3A',
-    borderWidth: StyleSheet.hairlineWidth,
   },
   pressed: {
     opacity: 0.72,

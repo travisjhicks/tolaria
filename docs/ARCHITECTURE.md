@@ -141,7 +141,7 @@ The note list opportunistically preloads visible and adjacent markdown/text entr
 | Raw editor | CodeMirror 6 | - |
 | Styling | Tailwind CSS v4 + CSS variables | 4.1.18 |
 | UI primitives | Radix UI + shadcn/ui | - |
-| Mobile UI primitives | React Native Tolaria primitives in `apps/mobile/src/ui` | - |
+| Mobile UI primitives | Nativewind + React Native Reusables via Tolaria-owned wrappers | Nativewind 4, RNR registry primitives |
 | Icons | Phosphor Icons | - |
 | Build | Vite | 7.3.1 |
 | Backend language | Rust (edition 2021) | 1.77.2 |
@@ -158,7 +158,7 @@ The note list opportunistically preloads visible and adjacent markdown/text entr
 
 The mobile app lives in `apps/mobile` as a separate Expo React Native workspace package. It is intentionally not a port of the desktop React DOM component tree. Desktop components, CSS variables, and panel semantics are treated as the reference contract, while mobile uses native primitives and fixture-driven screens.
 
-The first mobile surface is a UI lab, not production vault wiring. `apps/mobile/src/ui` owns native Tolaria primitives such as buttons, icon buttons, panels, toolbars, list rows, chips, and property rows. `apps/mobile/src/screens` composes those primitives into tablet and later phone shell fixtures. This keeps UI quality work deterministic: each mobile surface can be rendered, clicked, screenshot-tested, and compared against the desktop visual language before storage/editor/Git behavior is attached.
+The first mobile surface is a UI lab, not production vault wiring. `apps/mobile/src/components/ui` owns RNR-derived shadcn-style primitives such as text, buttons, and badges, while `apps/mobile/src/ui` owns Tolaria-specific wrappers and compositions such as icon buttons, panels, toolbars, list rows, chips, and property rows. `apps/mobile/src/screens` composes those primitives into tablet and phone shell fixtures. This keeps UI quality work deterministic: each mobile surface can be rendered, clicked, screenshot-tested, and compared against the desktop visual language before storage/editor/Git behavior is attached.
 
 ## System Overview
 

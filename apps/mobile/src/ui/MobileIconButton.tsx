@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
-import { Pressable, StyleSheet } from 'react-native'
-import { mobileColors, mobileRadius } from './tokens'
+import { Button } from '../components/ui/button'
+import { cn } from '../components/ui/utils'
 
 export function MobileIconButton({
   accessibilityLabel,
@@ -14,35 +14,15 @@ export function MobileIconButton({
   selected?: boolean
 }) {
   return (
-    <Pressable
+    <Button
       accessibilityLabel={accessibilityLabel}
-      accessibilityRole="button"
+      className={cn('h-9 w-9 rounded-md active:opacity-70', selected ? 'bg-accent' : 'bg-card')}
       hitSlop={8}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.base,
-        selected ? styles.selected : null,
-        pressed ? styles.pressed : null,
-      ]}
+      size="icon"
+      variant={selected ? 'secondary' : 'ghost'}
     >
       {children}
-    </Pressable>
+    </Button>
   )
 }
-
-const styles = StyleSheet.create({
-  base: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: mobileRadius.md,
-    backgroundColor: mobileColors.card,
-  },
-  pressed: {
-    opacity: 0.68,
-  },
-  selected: {
-    backgroundColor: mobileColors.selected,
-  },
-})

@@ -11,7 +11,7 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "ES2022",
-    "types": ["react"]
+    "types": ["react", "nativewind/types"]
   },
-  "include": ["App.tsx", "index.ts", "src/**/*.ts", "src/**/*.tsx"]
+  "include": ["App.tsx", "index.ts", "nativewind-env.d.ts", "src/**/*.ts", "src/**/*.tsx"]
 }

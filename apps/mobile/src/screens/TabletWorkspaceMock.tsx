@@ -16,7 +16,7 @@ import {
   Tray,
   X,
 } from 'phosphor-react-native'
-import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
+import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native'
 import {
   workspaceScenarios,
   type FixtureNote,
@@ -28,6 +28,7 @@ import {
   type FixtureSyncStatus,
   type WorkspaceScenario,
 } from '../fixtures/workspaceFixtures'
+import { Text } from '../components/ui/text'
 import { mobileCopy, mobileText } from '../i18n/mobileText'
 import { MobileButton } from '../ui/MobileButton'
 import { MobileChip } from '../ui/MobileChip'

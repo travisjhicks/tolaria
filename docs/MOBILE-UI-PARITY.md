@@ -45,6 +45,8 @@ The phone navigation matrix currently captures:
 | `initial` | Full-screen note list |
 | `sidebar-open` | Left drawer over the note list, leaving a visible strip of list content on the right |
 | `editor-open` | Note editor opened from the right with a back path to the list |
+| `long-title-list` | Phone note list pressure with long titles |
+| `property-heavy-editor` | Phone editor pressure with the property-heavy selected note |
 
 Run the full desktop/native Tolaria gate only before promotion or when desktop/native production files are intentionally changed:
 
@@ -64,11 +66,17 @@ TOLARIA_MOBILE_FULL_GATE=1 git push
 | P1 | Create note/type/status actions | Native modal/sheet controls | valid input, invalid input, type selection, collision | Controls use Tolaria primitives; disabled/loading/error states are visible |
 | P2 | Phone shell | Reduced navigation and panels | list-only, editor-only, properties sheet, back stack | Phone removes surfaces deliberately after tablet parity is established |
 
+## Mobile Primitive Layer
+
+Mobile UI follows the same ownership model as desktop shadcn/ui. RNR-derived primitives live locally in `apps/mobile/src/components/ui`, and Tolaria-specific wrappers/compositions live in `apps/mobile/src/ui`.
+
+Use the local primitive layer before adding new raw React Native controls. Product-specific surfaces can still use native `View`, `ScrollView`, and `Pressable` where they model Tolaria behavior, but text, buttons, badges/chips, and future shared controls should flow through the local RNR-backed components whenever practical.
+
 ## Per-Surface Workflow
 
 1. Identify the desktop source component or workflow.
 2. Add or update fixture data for the relevant states.
-3. Compose the screen from `apps/mobile/src/ui` primitives.
+3. Compose the screen from `apps/mobile/src/components/ui` primitives and `apps/mobile/src/ui` Tolaria wrappers.
 4. Run the fast QA loop and inspect screenshots.
 5. Add interaction checks for taps, selection, scrolling, and state transitions.
 6. Wire real data only after the fixture surface passes visual and interaction QA.
