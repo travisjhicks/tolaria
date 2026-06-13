@@ -1,6 +1,39 @@
 # Mobile UI Parity
 
-Tolaria mobile UI work starts from fixture-driven parity with desktop semantics. The goal is not to copy desktop layout mechanically. The goal is to recreate the same information architecture, interaction affordances, and visual quality with native React Native surfaces before production logic is wired.
+Tolaria mobile UI work starts from fixture-driven parity with desktop semantics. The iPad baseline copies desktop visual contracts first, then documents any mobile adaptation as an explicit exception. The goal is to avoid invented mobile UI while production logic is still static.
+
+## Copy-First Rule
+
+Desktop Tolaria is the visual source of truth for the first iPad version. React Native surfaces should copy the desktop component contract before adding mobile-specific behavior.
+
+Allowed differences must be documented as exceptions:
+
+| Exception | Rule |
+| --- | --- |
+| Native layout engine limits | Keep the same semantic contract and closest measurable dimensions. |
+| Touch targets | Increase only when the desktop hit area is too small to use reliably. |
+| Tablet panel navigation | Swipe/hide/reveal behavior can adapt the layout shell, not component styling. |
+| Phone reduction | Phone UI may remove/reflow surfaces after tablet parity is stable. |
+
+If a visible difference is not listed as an exception, treat it as a bug.
+
+## Parity Contract
+
+Mobile desktop-derived constants live in:
+
+```text
+apps/mobile/src/ui/desktopParity.ts
+```
+
+That file records the source values for the current iPad surface:
+
+| Contract | Desktop source | Mobile users |
+| --- | --- | --- |
+| `desktopSidebarParity` | `SidebarTopNav`, `SidebarGroupHeader`, `NavItem`, `FolderItemRow` | `MobileWorkspaceSidebar` |
+| `desktopNoteItemParity` | `NoteItem` | `MobileListRow`, `MobileNoteListPanel` |
+| `desktopPropertyParity` | `propertyPanelLayout`, `propertyChipStyles`, `RelationshipsPanel` | `MobilePropertyRow`, `MobileChip`, `MobilePropertiesPanel` |
+| `desktopEditorParity` | `theme.json`, `EditorTheme.css` | `TabletEditorPanel` |
+| `desktopPanelParity` | desktop split-pane widths and 52px chrome | tablet sidebar, note list, editor, properties |
 
 ## Fast QA Loop
 
@@ -18,6 +51,15 @@ pnpm mobile:qa:screenshots
 ```text
 /tmp/tolaria-mobile-ui-screenshots
 ```
+
+The screenshot suite also contains objective parity assertions for tablet landscape. These assertions fail on regressions such as:
+
+- selected note rows not spanning the full note-list panel
+- invented primary-blue note selection when desktop uses the note type color
+- rounded/margined note row wrappers instead of desktop full-width rows
+- missing note row separators
+- sidebar section padding drifting from desktop `SidebarTopNav` and `SidebarGroupHeader`
+- sidebar count pills losing desktop rounded pill sizing
 
 The default screenshot matrix is:
 
@@ -58,10 +100,10 @@ TOLARIA_MOBILE_FULL_GATE=1 git push
 
 | Priority | Desktop Source | Mobile Target | Required Fixture States | Acceptance Bar |
 | --- | --- | --- | --- | --- |
-| P0 | Sidebar navigation | Native sidebar rail/list | all notes, inbox, archive, favorites, types, long counts | Touch targets stay stable; labels and counts do not overlap; active state is obvious |
-| P0 | Note list | Native note list panel | selected note, favorite note, long title, multi-chip note, empty search | Dense enough for tablet work; rows remain readable; selected/favorite affordances are clear |
-| P0 | Editor shell | Native editor container | title, breadcrumb, rich text preview, empty note | Reading area feels like Tolaria; title scale is appropriate; content width is controlled |
-| P0 | Properties panel | Native property rows | type, date, status, relationships, empty values | Property labels align; chips match desktop semantics; actions are touch-safe |
+| P0 | Sidebar navigation | Native sidebar rail/list | all notes, inbox, archive, favorites, types, long counts | Copy desktop section padding, group labels, count pills, active states, and folder row density |
+| P0 | Note list | Native note list panel | selected note, favorite note, long title, multi-chip note, empty search | Copy desktop full-width row surface, separators, type-colored selected state, typography, and chip density |
+| P0 | Editor shell | Native editor container | title, rich text preview, empty note | Copy desktop editor theme values for content width, title separator, headings, body, lists, quotes, and tables |
+| P0 | Properties panel | Native property rows | type, date, status, relationships, empty values | Copy compact 12px labels, 24px chips, full-width relationship rows, and property-action rows |
 | P1 | Search and quick open | Native search overlay/sheet | empty query, results, no results, keyboard focus | Results can be scanned quickly; mouse/touch selection is deterministic |
 | P1 | Create note/type/status actions | Native modal/sheet controls | valid input, invalid input, type selection, collision | Controls use Tolaria primitives; disabled/loading/error states are visible |
 | P2 | Phone shell | Reduced navigation and panels | list-only, editor-only, properties sheet, back stack | Phone removes surfaces deliberately after tablet parity is established |
@@ -75,11 +117,13 @@ Use the local primitive layer before adding new raw React Native controls. Produ
 ## Per-Surface Workflow
 
 1. Identify the desktop source component or workflow.
-2. Add or update fixture data for the relevant states.
-3. Compose the screen from `apps/mobile/src/components/ui` primitives and `apps/mobile/src/ui` Tolaria wrappers.
-4. Run the fast QA loop and inspect screenshots.
-5. Add interaction checks for taps, selection, scrolling, and state transitions.
-6. Wire real data only after the fixture surface passes visual and interaction QA.
+2. Add its values to `desktopParity.ts` or reuse an existing contract.
+3. Add or update fixture data for the relevant states.
+4. Compose the screen from `apps/mobile/src/components/ui` primitives and `apps/mobile/src/ui` Tolaria wrappers.
+5. Add parity assertions for measurable invariants before relying on screenshot review.
+6. Run the fast QA loop and inspect screenshots.
+7. Add interaction checks for taps, selection, scrolling, and state transitions.
+8. Wire real data only after the fixture surface passes visual and interaction QA.
 
 ## Quality Rules
 

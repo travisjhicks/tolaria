@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
 import { Pressable, StyleSheet, View } from 'react-native'
 import { Text } from '../components/ui/text'
-import { mobileColors, mobileRadius, mobileSpace, mobileType } from './tokens'
+import { desktopNoteItemParity } from './desktopParity'
+import { mobileColors, mobileSpace, mobileType } from './tokens'
 
 type MobileListRowProps = {
   chips?: ReactNode
@@ -9,66 +10,98 @@ type MobileListRowProps = {
   meta?: string
   onPress?: () => void
   selected?: boolean
+  selectedBackgroundColor?: string
+  selectedBorderColor?: string
   subtitle: string
+  testID?: string
   title: string
   trailing?: ReactNode
 }
 
 export function MobileListRow(props: MobileListRowProps) {
-  const {
-    chips,
-    leading,
-    meta,
-    onPress,
-    selected = false,
-    subtitle,
-    title,
-    trailing,
-  } = props
+  const selected = props.selected ?? false
 
   return (
-    <View style={[styles.frame, selected ? styles.selected : null]}>
+    <View
+      testID={props.testID}
+      style={frameStyle({
+        selected,
+        selectedBackgroundColor: props.selectedBackgroundColor,
+        selectedBorderColor: props.selectedBorderColor,
+      })}
+    >
       <Pressable
         accessibilityRole="button"
-        onPress={onPress}
-        style={({ pressed }) => [
-          styles.base,
-          pressed ? styles.pressed : null,
-        ]}
+        onPress={props.onPress}
+        style={({ pressed }) => rowContentStyle({ pressed, selected })}
       >
         <View style={styles.header}>
-          {leading}
-          <Text numberOfLines={1} style={[styles.title, selected ? styles.titleSelected : null]}>{title}</Text>
-          {trailing}
+          {props.leading}
+          <Text numberOfLines={1} style={[styles.title, selected ? styles.titleSelected : null]}>{props.title}</Text>
+          {props.trailing}
         </View>
-        <Text numberOfLines={2} style={styles.subtitle}>{subtitle}</Text>
+        <Text numberOfLines={2} style={styles.subtitle}>{props.subtitle}</Text>
         <View style={styles.footer}>
-          {chips}
-          {meta ? <Text style={styles.meta}>{meta}</Text> : null}
+          {props.chips}
+          {props.meta ? <Text style={styles.meta}>{props.meta}</Text> : null}
         </View>
       </Pressable>
     </View>
   )
 }
 
+function frameStyle({
+  selected,
+  selectedBackgroundColor,
+  selectedBorderColor,
+}: {
+  selected: boolean
+  selectedBackgroundColor?: string
+  selectedBorderColor?: string
+}) {
+  return [
+    styles.frame,
+    selected ? styles.selected : null,
+    selected && selectedBackgroundColor ? { backgroundColor: selectedBackgroundColor } : null,
+    selected && selectedBorderColor ? { borderLeftColor: selectedBorderColor } : null,
+  ]
+}
+
+function rowContentStyle({
+  pressed,
+  selected,
+}: {
+  pressed: boolean
+  selected: boolean
+}) {
+  return [
+    styles.base,
+    selected ? styles.baseSelected : null,
+    pressed ? styles.pressed : null,
+  ]
+}
+
 const styles = StyleSheet.create({
   base: {
-    paddingHorizontal: mobileSpace.md,
-    paddingVertical: mobileSpace.md,
+    paddingBottom: desktopNoteItemParity.padding.bottom,
+    paddingLeft: desktopNoteItemParity.padding.left,
+    paddingRight: desktopNoteItemParity.padding.right,
+    paddingTop: desktopNoteItemParity.padding.top,
+  },
+  baseSelected: {
+    paddingLeft: desktopNoteItemParity.selectedPaddingLeft,
   },
   frame: {
     alignSelf: 'stretch',
-    borderColor: 'transparent',
+    borderBottomColor: mobileColors.border,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderLeftColor: 'transparent',
-    borderLeftWidth: 3,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: mobileRadius.md,
-    marginBottom: mobileSpace.xs,
+    borderLeftWidth: 0,
     overflow: 'hidden',
     width: '100%',
   },
   footer: {
-    marginTop: mobileSpace.md,
+    marginTop: desktopNoteItemParity.contentGap,
     alignItems: 'center',
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -84,24 +117,23 @@ const styles = StyleSheet.create({
     fontSize: mobileType.caption,
   },
   pressed: {
-    backgroundColor: mobileColors.graySoft,
+    backgroundColor: mobileColors.control,
   },
   selected: {
-    backgroundColor: mobileColors.selected,
-    borderColor: mobileColors.selectedStrong,
-    borderLeftColor: mobileColors.primary,
+    borderLeftWidth: desktopNoteItemParity.borderLeftWidth,
   },
   subtitle: {
-    marginTop: mobileSpace.sm,
+    marginTop: desktopNoteItemParity.contentGap,
     color: mobileColors.textMuted,
-    fontSize: mobileType.caption,
-    lineHeight: 18,
+    fontSize: desktopNoteItemParity.snippetTextSize,
+    lineHeight: desktopNoteItemParity.snippetLineHeight,
   },
   title: {
     flex: 1,
     color: mobileColors.text,
-    fontSize: 13,
+    fontSize: desktopNoteItemParity.titleTextSize,
     fontWeight: '500',
+    lineHeight: desktopNoteItemParity.titleLineHeight,
   },
   titleSelected: {
     fontWeight: '600',

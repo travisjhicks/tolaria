@@ -6,10 +6,11 @@ import { MobileChip } from '../../ui/MobileChip'
 import { MobileIconButton } from '../../ui/MobileIconButton'
 import { MobileListRow } from '../../ui/MobileListRow'
 import { MobilePanel, MobileToolbar, MobileToolbarSpacer, MobileToolbarTitle } from '../../ui/MobilePanel'
-import { mobileColors, mobileRadius, mobileSpace, mobileType } from '../../ui/tokens'
+import { desktopPanelParity } from '../../ui/desktopParity'
+import { mobileColors, mobileSpace, mobileType } from '../../ui/tokens'
 import type { MobileNote } from '../../workspace/mobileWorkspaceModel'
 import { MobileTypeIcon } from './MobileWorkspaceIcons'
-import { chipTone, noteTypeColor, statusTone, tagTone } from './mobileWorkspaceTone'
+import { chipTone, noteTypeColor, noteTypeSoftColor, statusTone, tagTone } from './mobileWorkspaceTone'
 
 export function MobileNoteListPanel({
   compact,
@@ -31,7 +32,7 @@ export function MobileNoteListPanel({
   const activeNoteId = selectedNoteId ?? notes[0]?.id ?? null
 
   return (
-    <MobilePanel style={[styles.panel, compact ? styles.panelCompact : null]}>
+    <MobilePanel style={[styles.panel, compact ? styles.panelCompact : null]} testID="note-list-panel">
       <MobileToolbar>
         <View style={styles.toolbarTitleBlock}>
           <MobileToolbarTitle title={title} />
@@ -58,9 +59,11 @@ export function MobileNoteListPanel({
           renderItem={({ item: note }) => (
             <MobileListRow
               chips={<NoteRowChips note={note} />}
-              leading={<NoteTypeDot note={note} />}
               selected={note.id === activeNoteId}
+              selectedBackgroundColor={noteTypeSoftColor(note.typeTone)}
+              selectedBorderColor={noteTypeColor(note.typeTone)}
               subtitle={note.snippet}
+              testID={`note-row-${note.id}`}
               title={note.title}
               trailing={<MobileTypeIcon size={16} tone={note.typeTone} type={note.type} />}
               onPress={() => onSelectNote(note.id)}
@@ -96,15 +99,11 @@ function NoteListEmptyState() {
 function NoteRowChips({ note }: { note: MobileNote }) {
   return (
     <View style={styles.chipRow}>
-      <MobileChip label={note.type} tone={chipTone(note.typeTone)} />
-      {note.status ? <MobileChip label={note.status} tone={statusTone(note.status)} /> : null}
-      {note.tags.slice(0, 1).map((tag) => <MobileChip key={tag} label={tag} tone={tagTone(tag)} />)}
+      <MobileChip density="list" label={note.type} tone={chipTone(note.typeTone)} />
+      {note.status ? <MobileChip density="list" label={note.status} tone={statusTone(note.status)} /> : null}
+      {note.tags.slice(0, 1).map((tag) => <MobileChip density="list" key={tag} label={tag} tone={tagTone(tag)} />)}
     </View>
   )
-}
-
-function NoteTypeDot({ note }: { note: MobileNote }) {
-  return <View style={[styles.typeDot, { backgroundColor: noteTypeColor(note.typeTone) }]} />
 }
 
 const styles = StyleSheet.create({
@@ -136,14 +135,14 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     borderRightWidth: StyleSheet.hairlineWidth,
     height: '100%',
-    width: 340,
+    width: desktopPanelParity.noteListWidth,
   },
   panelCompact: {
     width: 336,
   },
   listContent: {
-    paddingHorizontal: mobileSpace.md,
-    paddingVertical: mobileSpace.sm,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
   },
   searchPill: {
     minHeight: 36,
@@ -167,10 +166,5 @@ const styles = StyleSheet.create({
   },
   toolbarTitleBlock: {
     minWidth: 0,
-  },
-  typeDot: {
-    borderRadius: mobileRadius.pill,
-    height: 8,
-    width: 8,
   },
 })

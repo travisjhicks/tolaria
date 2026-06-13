@@ -9,6 +9,7 @@ import { mobileText } from '../i18n/mobileText'
 import { MobileChip } from '../ui/MobileChip'
 import { MobileIconButton } from '../ui/MobileIconButton'
 import { MobilePanel, MobileToolbar, MobileToolbarTitle } from '../ui/MobilePanel'
+import { desktopEditorParity } from '../ui/desktopParity'
 import { mobileColors, mobileRadius, mobileSpace, mobileType } from '../ui/tokens'
 import type { MobileEditorBlock, MobileEditorInline, MobileNote } from '../workspace/mobileWorkspaceModel'
 
@@ -28,7 +29,7 @@ export function TabletEditorPanel({
   }
 
   return (
-    <MobilePanel style={panelStyles.panel}>
+    <MobilePanel style={panelStyles.panel} testID="editor-panel">
       <MobileToolbar>
         <FileText color={mobileColors.textMuted} size={18} />
         <MobileToolbarTitle title={note.title} />
@@ -52,7 +53,7 @@ export function TabletEditorPanel({
 
 function EmptyEditorPanel() {
   return (
-    <MobilePanel style={panelStyles.panel}>
+    <MobilePanel style={panelStyles.panel} testID="editor-panel">
       <MobileToolbar>
         <FileText color={mobileColors.textMuted} size={18} />
         <MobileToolbarTitle title={mobileText('inspector.empty.noNoteSelected')} />
@@ -197,9 +198,9 @@ function EditorTable({
 const panelStyles = StyleSheet.create({
   content: {
     alignSelf: 'center',
-    maxWidth: 700,
-    paddingHorizontal: mobileSpace.xxl,
-    paddingVertical: 40,
+    maxWidth: desktopEditorParity.contentMaxWidth,
+    paddingHorizontal: desktopEditorParity.contentPaddingHorizontal,
+    paddingVertical: desktopEditorParity.contentPaddingVertical,
     width: '100%',
   },
   contentCompact: {
@@ -222,15 +223,15 @@ const panelStyles = StyleSheet.create({
   },
   title: {
     color: mobileColors.text,
-    fontSize: 32,
+    fontSize: desktopEditorParity.h1FontSize,
     fontWeight: '700',
-    lineHeight: 38,
+    lineHeight: desktopEditorParity.h1LineHeight,
   },
   titleBlock: {
     borderBottomColor: mobileColors.border,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    marginBottom: mobileSpace.xl,
-    paddingBottom: mobileSpace.lg,
+    marginBottom: desktopEditorParity.h1MarginBottom,
+    paddingBottom: desktopEditorParity.h1PaddingBottom,
   },
   titleCompact: {
     fontSize: 30,
@@ -242,28 +243,28 @@ const textStyles = StyleSheet.create({
   body: {
     flex: 1,
     color: mobileColors.text,
-    fontSize: 15,
-    lineHeight: 23,
+    fontSize: desktopEditorParity.bodyFontSize,
+    lineHeight: desktopEditorParity.bodyLineHeight,
   },
   heading: {
     color: mobileColors.text,
-    fontSize: 27,
+    fontSize: desktopEditorParity.h2FontSize,
     fontWeight: '600',
-    lineHeight: 38,
-    marginBottom: 10,
-    marginTop: 28,
+    lineHeight: desktopEditorParity.h2LineHeight,
+    marginBottom: desktopEditorParity.h2MarginBottom,
+    marginTop: desktopEditorParity.h2MarginTop,
   },
   headingSmall: {
-    fontSize: 20,
-    lineHeight: 28,
-    marginBottom: 8,
-    marginTop: 24,
+    fontSize: desktopEditorParity.h3FontSize,
+    lineHeight: desktopEditorParity.h3LineHeight,
+    marginBottom: desktopEditorParity.h3MarginBottom,
+    marginTop: desktopEditorParity.h3MarginTop,
   },
   paragraph: {
     color: mobileColors.text,
-    fontSize: 15,
-    lineHeight: 23,
-    marginBottom: mobileSpace.sm,
+    fontSize: desktopEditorParity.bodyFontSize,
+    lineHeight: desktopEditorParity.bodyLineHeight,
+    marginBottom: desktopEditorParity.paragraphSpacing,
   },
 })
 
@@ -288,17 +289,17 @@ const inlineStyles = StyleSheet.create({
 
 const bulletStyles = StyleSheet.create({
   group: {
-    marginBottom: mobileSpace.sm,
+    marginBottom: desktopEditorParity.paragraphSpacing,
   },
   marker: {
     color: mobileColors.primary,
-    fontSize: 24,
-    lineHeight: 23,
-    minWidth: 24,
+    fontSize: desktopEditorParity.listBulletSize,
+    lineHeight: desktopEditorParity.bodyLineHeight,
+    minWidth: desktopEditorParity.listIndentSize,
   },
   row: {
     flexDirection: 'row',
-    gap: 6,
+    gap: desktopEditorParity.listBulletGap,
     marginBottom: mobileSpace.xs,
   },
 })
@@ -307,14 +308,14 @@ const quoteStyles = StyleSheet.create({
   container: {
     borderLeftColor: mobileColors.primary,
     borderLeftWidth: 3,
-    marginVertical: mobileSpace.md,
-    paddingLeft: mobileSpace.lg,
+    marginVertical: desktopEditorParity.quoteMarginVertical,
+    paddingLeft: desktopEditorParity.quotePaddingLeft,
   },
   text: {
     color: mobileColors.textMuted,
-    fontSize: 15,
+    fontSize: desktopEditorParity.bodyFontSize,
     fontStyle: 'italic',
-    lineHeight: 23,
+    lineHeight: desktopEditorParity.bodyLineHeight,
   },
 })
 
@@ -326,10 +327,10 @@ const tableStyles = StyleSheet.create({
     borderRightColor: mobileColors.border,
     borderRightWidth: StyleSheet.hairlineWidth,
     color: mobileColors.text,
-    fontSize: mobileType.body,
+    fontSize: desktopEditorParity.tableFontSize,
     lineHeight: 20,
-    paddingHorizontal: mobileSpace.md,
-    paddingVertical: mobileSpace.sm,
+    paddingHorizontal: desktopEditorParity.tableCellPaddingHorizontal,
+    paddingVertical: desktopEditorParity.tableCellPaddingVertical,
   },
   headerCell: {
     backgroundColor: mobileColors.card,

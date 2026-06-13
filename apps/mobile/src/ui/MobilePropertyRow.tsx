@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Text } from '../components/ui/text'
+import { desktopPropertyParity } from './desktopParity'
 import { mobileColors, mobileSpace, mobileType } from './tokens'
 
 export function MobilePropertyRow({
@@ -20,17 +21,18 @@ export function MobilePropertyRow({
 
 const styles = StyleSheet.create({
   label: {
-    width: 78,
+    width: 86,
     color: mobileColors.textMuted,
-    fontSize: mobileType.caption,
+    fontSize: desktopPropertyParity.labelTextSize,
   },
   row: {
-    minHeight: 32,
+    minHeight: desktopPropertyParity.rowMinHeight,
     alignItems: 'center',
     flexDirection: 'row',
     gap: mobileSpace.sm,
     borderBottomColor: mobileColors.border,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: desktopPropertyParity.rowPaddingHorizontal,
   },
   value: {
     flex: 1,

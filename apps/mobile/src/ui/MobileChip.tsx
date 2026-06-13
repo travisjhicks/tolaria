@@ -2,41 +2,83 @@ import { type StyleProp, type ViewStyle } from 'react-native'
 import { Badge } from '../components/ui/badge'
 import { Text } from '../components/ui/text'
 import { cn } from '../components/ui/utils'
+import { desktopPropertyParity } from './desktopParity'
+import { mobileColors } from './tokens'
 
 type MobileChipTone = 'blue' | 'gray' | 'green' | 'orange' | 'purple' | 'red' | 'yellow'
+type MobileChipDensity = 'list' | 'property'
 
 export function MobileChip({
+  density = 'property',
   label,
   style,
   tone = 'green',
 }: {
+  density?: MobileChipDensity
   label: string
   style?: StyleProp<ViewStyle>
   tone?: MobileChipTone
 }) {
+  const chipStyle = density === 'list' ? listChipStyles[tone] : propertyChipStyles[tone]
+  const chipTextStyle = density === 'list' ? styles.listText : styles.propertyText
+
   return (
-    <Badge className={cn('rounded-full border-transparent px-1.5 py-0.5', chipClassNames[tone])} style={style} variant="secondary">
-      <Text className={cn('text-[11px] font-normal leading-none', chipTextClassNames[tone])} numberOfLines={1}>{label}</Text>
+    <Badge className={cn('border-transparent', densityClassNames[density])} style={[chipStyle, style]} variant="secondary">
+      <Text numberOfLines={1} style={[chipTextStyle, { color: chipTextColors[tone] }]}>{label}</Text>
     </Badge>
   )
 }
 
-const chipClassNames: Record<MobileChipTone, string> = {
-  blue: 'bg-blue-50',
-  gray: 'bg-muted',
-  green: 'bg-emerald-50',
-  orange: 'bg-orange-50',
-  purple: 'bg-violet-50',
-  red: 'bg-red-50',
-  yellow: 'bg-yellow-50',
+const densityClassNames: Record<MobileChipDensity, string> = {
+  list: 'rounded-md px-1.5 py-0.5',
+  property: 'rounded-md',
 }
 
-const chipTextClassNames: Record<MobileChipTone, string> = {
-  blue: 'text-primary',
-  gray: 'text-muted-foreground',
-  green: 'text-emerald-700',
-  orange: 'text-orange-700',
-  purple: 'text-violet-700',
-  red: 'text-red-700',
-  yellow: 'text-yellow-700',
+const chipBackgroundColors: Record<MobileChipTone, string> = {
+  blue: mobileColors.blueSoft,
+  gray: mobileColors.graySoft,
+  green: mobileColors.greenSoft,
+  orange: mobileColors.orangeSoft,
+  purple: mobileColors.purpleSoft,
+  red: mobileColors.redSoft,
+  yellow: mobileColors.yellowSoft,
+}
+
+const chipTextColors: Record<MobileChipTone, string> = {
+  blue: mobileColors.blue,
+  gray: mobileColors.textMuted,
+  green: mobileColors.green,
+  orange: mobileColors.orange,
+  purple: mobileColors.purple,
+  red: mobileColors.red,
+  yellow: mobileColors.yellow,
+}
+
+const listChipStyles = Object.fromEntries(
+  Object.entries(chipBackgroundColors).map(([tone, backgroundColor]) => [tone, { backgroundColor }]),
+) as Record<MobileChipTone, ViewStyle>
+
+const propertyChipStyles = Object.fromEntries(
+  Object.entries(chipBackgroundColors).map(([tone, backgroundColor]) => [
+    tone,
+    {
+      backgroundColor,
+      borderRadius: desktopPropertyParity.chipRadius,
+      height: desktopPropertyParity.chipHeight,
+      paddingHorizontal: desktopPropertyParity.chipPaddingHorizontal,
+    },
+  ]),
+) as Record<MobileChipTone, ViewStyle>
+
+const styles = {
+  listText: {
+    fontSize: 10,
+    fontWeight: '400' as const,
+    lineHeight: 14,
+  },
+  propertyText: {
+    fontSize: desktopPropertyParity.chipTextSize,
+    fontWeight: '500' as const,
+    lineHeight: desktopPropertyParity.chipHeight,
+  },
 }

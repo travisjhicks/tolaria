@@ -1,16 +1,19 @@
 import type { ReactNode } from 'react'
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
 import { Text } from '../components/ui/text'
+import { desktopPanelParity } from './desktopParity'
 import { mobileColors, mobileSpace, mobileType } from './tokens'
 
 export function MobilePanel({
   children,
   style,
+  testID,
 }: {
   children: ReactNode
   style?: StyleProp<ViewStyle>
+  testID?: string
 }) {
-  return <View style={[styles.panel, style]}>{children}</View>
+  return <View style={[styles.panel, style]} testID={testID}>{children}</View>
 }
 
 export function MobileToolbar({
@@ -44,12 +47,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   toolbar: {
-    minHeight: 56,
+    minHeight: desktopPanelParity.toolbarHeight,
     alignItems: 'center',
     flexDirection: 'row',
     gap: mobileSpace.sm,
     borderBottomColor: mobileColors.border,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: mobileSpace.md,
+    paddingHorizontal: mobileSpace.lg,
   },
 })

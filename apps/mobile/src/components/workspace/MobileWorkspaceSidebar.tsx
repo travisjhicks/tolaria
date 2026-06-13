@@ -17,14 +17,15 @@ import { Text } from '../ui/text'
 import { mobileCopy, mobileText } from '../../i18n/mobileText'
 import { MobileIconButton } from '../../ui/MobileIconButton'
 import { MobilePanel, MobileToolbar } from '../../ui/MobilePanel'
-import { mobileColors, mobileRadius, mobileSpace, mobileType } from '../../ui/tokens'
+import { desktopPanelParity, desktopSidebarParity } from '../../ui/desktopParity'
+import { mobileColors, mobileSpace, mobileType } from '../../ui/tokens'
 import type {
   MobileNote,
   MobileSidebarFolder,
   MobileSidebarIcon,
   MobileSidebarSection,
 } from '../../workspace/mobileWorkspaceModel'
-import { noteTypeColor } from './mobileWorkspaceTone'
+import { noteTypeColor, noteTypeSoftColor } from './mobileWorkspaceTone'
 
 export type MobileSidebarFolderSelection = {
   id: string
@@ -54,7 +55,7 @@ export function MobileWorkspaceSidebar({
   title?: string
 }) {
   return (
-    <MobilePanel style={styles.panel}>
+    <MobilePanel style={styles.panel} testID="workspace-sidebar-panel">
       <MobileToolbar>
         <MobileIconButton accessibilityLabel={mobileText('sidebar.action.collapse')}>
           <SidebarSimple color={mobileColors.textMuted} size={20} />
@@ -63,17 +64,24 @@ export function MobileWorkspaceSidebar({
       </MobileToolbar>
       <ScrollView contentContainerStyle={styles.content}>
         {sections.map((section) => (
-          <View key={section.id}>
-            {section.label ? <SectionTitle count={section.count} label={sidebarSectionLabel(section.id, section.label)} /> : null}
+          <View
+            key={section.id}
+            style={[styles.section, section.id === 'primary' ? styles.primarySection : styles.groupSection]}
+            testID={`sidebar-section-${section.id}`}
+          >
+            {section.label ? <SectionTitle count={section.count} label={sidebarSectionLabel(section.id, section.label)} sectionId={section.id} /> : null}
             {section.items?.map((item) => {
               const active = activeItemId ? item.id === activeItemId : item.active
               const label = sidebarLabel(item.id, item.label)
+              const activeColor = sidebarActiveColor(item.tone)
 
               return (
                 <SidebarItem
                   active={active}
+                  activeBackgroundColor={sidebarActiveBackgroundColor(item.tone)}
+                  activeColor={activeColor}
                   count={item.count}
-                  icon={sidebarIcon(item.icon, active ? 'primary' : item.tone)}
+                  icon={sidebarIcon(item.icon, active ? item.tone ?? 'primary' : item.tone)}
                   key={item.id}
                   label={label}
                   onPress={() => onSelectItem?.({
@@ -101,12 +109,16 @@ export function MobileWorkspaceSidebar({
 
 function SidebarItem({
   active = false,
+  activeBackgroundColor = mobileColors.primarySoft,
+  activeColor = mobileColors.primary,
   count,
   icon,
   label,
   onPress,
 }: {
   active?: boolean
+  activeBackgroundColor?: string
+  activeColor?: string
   count?: string
   icon: ReactNode
   label: string
@@ -117,12 +129,18 @@ function SidebarItem({
       accessibilityLabel={label}
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.item, active ? styles.itemActive : null, pressed ? styles.itemPressed : null]}
+      style={({ pressed }) => [
+        styles.item,
+        sidebarItemPadding(Boolean(count)),
+        active ? { backgroundColor: activeBackgroundColor } : null,
+        pressed ? styles.itemPressed : null,
+      ]}
+      testID={`sidebar-item-${label.toLowerCase().replaceAll(' ', '-')}`}
     >
       <View style={styles.itemContent}>
         {icon}
-        <Text numberOfLines={1} style={[styles.itemText, active ? styles.itemTextActive : null]}>{label}</Text>
-        {count ? <Text style={[styles.count, active ? styles.countActive : null]}>{count}</Text> : null}
+        <Text numberOfLines={1} style={[styles.itemText, active ? { color: activeColor } : null]}>{label}</Text>
+        {count ? <Text style={[styles.count, active ? { backgroundColor: activeColor, color: mobileColors.textInverse } : null]}>{count}</Text> : null}
       </View>
     </Pressable>
   )
@@ -131,15 +149,20 @@ function SidebarItem({
 function SectionTitle({
   count,
   label,
+  sectionId,
 }: {
   count?: string
   label: string
+  sectionId: string
 }) {
   return (
-    <View style={styles.sectionTitleRow}>
+    <View
+      style={[styles.sectionTitleRow, count ? styles.sectionTitleRowWithCount : styles.sectionTitleRowRegular]}
+      testID={`sidebar-section-title-${sectionId}`}
+    >
       <CaretDown color={mobileColors.textMuted} size={11} />
-      <Text style={styles.sectionTitle}>{label}</Text>
-      {count ? <Text style={styles.sectionCount}>{count}</Text> : null}
+      <Text style={styles.sectionTitle} testID={`sidebar-section-title-text-${sectionId}`}>{label}</Text>
+      {count ? <Text style={styles.sectionCount} testID={`sidebar-section-count-${sectionId}`}>{count}</Text> : null}
     </View>
   )
 }
@@ -249,7 +272,10 @@ function FolderTreeIcon({
 }
 
 function folderTreeIndent(depth: number) {
-  return { paddingLeft: mobileSpace.md + depth * 16 }
+  return {
+    paddingLeft: desktopSidebarParity.folderRowContentInset
+      + depth * desktopSidebarParity.folderRowIndent,
+  }
 }
 
 function sidebarIcon(icon: MobileSidebarIcon, tone?: MobileNote['typeTone'] | 'primary') {
@@ -272,6 +298,14 @@ function sidebarIconColor(tone?: MobileNote['typeTone'] | 'primary') {
   return mobileColors.textMuted
 }
 
+function sidebarActiveColor(tone?: MobileNote['typeTone']) {
+  return tone ? noteTypeColor(tone) : mobileColors.primary
+}
+
+function sidebarActiveBackgroundColor(tone?: MobileNote['typeTone']) {
+  return tone ? noteTypeSoftColor(tone) : mobileColors.primarySoft
+}
+
 function sidebarLabel(id: string, fallback: string) {
   if (id === 'all-notes') return mobileCopy.allNotes
   if (id === 'archive') return mobileCopy.archive
@@ -290,63 +324,70 @@ function sidebarSectionLabel(id: string, fallback: string) {
 
 const styles = StyleSheet.create({
   content: {
-    padding: mobileSpace.sm,
+    padding: 0,
   },
   count: {
-    minWidth: 22,
-    height: 18,
+    minWidth: desktopSidebarParity.countPillMinWidth,
+    height: desktopSidebarParity.countPillHeight,
     overflow: 'hidden',
-    borderRadius: mobileRadius.pill,
+    borderRadius: desktopSidebarParity.countPillRadius,
     backgroundColor: mobileColors.graySoft,
     color: mobileColors.textMuted,
-    fontSize: mobileType.micro,
+    fontSize: desktopSidebarParity.countPillTextSize,
     fontWeight: '400',
-    paddingHorizontal: 6,
+    paddingHorizontal: desktopSidebarParity.countPillPaddingHorizontal,
     textAlign: 'center',
   },
-  countActive: {
-    backgroundColor: mobileColors.primary,
-    color: mobileColors.textInverse,
+  groupSection: {
+    paddingHorizontal: desktopSidebarParity.sectionHorizontalPadding,
   },
   item: {
-    minHeight: 34,
     justifyContent: 'center',
-    borderRadius: mobileRadius.md,
+    borderRadius: desktopSidebarParity.itemRadius,
     width: '100%',
   },
   itemContent: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: mobileSpace.sm,
-    paddingHorizontal: mobileSpace.md,
-  },
-  itemActive: {
-    backgroundColor: mobileColors.selected,
+    gap: desktopSidebarParity.itemGap,
   },
   itemPressed: {
-    backgroundColor: mobileColors.graySoft,
+    backgroundColor: mobileColors.control,
   },
   itemText: {
     flex: 1,
     color: mobileColors.text,
-    fontSize: 13,
+    fontSize: desktopSidebarParity.itemTextSize,
     fontWeight: '500',
-  },
-  itemTextActive: {
-    color: mobileColors.primary,
-    fontWeight: '600',
   },
   panel: {
     alignSelf: 'stretch',
-    width: 260,
+    width: desktopPanelParity.sidebarWidth,
     height: '100%',
     backgroundColor: mobileColors.sidebar,
     borderRightWidth: StyleSheet.hairlineWidth,
   },
+  primarySection: {
+    paddingBottom: desktopSidebarParity.topNavPadding.bottom,
+    paddingLeft: desktopSidebarParity.topNavPadding.left,
+    paddingRight: desktopSidebarParity.topNavPadding.right,
+    paddingTop: desktopSidebarParity.topNavPadding.top,
+  },
+  section: {
+    borderBottomColor: mobileColors.border,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
   sectionCount: {
+    minWidth: 22,
+    height: 18,
+    overflow: 'hidden',
+    borderRadius: desktopSidebarParity.countPillRadius,
+    backgroundColor: mobileColors.graySoft,
     color: mobileColors.textMuted,
     fontSize: mobileType.micro,
     fontWeight: '400',
+    paddingHorizontal: desktopSidebarParity.countPillPaddingHorizontal,
+    textAlign: 'center',
   },
   sectionTitle: {
     flex: 1,
@@ -356,12 +397,21 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   sectionTitleRow: {
-    minHeight: 32,
     alignItems: 'center',
     flexDirection: 'row',
     gap: mobileSpace.xs,
-    marginTop: mobileSpace.md,
-    paddingHorizontal: mobileSpace.sm,
+  },
+  sectionTitleRowRegular: {
+    paddingBottom: desktopSidebarParity.groupHeaderPadding.regular.bottom,
+    paddingLeft: desktopSidebarParity.groupHeaderPadding.regular.left,
+    paddingRight: desktopSidebarParity.groupHeaderPadding.regular.right,
+    paddingTop: desktopSidebarParity.groupHeaderPadding.regular.top,
+  },
+  sectionTitleRowWithCount: {
+    paddingBottom: desktopSidebarParity.groupHeaderPadding.withCount.bottom,
+    paddingLeft: desktopSidebarParity.groupHeaderPadding.withCount.left,
+    paddingRight: desktopSidebarParity.groupHeaderPadding.withCount.right,
+    paddingTop: desktopSidebarParity.groupHeaderPadding.withCount.top,
   },
   vaultTitle: {
     flex: 1,
@@ -379,19 +429,20 @@ const folderTreeStyles = StyleSheet.create({
     position: 'relative',
   },
   row: {
-    minHeight: 32,
     justifyContent: 'center',
-    borderRadius: mobileRadius.sm,
-    paddingRight: mobileSpace.md,
+    borderRadius: desktopSidebarParity.itemRadius,
+    paddingBottom: desktopSidebarParity.itemPadding.regular.bottom,
+    paddingRight: desktopSidebarParity.itemPadding.regular.right,
+    paddingTop: desktopSidebarParity.itemPadding.regular.top,
     width: '100%',
   },
   rowContent: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: mobileSpace.sm,
+    gap: desktopSidebarParity.folderIconGap,
   },
   rowActive: {
-    backgroundColor: mobileColors.selected,
+    backgroundColor: mobileColors.primarySoft,
   },
   rowPressed: {
     backgroundColor: mobileColors.graySoft,
@@ -399,7 +450,7 @@ const folderTreeStyles = StyleSheet.create({
   rowText: {
     flex: 1,
     color: mobileColors.text,
-    fontSize: 13,
+    fontSize: desktopSidebarParity.itemTextSize,
     fontWeight: '500',
   },
   rowTextActive: {
@@ -407,7 +458,18 @@ const folderTreeStyles = StyleSheet.create({
     fontWeight: '600',
   },
   tree: {
-    gap: mobileSpace.xs,
-    paddingBottom: mobileSpace.sm,
+    gap: 2,
+    paddingBottom: desktopSidebarParity.sectionContentPaddingBottom,
   },
 })
+
+function sidebarItemPadding(hasCount: boolean) {
+  const padding = hasCount ? desktopSidebarParity.itemPadding.withCount : desktopSidebarParity.itemPadding.regular
+
+  return {
+    paddingBottom: padding.bottom,
+    paddingLeft: padding.left,
+    paddingRight: padding.right,
+    paddingTop: padding.top,
+  }
+}
