@@ -56,11 +56,11 @@ export function MobileWorkspaceSidebar({
 }) {
   return (
     <MobilePanel style={styles.panel} testID="workspace-sidebar-panel">
-      <MobileToolbar>
+      <MobileToolbar testID="sidebar-toolbar">
         <MobileIconButton accessibilityLabel={mobileText('sidebar.action.collapse')} testID="sidebar-collapse-action">
           <SidebarSimple color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />
         </MobileIconButton>
-        <Text numberOfLines={1} style={styles.vaultTitle}>{title}</Text>
+        <Text numberOfLines={1} style={styles.vaultTitle} testID="sidebar-toolbar-title">{title}</Text>
       </MobileToolbar>
       <ScrollView contentContainerStyle={styles.content}>
         {sections.map((section) => (
@@ -139,8 +139,8 @@ function SidebarItem({
     >
       <View style={styles.itemContent}>
         {icon}
-        <Text numberOfLines={1} style={[styles.itemText, active ? { color: activeColor } : null]}>{label}</Text>
-        {count ? <Text style={[styles.count, active ? { backgroundColor: activeColor, color: mobileColors.textInverse } : null]}>{count}</Text> : null}
+        <Text numberOfLines={1} style={[styles.itemText, active ? { color: activeColor } : null]} testID={`sidebar-item-${label.toLowerCase().replaceAll(' ', '-')}-label`}>{label}</Text>
+        {count ? <Text style={[styles.count, active ? { backgroundColor: activeColor, color: mobileColors.textInverse } : null]} testID={`sidebar-item-${label.toLowerCase().replaceAll(' ', '-')}-count`}>{count}</Text> : null}
       </View>
     </Pressable>
   )
@@ -378,13 +378,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   sectionCount: {
-    minWidth: 22,
-    height: 18,
+    minWidth: desktopSidebarParity.countPillCompactMinWidth,
+    height: desktopSidebarParity.countPillCompactHeight,
     overflow: 'hidden',
     borderRadius: desktopSidebarParity.countPillRadius,
     backgroundColor: mobileColors.graySoft,
     color: mobileColors.textMuted,
-    fontSize: mobileType.micro,
+    fontSize: desktopSidebarParity.countPillTextSize,
     fontWeight: '400',
     paddingHorizontal: desktopSidebarParity.countPillPaddingHorizontal,
     textAlign: 'center',
@@ -392,9 +392,9 @@ const styles = StyleSheet.create({
   sectionTitle: {
     flex: 1,
     color: mobileColors.textMuted,
-    fontSize: mobileType.micro,
-    fontWeight: '600',
-    letterSpacing: 0.5,
+    fontSize: desktopSidebarParity.countPillTextSize,
+    fontWeight: desktopSidebarParity.sectionTitleFontWeight,
+    letterSpacing: desktopSidebarParity.sectionTitleLetterSpacing,
   },
   sectionTitleRow: {
     alignItems: 'center',

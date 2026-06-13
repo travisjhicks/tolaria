@@ -25,6 +25,14 @@ Mobile desktop-derived constants live in:
 apps/mobile/src/ui/desktopParity.ts
 ```
 
+The visible iPad component coverage map lives in:
+
+```text
+apps/mobile/src/ui/mobileParityInventory.ts
+```
+
+`mobileParityInventory.test.ts` fails when a visible iPad implementation component has no desktop source, parity contract, or assertion listed.
+
 That file records the source values for the current iPad surface:
 
 | Contract | Desktop source | Mobile users |
@@ -55,6 +63,7 @@ pnpm mobile:qa:screenshots
 The screenshot suite also contains objective parity assertions for tablet landscape. These assertions fail on regressions such as:
 
 - selected note rows not spanning the full note-list panel
+- panel widths, toolbar height, toolbar padding, or toolbar title typography drifting from desktop chrome
 - invented primary-blue note selection when desktop uses the note type color
 - rounded/margined note row wrappers instead of desktop full-width rows
 - missing note row separators

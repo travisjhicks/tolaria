@@ -30,6 +30,8 @@ export const desktopParityColors = {
 
 export const desktopSidebarParity = {
   countPillHeight: 20,
+  countPillCompactHeight: 18,
+  countPillCompactMinWidth: 22,
   countPillMinWidth: 22,
   countPillPaddingHorizontal: 6,
   countPillRadius: 999,
@@ -52,6 +54,8 @@ export const desktopSidebarParity = {
   itemTextSize: 13,
   sectionContentPaddingBottom: 8,
   sectionHorizontalPadding: 6,
+  sectionTitleFontWeight: '600',
+  sectionTitleLetterSpacing: 0.5,
   titleBarHeight: 52,
   topNavPadding: { bottom: 4, left: 6, right: 6, top: 4 },
 } as const
@@ -128,6 +132,16 @@ export const desktopPanelParity = {
   noteListWidth: 340,
   sidebarWidth: 260,
   toolbarHeight: 52,
+} as const
+
+export const desktopToolbarParity = {
+  gap: 8,
+  inspectorTitleFontSize: 13,
+  paddingHorizontal: 16,
+  subtitleFontSize: 12,
+  subtitleFontWeight: '500',
+  titleFontSize: 14,
+  titleFontWeight: '600',
 } as const
 
 export const desktopToolbarActionParity = {

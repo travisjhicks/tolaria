@@ -2,11 +2,13 @@ import { expect, type Locator, type Page } from '@playwright/test'
 import {
   desktopEditorParity,
   desktopNoteItemParity,
+  desktopPanelParity,
   desktopParityColors,
   desktopPropertyParity,
   desktopRelationshipParity,
   desktopSidebarParity,
   desktopStatusBarParity,
+  desktopToolbarParity,
   desktopToolbarActionParity,
 } from '../src/ui/desktopParity'
 
@@ -33,12 +35,37 @@ type ColorNormalizationRequest = {
 }
 
 export async function assertTabletDesktopParity(page: Page) {
+  await assertPanelChromeParity(page)
   await assertNoteListParity(page)
   await assertSidebarParity(page)
   await assertPropertiesParity(page)
   await assertEditorParity(page)
   await assertToolbarActionParity(page)
   await assertStatusBarParity(page)
+}
+
+async function assertPanelChromeParity(page: Page) {
+  await expectCssValue({ locator: page.getByTestId('workspace-sidebar-panel'), property: 'width', expected: `${desktopPanelParity.sidebarWidth}px` })
+  await expectCssValue({ locator: page.getByTestId('note-list-panel'), property: 'width', expected: `${desktopPanelParity.noteListWidth}px` })
+  await expectCssValue({ locator: page.getByTestId('properties-panel'), property: 'width', expected: `${desktopPanelParity.inspectorWidth}px` })
+
+  for (const toolbar of [
+    page.getByTestId('sidebar-toolbar'),
+    page.getByTestId('note-list-toolbar'),
+    page.getByTestId('editor-toolbar'),
+    page.getByTestId('properties-toolbar'),
+  ]) {
+    await expect(toolbar).toBeVisible()
+    await expectCssValue({ locator: toolbar, property: 'min-height', expected: `${desktopPanelParity.toolbarHeight}px` })
+    await expectCssValue({ locator: toolbar, property: 'padding-left', expected: `${desktopToolbarParity.paddingHorizontal}px` })
+    await expectCssValue({ locator: toolbar, property: 'border-bottom-color', expected: await cssColor({ page, color: desktopParityColors.borderDefault }) })
+  }
+
+  await expectCssValue({ locator: page.getByTestId('note-list-toolbar-title'), property: 'font-size', expected: `${desktopToolbarParity.titleFontSize}px` })
+  await expectCssValue({ locator: page.getByTestId('note-list-toolbar-subtitle'), property: 'font-size', expected: `${desktopToolbarParity.subtitleFontSize}px` })
+  await expectCssValue({ locator: page.getByTestId('note-list-toolbar-subtitle'), property: 'color', expected: await cssColor({ page, color: desktopParityColors.textSecondary }) })
+  await expectCssValue({ locator: page.getByTestId('properties-toolbar-title'), property: 'font-size', expected: `${desktopToolbarParity.inspectorTitleFontSize}px` })
+  await expectCssValue({ locator: page.getByTestId('properties-toolbar-title'), property: 'color', expected: await cssColor({ page, color: desktopParityColors.textSecondary }) })
 }
 
 async function assertNoteListParity(page: Page) {
@@ -87,7 +114,7 @@ async function assertSidebarParity(page: Page) {
   await expectCssValue({ locator: favoritesTitle, property: 'padding-left', expected: `${desktopSidebarParity.groupHeaderPadding.withCount.left}px` })
   await expectCssValue({ locator: favoritesTitleText, property: 'color', expected: await cssColor({ page, color: desktopParityColors.textSecondary }) })
   await expectCssValue({ locator: typesCount, property: 'font-size', expected: `${desktopSidebarParity.countPillTextSize}px` })
-  await expectCssValue({ locator: typesCount, property: 'height', expected: '18px' })
+  await expectCssValue({ locator: typesCount, property: 'height', expected: `${desktopSidebarParity.countPillCompactHeight}px` })
   await expectCssValue({ locator: typesCount, property: 'border-radius', expected: `${desktopSidebarParity.countPillRadius}px` })
   await expectCssValue({ locator: inboxItem, property: 'background-color', expected: await cssColor({ page, color: desktopParityColors.accentBlueLight }) })
 }

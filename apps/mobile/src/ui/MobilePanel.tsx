@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react'
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
 import { Text } from '../components/ui/text'
-import { desktopPanelParity } from './desktopParity'
-import { mobileColors, mobileSpace, mobileType } from './tokens'
+import { desktopPanelParity, desktopToolbarParity } from './desktopParity'
+import { mobileColors } from './tokens'
+
+type MobileToolbarTitleVariant = 'default' | 'inspector'
 
 export function MobilePanel({
   children,
@@ -18,14 +20,24 @@ export function MobilePanel({
 
 export function MobileToolbar({
   children,
+  testID,
 }: {
   children: ReactNode
+  testID?: string
 }) {
-  return <View style={styles.toolbar}>{children}</View>
+  return <View style={styles.toolbar} testID={testID}>{children}</View>
 }
 
-export function MobileToolbarTitle({ title }: { title: string }) {
-  return <Text className="font-semibold text-foreground" numberOfLines={1} style={styles.title}>{title}</Text>
+export function MobileToolbarTitle({
+  testID,
+  title,
+  variant = 'default',
+}: {
+  testID?: string
+  title: string
+  variant?: MobileToolbarTitleVariant
+}) {
+  return <Text numberOfLines={1} style={titleStyleByVariant[variant]} testID={testID}>{title}</Text>
 }
 
 export function MobileToolbarSpacer() {
@@ -43,16 +55,26 @@ const styles = StyleSheet.create({
   },
   title: {
     color: mobileColors.text,
-    fontSize: mobileType.body,
-    fontWeight: '600',
+    fontSize: desktopToolbarParity.titleFontSize,
+    fontWeight: desktopToolbarParity.titleFontWeight,
+  },
+  titleInspector: {
+    color: mobileColors.textMuted,
+    fontSize: desktopToolbarParity.inspectorTitleFontSize,
+    fontWeight: desktopToolbarParity.titleFontWeight,
   },
   toolbar: {
     minHeight: desktopPanelParity.toolbarHeight,
     alignItems: 'center',
     flexDirection: 'row',
-    gap: mobileSpace.sm,
+    gap: desktopToolbarParity.gap,
     borderBottomColor: mobileColors.border,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: mobileSpace.lg,
+    paddingHorizontal: desktopToolbarParity.paddingHorizontal,
   },
 })
+
+const titleStyleByVariant = {
+  default: styles.title,
+  inspector: styles.titleInspector,
+} as const

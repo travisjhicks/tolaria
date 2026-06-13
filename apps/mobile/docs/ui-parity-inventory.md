@@ -2,6 +2,8 @@
 
 This inventory is the working source map for the experimental mobile UI foundation. Mobile and tablet styling should copy the desktop Tolaria implementation by default, and only diverge where the target form factor requires a different interaction model.
 
+The machine-readable coverage source lives in `src/ui/mobileParityInventory.ts`. `src/ui/mobileParityInventory.test.ts` fails when a visible iPad implementation file under `src/ui`, `src/components/workspace`, `TabletWorkspace`, or `TabletEditorPanel` is not mapped to a desktop source, parity contract, and assertion.
+
 ## Tokens
 
 | Mobile file | Desktop source | Parity target |
@@ -50,6 +52,7 @@ The tablet landscape parity test now checks these computed-style contracts:
 
 | Surface | Guarded invariants |
 | --- | --- |
+| Panel chrome | desktop panel widths, 52px toolbar height, toolbar padding, title/subtitle typography, inspector muted title |
 | Sidebar | section padding, border color, muted group title color, count pill size/radius, active row color |
 | Note list | full-width selected row, no wrapper margins/radius, desktop row padding, type-colored selected background and border |
 | Properties | 28px rows, 12px muted labels, wrapping tags, full-width relationship row radius/padding/font/color, compact action rows |

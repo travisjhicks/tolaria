@@ -21,8 +21,8 @@ export function MobilePropertiesPanel({
 }) {
   return (
     <MobilePanel style={[panelStyles.panel, compact ? panelStyles.panelCompact : null]} testID="properties-panel">
-      <MobileToolbar>
-        <MobileToolbarTitle title={mobileCopy.properties} />
+      <MobileToolbar testID="properties-toolbar">
+        <MobileToolbarTitle testID="properties-toolbar-title" title={mobileCopy.properties} variant="inspector" />
       </MobileToolbar>
       <ScrollView contentContainerStyle={panelStyles.content}>
         {note ? <NoteProperties note={note} /> : <PropertiesEmptyState />}
@@ -85,13 +85,15 @@ function PropertySection({
 }
 
 function PropertyActionRow({ label, testID }: { label: string; testID: string }) {
+  const visibleLabel = label.replace(/^\+\s*/, '')
+
   return (
     <Pressable accessibilityLabel={label} accessibilityRole="button" style={({ pressed }) => [actionStyles.row, pressed ? actionStyles.rowPressed : null]} testID={testID}>
       <View style={actionStyles.label}>
         <View style={actionStyles.iconSlot}>
           <Plus color={mobileColors.textMuted} size={14} />
         </View>
-        <Text numberOfLines={1} style={actionStyles.text}>{label}</Text>
+        <Text numberOfLines={1} style={actionStyles.text}>{visibleLabel}</Text>
       </View>
       <View style={actionStyles.value} />
     </Pressable>

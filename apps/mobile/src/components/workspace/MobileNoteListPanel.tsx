@@ -6,7 +6,7 @@ import { MobileChip } from '../../ui/MobileChip'
 import { MobileIconButton } from '../../ui/MobileIconButton'
 import { MobileListRow } from '../../ui/MobileListRow'
 import { MobilePanel, MobileToolbar, MobileToolbarSpacer, MobileToolbarTitle } from '../../ui/MobilePanel'
-import { desktopPanelParity, desktopToolbarActionParity } from '../../ui/desktopParity'
+import { desktopPanelParity, desktopToolbarActionParity, desktopToolbarParity } from '../../ui/desktopParity'
 import { mobileColors, mobileSpace, mobileType } from '../../ui/tokens'
 import type { MobileNote } from '../../workspace/mobileWorkspaceModel'
 import { MobileTypeIcon } from './MobileWorkspaceIcons'
@@ -33,10 +33,10 @@ export function MobileNoteListPanel({
 
   return (
     <MobilePanel style={[styles.panel, compact ? styles.panelCompact : null]} testID="note-list-panel">
-      <MobileToolbar>
+      <MobileToolbar testID="note-list-toolbar">
         <View style={styles.toolbarTitleBlock}>
-          <MobileToolbarTitle title={title} />
-          <Text style={styles.toolbarSubtitle}>{subtitle}</Text>
+          <MobileToolbarTitle testID="note-list-toolbar-title" title={title} />
+          <Text style={styles.toolbarSubtitle} testID="note-list-toolbar-subtitle">{subtitle}</Text>
         </View>
         <MobileToolbarSpacer />
         <MobileIconButton accessibilityLabel={mobileCopy.searchNotes} testID="note-list-search-action">
@@ -161,8 +161,8 @@ const styles = StyleSheet.create({
   },
   toolbarSubtitle: {
     color: mobileColors.textMuted,
-    fontSize: mobileType.caption,
-    fontWeight: '500',
+    fontSize: desktopToolbarParity.subtitleFontSize,
+    fontWeight: desktopToolbarParity.subtitleFontWeight,
   },
   toolbarTitleBlock: {
     minWidth: 0,

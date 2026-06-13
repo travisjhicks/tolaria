@@ -30,9 +30,9 @@ export function TabletEditorPanel({
 
   return (
     <MobilePanel style={panelStyles.panel} testID="editor-panel">
-      <MobileToolbar>
+      <MobileToolbar testID="editor-toolbar">
         <FileText color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />
-        <MobileToolbarTitle title={note.title} />
+        <MobileToolbarTitle testID="editor-toolbar-title" title={note.title} />
         <MobileChip label={note.workspace} tone="gray" />
         <MobileIconButton accessibilityLabel={mobileText('command.note.addFavorite')} testID="editor-favorite-action">
           <Star color={note.favorite ? mobileColors.primary : mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} weight={note.favorite ? 'fill' : 'regular'} />
@@ -54,9 +54,9 @@ export function TabletEditorPanel({
 function EmptyEditorPanel() {
   return (
     <MobilePanel style={panelStyles.panel} testID="editor-panel">
-      <MobileToolbar>
+      <MobileToolbar testID="editor-toolbar">
         <FileText color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />
-        <MobileToolbarTitle title={mobileText('inspector.empty.noNoteSelected')} />
+        <MobileToolbarTitle testID="editor-toolbar-title" title={mobileText('inspector.empty.noNoteSelected')} />
       </MobileToolbar>
       <View style={panelStyles.emptyState}>
         <Text style={panelStyles.emptyTitle}>{mobileText('editor.empty.selectNote')}</Text>
