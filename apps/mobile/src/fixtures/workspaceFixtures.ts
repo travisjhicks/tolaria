@@ -133,6 +133,7 @@ const propertyHeavyEditorBlocks: FixtureEditorBlock[] = [
 export const fixtureNotes: FixtureNote[] = [
   {
     id: 'workflow-orchestration',
+    path: 'Tolaria/Mobile UI/Workflow Orchestration Essay.md',
     title: 'Workflow Orchestration Essay',
     snippet: 'The current narrative and temptation: everything routed through an LLM.',
     type: 'Essay',
@@ -170,6 +171,7 @@ export const fixtureNotes: FixtureNote[] = [
   },
   {
     id: 'open-source-project',
+    path: 'Tolaria/Mobile UI/How I Run an Open Source Project.md',
     title: 'How I Run an Open Source Project',
     snippet: 'Tolaria unexpected success: various sources of input, requests, and bugs.',
     type: 'Procedure',
@@ -200,6 +202,7 @@ export const fixtureNotes: FixtureNote[] = [
   },
   {
     id: 'release-2026-05-02',
+    path: 'Tolaria/Releases/v2026-05-02.md',
     title: 'v2026-05-02',
     snippet: 'Release cleanup date, bug fixes, and mobile planning notes.',
     type: 'Release',
@@ -233,6 +236,7 @@ export const fixtureNotes: FixtureNote[] = [
 
 const longTitleNote: FixtureNote = {
   id: 'long-title-layout-pressure',
+  path: 'Writing/Essays/A Very Long Note Title.md',
   title: 'A Very Long Note Title That Should Stay Readable Without Pushing Type Icons or Property Controls Out of Alignment',
   snippet: 'Used to verify row truncation, editor title wrapping, and toolbar stability.',
   type: 'Essay',
@@ -258,6 +262,7 @@ const longTitleNote: FixtureNote = {
 
 const propertyHeavyNote: FixtureNote = {
   id: 'mobile-ui-property-heavy',
+  path: 'Tolaria/Mobile UI/Mobile UI Parity Review.md',
   title: 'Mobile UI Parity Review',
   snippet: 'A dense fixture for multi-value properties, relationship groups, and long metadata sets.',
   type: 'Procedure',

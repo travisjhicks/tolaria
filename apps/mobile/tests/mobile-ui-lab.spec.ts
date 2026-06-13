@@ -172,6 +172,23 @@ test.describe('mobile UI lab screenshots', () => {
     })
   })
 
+  test('navigates tablet sidebar sections and folders', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'tablet-landscape', 'Sidebar navigation is exercised in the full-width tablet layout.')
+
+    await page.goto('/')
+
+    await page.getByRole('button', { name: 'Procedures' }).click()
+    await expect(page.getByText('How I Run an Open Source Project').first()).toBeVisible()
+    await expect(page.getByText('Procedure').last()).toBeVisible()
+
+    await page.getByRole('button', { name: 'Releases' }).click()
+    await expect(page.getByText('v2026-05-02').first()).toBeVisible()
+    await expect(page.getByText('Release cleanup date, bug fixes, and mobile planning notes.').first()).toBeVisible()
+
+    await page.getByRole('button', { name: 'Inbox' }).click()
+    await expect(page.getByText('Workflow Orchestration Essay').first()).toBeVisible()
+  })
+
   test('hides and reveals tablet chrome with horizontal swipe gestures', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'tablet-landscape', 'Tablet chrome gestures are exercised in the full-width tablet layout.')
 

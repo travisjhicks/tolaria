@@ -165,7 +165,9 @@ const styles = StyleSheet.create({
     marginTop: mobileSpace.sm,
   },
   panel: {
+    alignSelf: 'stretch',
     borderLeftWidth: StyleSheet.hairlineWidth,
+    height: '100%',
     width: 300,
   },
   panelCompact: {

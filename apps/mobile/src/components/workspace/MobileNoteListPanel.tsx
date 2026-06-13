@@ -18,6 +18,7 @@ export function MobileNoteListPanel({
   searchQuery,
   selectedNoteId,
   subtitle,
+  title = mobileCopy.inbox,
 }: {
   compact: boolean
   notes: MobileNote[]
@@ -25,12 +26,15 @@ export function MobileNoteListPanel({
   searchQuery?: string
   selectedNoteId: string | null
   subtitle: string
+  title?: string
 }) {
+  const activeNoteId = selectedNoteId ?? notes[0]?.id ?? null
+
   return (
     <MobilePanel style={[styles.panel, compact ? styles.panelCompact : null]}>
       <MobileToolbar>
         <View style={styles.toolbarTitleBlock}>
-          <MobileToolbarTitle title={mobileCopy.inbox} />
+          <MobileToolbarTitle title={title} />
           <Text style={styles.toolbarSubtitle}>{subtitle}</Text>
         </View>
         <MobileToolbarSpacer />
@@ -55,7 +59,7 @@ export function MobileNoteListPanel({
             <MobileListRow
               chips={<NoteRowChips note={note} />}
               leading={<NoteTypeDot note={note} />}
-              selected={note.id === selectedNoteId}
+              selected={note.id === activeNoteId}
               subtitle={note.snippet}
               title={note.title}
               trailing={<MobileTypeIcon size={16} tone={note.typeTone} type={note.type} />}
@@ -129,15 +133,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   panel: {
+    alignSelf: 'stretch',
     borderRightWidth: StyleSheet.hairlineWidth,
+    height: '100%',
     width: 340,
   },
   panelCompact: {
     width: 336,
   },
   listContent: {
-    paddingHorizontal: mobileSpace.sm,
-    paddingVertical: mobileSpace.xs,
+    paddingHorizontal: mobileSpace.md,
+    paddingVertical: mobileSpace.sm,
   },
   searchPill: {
     minHeight: 36,

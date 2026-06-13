@@ -12,7 +12,7 @@ import {
   Tag,
   Tray,
 } from 'phosphor-react-native'
-import { ScrollView, StyleSheet, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { Text } from '../ui/text'
 import { mobileCopy, mobileText } from '../../i18n/mobileText'
 import { MobileIconButton } from '../../ui/MobileIconButton'
@@ -26,10 +26,30 @@ import type {
 } from '../../workspace/mobileWorkspaceModel'
 import { noteTypeColor } from './mobileWorkspaceTone'
 
+export type MobileSidebarFolderSelection = {
+  id: string
+  name: string
+}
+
+export type MobileSidebarItemSelection = {
+  count?: string
+  id: string
+  label: string
+  sectionId: string
+}
+
 export function MobileWorkspaceSidebar({
+  activeFolderId,
+  activeItemId,
+  onSelectFolder,
+  onSelectItem,
   sections,
   title = 'Tolaria Vault',
 }: {
+  activeFolderId?: string | null
+  activeItemId?: string | null
+  onSelectFolder?: (selection: MobileSidebarFolderSelection) => void
+  onSelectItem?: (selection: MobileSidebarItemSelection) => void
   sections: MobileSidebarSection[]
   title?: string
 }) {
@@ -45,16 +65,33 @@ export function MobileWorkspaceSidebar({
         {sections.map((section) => (
           <View key={section.id}>
             {section.label ? <SectionTitle count={section.count} label={sidebarSectionLabel(section.id, section.label)} /> : null}
-            {section.items?.map((item) => (
-              <SidebarItem
-                active={item.active}
-                count={item.count}
-                icon={sidebarIcon(item.icon, item.active ? 'primary' : item.tone)}
-                key={item.id}
-                label={sidebarLabel(item.id, item.label)}
+            {section.items?.map((item) => {
+              const active = activeItemId ? item.id === activeItemId : item.active
+              const label = sidebarLabel(item.id, item.label)
+
+              return (
+                <SidebarItem
+                  active={active}
+                  count={item.count}
+                  icon={sidebarIcon(item.icon, active ? 'primary' : item.tone)}
+                  key={item.id}
+                  label={label}
+                  onPress={() => onSelectItem?.({
+                    count: item.count,
+                    id: item.id,
+                    label,
+                    sectionId: section.id,
+                  })}
+                />
+              )
+            })}
+            {section.folders ? (
+              <FolderTree
+                activeFolderId={activeFolderId}
+                folders={section.folders}
+                onSelectFolder={onSelectFolder}
               />
-            ))}
-            {section.folders ? <FolderTree folders={section.folders} /> : null}
+            ) : null}
           </View>
         ))}
       </ScrollView>
@@ -67,18 +104,27 @@ function SidebarItem({
   count,
   icon,
   label,
+  onPress,
 }: {
   active?: boolean
   count?: string
   icon: ReactNode
   label: string
+  onPress?: () => void
 }) {
   return (
-    <View style={[styles.item, active ? styles.itemActive : null]}>
-      {icon}
-      <Text numberOfLines={1} style={[styles.itemText, active ? styles.itemTextActive : null]}>{label}</Text>
-      {count ? <Text style={[styles.count, active ? styles.countActive : null]}>{count}</Text> : null}
-    </View>
+    <Pressable
+      accessibilityLabel={label}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.item, active ? styles.itemActive : null, pressed ? styles.itemPressed : null]}
+    >
+      <View style={styles.itemContent}>
+        {icon}
+        <Text numberOfLines={1} style={[styles.itemText, active ? styles.itemTextActive : null]}>{label}</Text>
+        {count ? <Text style={[styles.count, active ? styles.countActive : null]}>{count}</Text> : null}
+      </View>
+    </Pressable>
   )
 }
 
@@ -98,33 +144,74 @@ function SectionTitle({
   )
 }
 
-function FolderTree({ folders }: { folders: MobileSidebarFolder[] }) {
+function FolderTree({
+  activeFolderId,
+  folders,
+  onSelectFolder,
+}: {
+  activeFolderId?: string | null
+  folders: MobileSidebarFolder[]
+  onSelectFolder?: (selection: MobileSidebarFolderSelection) => void
+}) {
   return (
     <View style={folderTreeStyles.tree}>
-      {folders.map((folder) => <FolderTreeRow depth={0} folder={folder} key={folder.id} />)}
+      {folders.map((folder) => (
+        <FolderTreeRow
+          activeFolderId={activeFolderId}
+          depth={0}
+          folder={folder}
+          key={folder.id}
+          onSelectFolder={onSelectFolder}
+        />
+      ))}
     </View>
   )
 }
 
 function FolderTreeRow({
+  activeFolderId,
   depth,
   folder,
+  onSelectFolder,
 }: {
+  activeFolderId?: string | null
   depth: number
   folder: MobileSidebarFolder
+  onSelectFolder?: (selection: MobileSidebarFolderSelection) => void
 }) {
   const hasChildren = folder.children.length > 0
+  const active = activeFolderId ? folder.id === activeFolderId : folder.active
 
   return (
     <View>
-      <View style={[folderTreeStyles.row, folder.active ? folderTreeStyles.rowActive : null, folderTreeIndent(depth)]}>
-        <FolderTreeCaret expanded={folder.expanded} hasChildren={hasChildren} />
-        <FolderTreeIcon active={folder.active} expanded={folder.expanded} />
-        <Text numberOfLines={1} style={[folderTreeStyles.rowText, folder.active ? folderTreeStyles.rowTextActive : null]}>{folder.name}</Text>
-      </View>
+      <Pressable
+        accessibilityLabel={folder.name}
+        accessibilityRole="button"
+        onPress={() => onSelectFolder?.({ id: folder.id, name: folder.name })}
+        style={({ pressed }) => [
+          folderTreeStyles.row,
+          active ? folderTreeStyles.rowActive : null,
+          pressed ? folderTreeStyles.rowPressed : null,
+          folderTreeIndent(depth),
+        ]}
+      >
+        <View style={folderTreeStyles.rowContent}>
+          <FolderTreeCaret expanded={folder.expanded} hasChildren={hasChildren} />
+          <FolderTreeIcon active={active} expanded={folder.expanded} />
+          <Text numberOfLines={1} style={[folderTreeStyles.rowText, active ? folderTreeStyles.rowTextActive : null]}>{folder.name}</Text>
+        </View>
+      </Pressable>
       {folder.expanded && hasChildren ? (
         <View style={folderTreeStyles.children}>
-          {folder.children.map((child) => <FolderTreeRow depth={depth + 1} folder={child} key={child.id} />)}
+          {folder.children.map((child) => (
+            <FolderTreeRow
+              activeFolderId={activeFolderId}
+              depth={depth + 1}
+              folder={child}
+              key={child.id}
+              onSelectFolder={onSelectFolder}
+            />
+          ))}
         </View>
       ) : null}
     </View>
@@ -223,14 +310,21 @@ const styles = StyleSheet.create({
   },
   item: {
     minHeight: 34,
+    justifyContent: 'center',
+    borderRadius: mobileRadius.md,
+    width: '100%',
+  },
+  itemContent: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: mobileSpace.sm,
-    borderRadius: mobileRadius.md,
     paddingHorizontal: mobileSpace.md,
   },
   itemActive: {
     backgroundColor: mobileColors.selected,
+  },
+  itemPressed: {
+    backgroundColor: mobileColors.graySoft,
   },
   itemText: {
     flex: 1,
@@ -243,7 +337,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   panel: {
+    alignSelf: 'stretch',
     width: 260,
+    height: '100%',
     backgroundColor: mobileColors.sidebar,
     borderRightWidth: StyleSheet.hairlineWidth,
   },
@@ -284,14 +380,21 @@ const folderTreeStyles = StyleSheet.create({
   },
   row: {
     minHeight: 32,
+    justifyContent: 'center',
+    borderRadius: mobileRadius.sm,
+    paddingRight: mobileSpace.md,
+    width: '100%',
+  },
+  rowContent: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: mobileSpace.sm,
-    borderRadius: mobileRadius.sm,
-    paddingRight: mobileSpace.md,
   },
   rowActive: {
     backgroundColor: mobileColors.selected,
+  },
+  rowPressed: {
+    backgroundColor: mobileColors.graySoft,
   },
   rowText: {
     flex: 1,

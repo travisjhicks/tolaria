@@ -27,38 +27,45 @@ export function MobileListRow(props: MobileListRowProps) {
   } = props
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.base,
-        selected ? styles.selected : null,
-        pressed ? styles.pressed : null,
-      ]}
-    >
-      <View style={styles.header}>
-        {leading}
-        <Text numberOfLines={1} style={[styles.title, selected ? styles.titleSelected : null]}>{title}</Text>
-        {trailing}
-      </View>
-      <Text numberOfLines={2} style={styles.subtitle}>{subtitle}</Text>
-      <View style={styles.footer}>
-        {chips}
-        {meta ? <Text style={styles.meta}>{meta}</Text> : null}
-      </View>
-    </Pressable>
+    <View style={[styles.frame, selected ? styles.selected : null]}>
+      <Pressable
+        accessibilityRole="button"
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.base,
+          pressed ? styles.pressed : null,
+        ]}
+      >
+        <View style={styles.header}>
+          {leading}
+          <Text numberOfLines={1} style={[styles.title, selected ? styles.titleSelected : null]}>{title}</Text>
+          {trailing}
+        </View>
+        <Text numberOfLines={2} style={styles.subtitle}>{subtitle}</Text>
+        <View style={styles.footer}>
+          {chips}
+          {meta ? <Text style={styles.meta}>{meta}</Text> : null}
+        </View>
+      </Pressable>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
   base: {
+    paddingHorizontal: mobileSpace.md,
+    paddingVertical: mobileSpace.md,
+  },
+  frame: {
+    alignSelf: 'stretch',
     borderColor: 'transparent',
     borderLeftColor: 'transparent',
     borderLeftWidth: 3,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: mobileRadius.md,
     marginBottom: mobileSpace.xs,
-    paddingHorizontal: mobileSpace.md,
-    paddingVertical: mobileSpace.md,
+    overflow: 'hidden',
+    width: '100%',
   },
   footer: {
     marginTop: mobileSpace.md,

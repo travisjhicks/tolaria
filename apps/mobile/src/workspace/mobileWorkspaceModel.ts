@@ -1,6 +1,7 @@
 export type MobileTone = 'blue' | 'gray' | 'green' | 'orange' | 'purple' | 'red' | 'yellow'
 
 export type MobileNote = {
+  archived?: boolean
   created: string
   date: string
   editorBlocks?: MobileEditorBlock[]
@@ -9,6 +10,8 @@ export type MobileNote = {
   id: string
   links: number
   modified: string
+  organized?: boolean
+  path?: string
   relationships: MobileRelationship[]
   status: string
   snippet: string
