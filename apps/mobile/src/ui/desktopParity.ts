@@ -71,6 +71,7 @@ export const desktopNoteItemParity = {
 } as const
 
 export const desktopPropertyParity = {
+  actionRowRadius: 4,
   chipHeight: 24,
   chipPaddingHorizontal: 8,
   chipRadius: 6,
@@ -80,6 +81,17 @@ export const desktopPropertyParity = {
   panelPadding: 12,
   rowMinHeight: 28,
   rowPaddingHorizontal: 6,
+} as const
+
+export const desktopRelationshipParity = {
+  iconSize: 14,
+  removeIconSize: 14,
+  rowGap: 8,
+  rowPaddingHorizontal: 10,
+  rowPaddingVertical: 6,
+  rowRadius: 6,
+  textFontSize: 12,
+  textFontWeight: '500',
 } as const
 
 export const desktopEditorParity = {
@@ -116,4 +128,16 @@ export const desktopPanelParity = {
   noteListWidth: 340,
   sidebarWidth: 260,
   toolbarHeight: 52,
+} as const
+
+export const desktopStatusBarParity = {
+  actionHeight: 24,
+  actionPaddingHorizontal: 4,
+  actionPaddingVertical: 2,
+  fontSize: 12,
+  height: 30,
+  iconSize: 13,
+  paddingHorizontal: 8,
+  primaryGap: 12,
+  sectionGap: 8,
 } as const

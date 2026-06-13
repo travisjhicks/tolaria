@@ -2,9 +2,13 @@ import { expect, test, type Locator, type Page } from '@playwright/test'
 import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises'
 import { basename, join, relative } from 'node:path'
 import {
+  desktopEditorParity,
   desktopNoteItemParity,
   desktopParityColors,
+  desktopPropertyParity,
+  desktopRelationshipParity,
   desktopSidebarParity,
+  desktopStatusBarParity,
 } from '../src/ui/desktopParity'
 import { buildLocalVaultWorkspaceSnapshot, type LocalVaultFile } from '../src/workspace/localVaultSnapshot'
 import type { MobileWorkspaceSnapshot } from '../src/workspace/mobileWorkspaceModel'
@@ -222,6 +226,9 @@ test.describe('mobile UI lab screenshots', () => {
 
     await assertNoteListParity(page)
     await assertSidebarParity(page)
+    await assertPropertiesParity(page)
+    await assertEditorParity(page)
+    await assertStatusBarParity(page)
   })
 
   test('hides and reveals tablet chrome with horizontal swipe gestures', async ({ page }, testInfo) => {
@@ -400,6 +407,79 @@ async function assertSidebarParity(page: Page) {
   await expectCssValue({ locator: typesCount, property: 'height', expected: '18px' })
   await expectCssValue({ locator: typesCount, property: 'border-radius', expected: `${desktopSidebarParity.countPillRadius}px` })
   await expectCssValue({ locator: inboxItem, property: 'background-color', expected: await cssColor({ page, color: desktopParityColors.accentBlueLight }) })
+}
+
+async function assertPropertiesParity(page: Page) {
+  const propertiesPanel = page.getByTestId('properties-panel')
+  const typeRow = page.getByTestId('property-row-type')
+  const typeLabel = page.getByTestId('property-row-type-label')
+  const tagsWrap = page.getByTestId('property-tags-wrap')
+  const belongsToSection = page.getByTestId('property-section-belongsTo')
+  const relationshipRow = page.getByTestId('relationship-row-llm-workflow')
+  const relationshipText = page.getByTestId('relationship-row-llm-workflow-text')
+  const addPropertyRow = page.getByTestId('property-action-add-property')
+
+  await expect(propertiesPanel).toBeVisible()
+  await expect(typeRow).toBeVisible()
+  await expect(belongsToSection).toBeVisible()
+
+  await expectCssValue({ locator: typeRow, property: 'min-height', expected: `${desktopPropertyParity.rowMinHeight}px` })
+  await expectCssValue({ locator: typeRow, property: 'padding-left', expected: `${desktopPropertyParity.rowPaddingHorizontal}px` })
+  await expectCssValue({ locator: typeLabel, property: 'font-size', expected: `${desktopPropertyParity.labelTextSize}px` })
+  await expectCssValue({ locator: typeLabel, property: 'color', expected: await cssColor({ page, color: desktopParityColors.textSecondary }) })
+  await expectCssValue({ locator: tagsWrap, property: 'flex-wrap', expected: 'wrap' })
+  await expectCssValue({ locator: relationshipRow, property: 'border-radius', expected: `${desktopRelationshipParity.rowRadius}px` })
+  await expectCssValue({ locator: relationshipRow, property: 'padding-left', expected: `${desktopRelationshipParity.rowPaddingHorizontal}px` })
+  await expectCssValue({ locator: relationshipRow, property: 'padding-top', expected: `${desktopRelationshipParity.rowPaddingVertical}px` })
+  await expectCssValue({ locator: relationshipText, property: 'font-size', expected: `${desktopRelationshipParity.textFontSize}px` })
+  await expectCssValue({ locator: relationshipText, property: 'font-weight', expected: desktopRelationshipParity.textFontWeight })
+  await expectCssValue({ locator: relationshipText, property: 'color', expected: await cssColor({ page, color: desktopParityColors.accentGreen }) })
+  await expectCssValue({ locator: addPropertyRow, property: 'min-height', expected: `${desktopPropertyParity.rowMinHeight}px` })
+  await expectCssValue({ locator: addPropertyRow, property: 'border-radius', expected: `${desktopPropertyParity.actionRowRadius}px` })
+}
+
+async function assertEditorParity(page: Page) {
+  const titleBlock = page.getByTestId('editor-title-block')
+  const title = page.getByTestId('editor-title')
+  const paragraph = page.getByTestId('editor-paragraph').first()
+  const heading = page.getByTestId('editor-heading-2')
+  const quote = page.getByTestId('editor-quote')
+  const quoteText = page.getByTestId('editor-quote-text')
+  const table = page.getByTestId('editor-table')
+
+  await expect(titleBlock).toBeVisible()
+  await expect(title).toBeVisible()
+  await expect(table).toBeVisible()
+
+  await expectCssValue({ locator: title, property: 'font-size', expected: `${desktopEditorParity.h1FontSize}px` })
+  await expectCssValue({ locator: title, property: 'font-weight', expected: '700' })
+  await expectCssValue({ locator: title, property: 'line-height', expected: `${desktopEditorParity.h1LineHeight}px` })
+  await expectCssValue({ locator: titleBlock, property: 'padding-bottom', expected: `${desktopEditorParity.h1PaddingBottom}px` })
+  await expectCssValue({ locator: titleBlock, property: 'margin-bottom', expected: `${desktopEditorParity.h1MarginBottom}px` })
+  await expectCssValue({ locator: titleBlock, property: 'border-bottom-color', expected: await cssColor({ page, color: desktopParityColors.borderDefault }) })
+  await expectCssValue({ locator: paragraph, property: 'font-size', expected: `${desktopEditorParity.bodyFontSize}px` })
+  await expectCssValue({ locator: paragraph, property: 'line-height', expected: `${desktopEditorParity.bodyLineHeight}px` })
+  await expectCssValue({ locator: heading, property: 'font-size', expected: `${desktopEditorParity.h2FontSize}px` })
+  await expectCssValue({ locator: heading, property: 'font-weight', expected: '600' })
+  await expectCssValue({ locator: quote, property: 'border-left-width', expected: '3px' })
+  await expectCssValue({ locator: quote, property: 'padding-left', expected: `${desktopEditorParity.quotePaddingLeft}px` })
+  await expectCssValue({ locator: quoteText, property: 'font-style', expected: 'italic' })
+}
+
+async function assertStatusBarParity(page: Page) {
+  const syncBar = page.getByTestId('sync-status-bar')
+  const syncLabel = page.getByTestId('sync-status-label')
+  const syncDetail = page.getByTestId('sync-status-detail')
+
+  await expect(syncBar).toBeVisible()
+  await expectCssValue({ locator: syncBar, property: 'height', expected: `${desktopStatusBarParity.height}px` })
+  await expectCssValue({ locator: syncBar, property: 'min-height', expected: `${desktopStatusBarParity.height}px` })
+  await expectCssValue({ locator: syncBar, property: 'padding-left', expected: `${desktopStatusBarParity.paddingHorizontal}px` })
+  await expectCssValue({ locator: syncBar, property: 'background-color', expected: await cssColor({ page, color: desktopParityColors.surfaceSidebar }) })
+  await expectCssValue({ locator: syncLabel, property: 'font-size', expected: `${desktopStatusBarParity.fontSize}px` })
+  await expectCssValue({ locator: syncLabel, property: 'font-weight', expected: '500' })
+  await expectCssValue({ locator: syncLabel, property: 'color', expected: await cssColor({ page, color: desktopParityColors.textSecondary }) })
+  await expectCssValue({ locator: syncDetail, property: 'font-size', expected: `${desktopStatusBarParity.fontSize}px` })
 }
 
 async function cssColor({ color, page }: ColorNormalizationRequest) {

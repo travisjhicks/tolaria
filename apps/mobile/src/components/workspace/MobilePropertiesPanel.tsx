@@ -6,7 +6,7 @@ import { mobileCopy, mobileText } from '../../i18n/mobileText'
 import { MobileChip } from '../../ui/MobileChip'
 import { MobilePanel, MobileToolbar, MobileToolbarTitle } from '../../ui/MobilePanel'
 import { MobilePropertyRow } from '../../ui/MobilePropertyRow'
-import { desktopPanelParity, desktopPropertyParity } from '../../ui/desktopParity'
+import { desktopPanelParity, desktopPropertyParity, desktopRelationshipParity } from '../../ui/desktopParity'
 import { mobileColors, mobileRadius, mobileSpace, mobileType } from '../../ui/tokens'
 import type { MobileNote, MobileRelationship, MobileRelationshipValue, MobileTone } from '../../workspace/mobileWorkspaceModel'
 import { MobileTypeIcon } from './MobileWorkspaceIcons'
@@ -34,25 +34,26 @@ export function MobilePropertiesPanel({
 function NoteProperties({ note }: { note: MobileNote }) {
   return (
     <>
-      <MobilePropertyRow label="Type" value={<MobileChip label={note.type} tone={chipTone(note.typeTone)} />} />
-      {note.status ? <MobilePropertyRow label={mobileText('noteList.sort.status')} value={<MobileChip label={note.status} tone={statusTone(note.status)} />} /> : null}
-      <MobilePropertyRow label={mobileText('noteList.sort.created')} value={note.created} />
-      <MobilePropertyRow label={mobileCopy.modified} value={note.modified} />
-      <MobilePropertyRow label={mobileText('inspector.properties.workspace')} value={<WorkspaceBadge label={note.workspace} />} />
-      <PropertySection label="Tags">
+      <MobilePropertyRow label="Type" testID="property-row-type" value={<MobileChip label={note.type} tone={chipTone(note.typeTone)} />} />
+      {note.status ? <MobilePropertyRow label={mobileText('noteList.sort.status')} testID="property-row-status" value={<MobileChip label={note.status} tone={statusTone(note.status)} />} /> : null}
+      <MobilePropertyRow label={mobileText('noteList.sort.created')} testID="property-row-created" value={note.created} />
+      <MobilePropertyRow label={mobileCopy.modified} testID="property-row-modified" value={note.modified} />
+      <MobilePropertyRow label={mobileText('inspector.properties.workspace')} testID="property-row-workspace" value={<WorkspaceBadge label={note.workspace} />} />
+      <PropertySection label="Tags" testID="property-section-tags">
         <TagWrap labels={note.tags} />
       </PropertySection>
-      <MobilePropertyRow label="Links" value={`${note.links}`} />
+      <MobilePropertyRow label="Links" testID="property-row-links" value={`${note.links}`} />
       {note.relationships.map((relationship) => (
         <PropertySection
           key={`${relationship.kind}-${relationship.label ?? relationship.values.map((value) => value.title).join('-')}`}
           label={relationshipHeading(relationship)}
+          testID={`property-section-${relationship.kind}`}
         >
           <RelationshipValues values={relationship.values} />
         </PropertySection>
       ))}
-      <PropertyActionRow label={mobileText('inspector.properties.addProperty')} />
-      <PropertyActionRow label={mobileText('inspector.relationship.addRelationship')} />
+      <PropertyActionRow label={mobileText('inspector.properties.addProperty')} testID="property-action-add-property" />
+      <PropertyActionRow label={mobileText('inspector.relationship.addRelationship')} testID="property-action-add-relationship" />
     </>
   )
 }
@@ -69,21 +70,23 @@ function PropertiesEmptyState() {
 function PropertySection({
   children,
   label,
+  testID,
 }: {
   children: ReactNode
   label: string
+  testID?: string
 }) {
   return (
-    <View style={propertyStyles.sectionRow}>
-      <Text style={propertyStyles.sectionLabel}>{label}</Text>
-      <View style={propertyStyles.sectionValue}>{children}</View>
+    <View style={propertyStyles.sectionRow} testID={testID}>
+      <Text style={propertyStyles.sectionLabel} testID={testID ? `${testID}-label` : undefined}>{label}</Text>
+      <View style={propertyStyles.sectionValue} testID={testID ? `${testID}-value` : undefined}>{children}</View>
     </View>
   )
 }
 
-function PropertyActionRow({ label }: { label: string }) {
+function PropertyActionRow({ label, testID }: { label: string; testID: string }) {
   return (
-    <Pressable accessibilityLabel={label} accessibilityRole="button" style={({ pressed }) => [actionStyles.row, pressed ? actionStyles.rowPressed : null]}>
+    <Pressable accessibilityLabel={label} accessibilityRole="button" style={({ pressed }) => [actionStyles.row, pressed ? actionStyles.rowPressed : null]} testID={testID}>
       <View style={actionStyles.label}>
         <View style={actionStyles.iconSlot}>
           <Plus color={mobileColors.textMuted} size={14} />
@@ -99,11 +102,11 @@ function RelationshipValues({ values }: { values: MobileRelationshipValue[] }) {
   return (
     <View style={relationshipStyles.values}>
       {values.map((value) => (
-        <View key={`${value.type}-${value.title}`} style={[relationshipStyles.row, relationshipRowTone(value.typeTone)]}>
-          <MobileTypeIcon size={12} tone={value.typeTone} type={value.type} />
-          <Text numberOfLines={1} style={[relationshipStyles.text, relationshipTextTone(value.typeTone)]}>{value.title}</Text>
+        <View key={`${value.type}-${value.title}`} style={[relationshipStyles.row, relationshipRowTone(value.typeTone)]} testID={`relationship-row-${testIdSegment(value.title)}`}>
+          <MobileTypeIcon size={desktopRelationshipParity.iconSize} tone={value.typeTone} type={value.type} />
+          <Text numberOfLines={1} style={[relationshipStyles.text, relationshipTextTone(value.typeTone)]} testID={`relationship-row-${testIdSegment(value.title)}-text`}>{value.title}</Text>
           <View style={relationshipStyles.remove}>
-            <X color={noteTypeColor(value.typeTone)} size={11} weight="bold" />
+            <X color={noteTypeColor(value.typeTone)} size={desktopRelationshipParity.removeIconSize} weight="bold" />
           </View>
         </View>
       ))}
@@ -123,7 +126,7 @@ function relationshipHeading(relationship: MobileRelationship): string {
 
 function TagWrap({ labels }: { labels: string[] }) {
   return (
-    <View style={propertyStyles.tagWrap}>
+    <View style={propertyStyles.tagWrap} testID="property-tags-wrap">
       {labels.map((label) => <MobileChip key={label} label={label} tone={tagTone(label)} />)}
     </View>
   )
@@ -139,6 +142,10 @@ function relationshipRowTone(tone: MobileTone) {
 
 function relationshipTextTone(tone: MobileTone) {
   return { color: noteTypeColor(tone) }
+}
+
+function testIdSegment(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
 
 const panelStyles = StyleSheet.create({
@@ -180,27 +187,26 @@ const styles = StyleSheet.create({
 
 const relationshipStyles = StyleSheet.create({
   remove: {
-    minHeight: 16,
-    minWidth: 16,
+    minHeight: desktopRelationshipParity.removeIconSize,
+    minWidth: desktopRelationshipParity.removeIconSize,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: mobileRadius.pill,
-    backgroundColor: mobileColors.card,
   },
   row: {
     minHeight: desktopPropertyParity.rowMinHeight,
     alignItems: 'center',
     flexDirection: 'row',
-    gap: mobileSpace.xs,
-    borderRadius: mobileRadius.md,
-    paddingHorizontal: mobileSpace.sm,
-    paddingVertical: mobileSpace.xs,
+    gap: desktopRelationshipParity.rowGap,
+    borderRadius: desktopRelationshipParity.rowRadius,
+    paddingHorizontal: desktopRelationshipParity.rowPaddingHorizontal,
+    paddingVertical: desktopRelationshipParity.rowPaddingVertical,
     width: '100%',
   },
   text: {
     flex: 1,
-    fontSize: desktopPropertyParity.labelTextSize,
-    fontWeight: '500',
+    fontSize: desktopRelationshipParity.textFontSize,
+    fontWeight: desktopRelationshipParity.textFontWeight,
   },
   values: {
     alignItems: 'stretch',
@@ -260,7 +266,7 @@ const actionStyles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: mobileSpace.sm,
-    borderRadius: mobileRadius.sm,
+    borderRadius: desktopPropertyParity.actionRowRadius,
     paddingHorizontal: desktopPropertyParity.rowPaddingHorizontal,
   },
   rowPressed: {

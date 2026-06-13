@@ -6,15 +6,19 @@ import { mobileColors, mobileSpace, mobileType } from './tokens'
 
 export function MobilePropertyRow({
   label,
+  testID,
   value,
 }: {
   label: string
+  testID?: string
   value: ReactNode
 }) {
   return (
-    <View style={styles.row}>
-      <Text style={styles.label}>{label}</Text>
-      <View style={styles.value}>{typeof value === 'string' ? <Text style={styles.valueText}>{value}</Text> : value}</View>
+    <View style={styles.row} testID={testID}>
+      <Text style={styles.label} testID={testID ? `${testID}-label` : undefined}>{label}</Text>
+      <View style={styles.value} testID={testID ? `${testID}-value` : undefined}>
+        {typeof value === 'string' ? <Text style={styles.valueText}>{value}</Text> : value}
+      </View>
     </View>
   )
 }

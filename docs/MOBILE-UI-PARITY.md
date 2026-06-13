@@ -60,6 +60,10 @@ The screenshot suite also contains objective parity assertions for tablet landsc
 - missing note row separators
 - sidebar section padding drifting from desktop `SidebarTopNav` and `SidebarGroupHeader`
 - sidebar count pills losing desktop rounded pill sizing
+- properties rows drifting from desktop 28px row density and 12px muted labels
+- relationship rows losing full-width typed color, 6px radius, or desktop padding
+- editor H1, paragraph, quote, and table primitives drifting from `theme.json`
+- sync footer becoming an oversized mobile bar instead of the 30px desktop status bar
 
 The default screenshot matrix is:
 

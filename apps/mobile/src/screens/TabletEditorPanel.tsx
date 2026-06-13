@@ -41,9 +41,9 @@ export function TabletEditorPanel({
           <DotsThree color={mobileColors.textMuted} size={20} weight="bold" />
         </MobileIconButton>
       </MobileToolbar>
-      <ScrollView contentContainerStyle={[panelStyles.content, compact ? panelStyles.contentCompact : null]}>
-        <View style={panelStyles.titleBlock}>
-          <Text style={[panelStyles.title, compact ? panelStyles.titleCompact : null]}>{note.title}</Text>
+      <ScrollView contentContainerStyle={[panelStyles.content, compact ? panelStyles.contentCompact : null]} testID="editor-scroll">
+        <View style={panelStyles.titleBlock} testID="editor-title-block">
+          <Text style={[panelStyles.title, compact ? panelStyles.titleCompact : null]} testID="editor-title">{note.title}</Text>
         </View>
         <EditorBlocks blocks={blocks} fallbackBullets={bullets} />
       </ScrollView>
@@ -87,7 +87,7 @@ function FallbackBullets({ bullets }: { bullets: string[] }) {
   return (
     <>
       {bullets.map((item) => (
-        <View key={item} style={bulletStyles.row}>
+        <View key={item} style={bulletStyles.row} testID="editor-bullet-row">
           <Text style={bulletStyles.marker}>•</Text>
           <Text style={textStyles.body}>{item}</Text>
         </View>
@@ -98,7 +98,7 @@ function FallbackBullets({ bullets }: { bullets: string[] }) {
 
 function EditorBlock({ block }: { block: MobileEditorBlock }) {
   if (block.kind === 'paragraph') {
-    return <InlineText content={block.content} style={textStyles.paragraph} />
+    return <InlineText content={block.content} style={textStyles.paragraph} testID="editor-paragraph" />
   }
 
   if (block.kind === 'heading') {
@@ -118,7 +118,7 @@ function EditorBlock({ block }: { block: MobileEditorBlock }) {
 
 function EditorHeading({ block }: { block: Extract<MobileEditorBlock, { kind: 'heading' }> }) {
   return (
-    <Text style={[textStyles.heading, block.level === 3 ? textStyles.headingSmall : null]}>
+    <Text style={[textStyles.heading, block.level === 3 ? textStyles.headingSmall : null]} testID={`editor-heading-${block.level}`}>
       {block.text}
     </Text>
   )
@@ -128,9 +128,9 @@ function EditorBulletList({ items }: { items: MobileEditorInline[][] }) {
   return (
     <View style={bulletStyles.group}>
       {items.map((item, index) => (
-        <View key={`bullet-${index}`} style={bulletStyles.row}>
+        <View key={`bullet-${index}`} style={bulletStyles.row} testID="editor-bullet-row">
           <Text style={bulletStyles.marker}>•</Text>
-          <InlineText content={item} style={textStyles.body} />
+          <InlineText content={item} style={textStyles.body} testID="editor-bullet-text" />
         </View>
       ))}
     </View>
@@ -139,8 +139,8 @@ function EditorBulletList({ items }: { items: MobileEditorInline[][] }) {
 
 function EditorQuote({ content }: { content: MobileEditorInline[] }) {
   return (
-    <View style={quoteStyles.container}>
-      <InlineText content={content} style={quoteStyles.text} />
+    <View style={quoteStyles.container} testID="editor-quote">
+      <InlineText content={content} style={quoteStyles.text} testID="editor-quote-text" />
     </View>
   )
 }
@@ -148,12 +148,14 @@ function EditorQuote({ content }: { content: MobileEditorInline[] }) {
 function InlineText({
   content,
   style,
+  testID,
 }: {
   content: MobileEditorInline[]
   style: TextStyle
+  testID?: string
 }) {
   return (
-    <Text style={style}>
+    <Text style={style} testID={testID}>
       {content.map((segment, index) => (
         <Text
           key={`${segment.text}-${index}`}
@@ -178,7 +180,7 @@ function EditorTable({
   rows: string[][]
 }) {
   return (
-    <View style={tableStyles.table}>
+    <View style={tableStyles.table} testID="editor-table">
       <View style={[tableStyles.row, tableStyles.headerRow]}>
         {headers.map((header) => (
           <Text key={header} style={[tableStyles.cell, tableStyles.headerCell]}>{header}</Text>

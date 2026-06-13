@@ -3,18 +3,24 @@ import { StyleSheet, View } from 'react-native'
 import { Text } from '../ui/text'
 import { mobileText } from '../../i18n/mobileText'
 import { MobileButton } from '../../ui/MobileButton'
-import { mobileColors, mobileSpace, mobileType } from '../../ui/tokens'
+import { desktopStatusBarParity } from '../../ui/desktopParity'
+import { mobileColors } from '../../ui/tokens'
 import type { MobileSyncStatus } from '../../workspace/mobileWorkspaceModel'
 
 export function MobileSyncStatusBar({ sync }: { sync: MobileSyncStatus }) {
   return (
-    <View style={styles.syncBar}>
+    <View style={styles.syncBar} testID="sync-status-bar">
       <View style={styles.syncStatusGroup}>
-        <Tray color={syncStatusColor(sync)} size={16} />
-        <Text numberOfLines={1} style={styles.syncStatusText}>{syncStatusLabel(sync)}</Text>
-        <Text numberOfLines={1} style={styles.syncDetailText}>{syncStatusDetail(sync)}</Text>
+        <Tray color={syncStatusColor(sync)} size={desktopStatusBarParity.iconSize} />
+        <Text numberOfLines={1} style={styles.syncStatusText} testID="sync-status-label">{syncStatusLabel(sync)}</Text>
+        <Text numberOfLines={1} style={styles.syncDetailText} testID="sync-status-detail">{syncStatusDetail(sync)}</Text>
       </View>
-      <MobileButton icon={<Tray color={mobileColors.text} size={14} />} label={mobileText('status.sync.now')} variant="ghost" />
+      <MobileButton
+        density="status"
+        icon={<Tray color={mobileColors.textMuted} size={desktopStatusBarParity.iconSize} />}
+        label={mobileText('status.sync.now')}
+        variant="ghost"
+      />
     </View>
   )
 }
@@ -44,29 +50,30 @@ function syncStatusLabel(sync: MobileSyncStatus) {
 const styles = StyleSheet.create({
   syncBar: {
     alignItems: 'center',
-    backgroundColor: mobileColors.card,
+    backgroundColor: mobileColors.sidebar,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: mobileColors.border,
     flexDirection: 'row',
-    gap: mobileSpace.md,
+    gap: desktopStatusBarParity.primaryGap,
+    height: desktopStatusBarParity.height,
     justifyContent: 'space-between',
-    minHeight: 40,
-    paddingHorizontal: mobileSpace.lg,
+    minHeight: desktopStatusBarParity.height,
+    paddingHorizontal: desktopStatusBarParity.paddingHorizontal,
   },
   syncDetailText: {
     color: mobileColors.textMuted,
-    fontSize: mobileType.micro,
+    fontSize: desktopStatusBarParity.fontSize,
   },
   syncStatusGroup: {
     alignItems: 'center',
     flex: 1,
     flexDirection: 'row',
-    gap: mobileSpace.sm,
+    gap: desktopStatusBarParity.sectionGap,
     minWidth: 0,
   },
   syncStatusText: {
-    color: mobileColors.text,
-    fontSize: mobileType.body,
-    fontWeight: '600',
+    color: mobileColors.textMuted,
+    fontSize: desktopStatusBarParity.fontSize,
+    fontWeight: '500',
   },
 })

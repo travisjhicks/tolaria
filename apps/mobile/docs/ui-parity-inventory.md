@@ -14,7 +14,7 @@ This inventory is the working source map for the experimental mobile UI foundati
 | Mobile wrapper | Desktop source | Required alignment |
 | --- | --- | --- |
 | `MobilePanel`, `MobileToolbar` | App shell panels and toolbar chrome | White/card surfaces, hairline borders, compact 13-16px toolbar labels, muted icons. |
-| `MobileButton` | `src/components/ui/button.tsx` | Use RNR/shadcn-like button primitive; labels should be medium, not bold. |
+| `MobileButton` | `src/components/ui/button.tsx`, `StatusBarAction` | Use RNR/shadcn-like button primitive; labels should be medium, not bold. Status-density buttons copy the 12px, 24px-high desktop status-bar action shape. |
 | `MobileChip` | `SidebarCountPill`, note property chips | Rounded compact pills, muted labels, small type. Count pills are 10px, rounded-full, tabular. |
 | `MobileListRow` | `src/components/NoteItem.tsx` | Row padding 14/16, title 13px medium default and semibold only when selected, snippets 12px muted, dates/meta 10-12px muted, type icon only at the row edge. |
 | `MobilePropertyRow` | `src/components/propertyPanelLayout.ts` | Dense rows, 12px muted labels, 12px normal values, no heavy text weight. |
@@ -41,7 +41,19 @@ The tablet shell consumes `MobileWorkspaceSnapshot` from `src/workspace/mobileWo
 | Note list | `NoteItem.tsx`, `PropertyChips.tsx` | No invented metadata lines, no word counts, no floating create button. Titles/snippets/dates follow desktop hierarchy. |
 | Editor | `EditorTheme.css`, `theme.json` | H1 title has 32px desktop scale and bottom separator. Markdown fixture should exercise paragraphs, bold, italic, inline code, bullets, blockquotes, and tables. |
 | Properties | `propertyPanelLayout.ts`, `RelationshipsPanel.tsx` | Dense 12px rows. Tags wrap under their label. Relationships are individual property sections; no global Relationships heading. Relationship values are full-width rows with type icon and type-colored text. |
-| Sync footer | `StatusBar.tsx`, status-bar badges | Bottom bar stays subtle: white/card surface, hairline top border, muted detail text. |
+| Sync footer | `StatusBar.tsx`, status-bar badges | Bottom bar stays subtle: 30px sidebar-colored surface, hairline top border, 12px muted detail text, compact status actions. |
+
+## Current Objective Assertions
+
+The tablet landscape parity test now checks these computed-style contracts:
+
+| Surface | Guarded invariants |
+| --- | --- |
+| Sidebar | section padding, border color, muted group title color, count pill size/radius, active row color |
+| Note list | full-width selected row, no wrapper margins/radius, desktop row padding, type-colored selected background and border |
+| Properties | 28px rows, 12px muted labels, wrapping tags, full-width relationship row radius/padding/font/color, compact action rows |
+| Editor | H1 size/weight/line height, title separator, paragraph size/line height, H2 size/weight, quote border/padding/italic text |
+| Sync footer | 30px height, sidebar background, 8px horizontal padding, 12px muted status text |
 
 ## Phone Screens
 
