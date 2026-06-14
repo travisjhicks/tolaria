@@ -13,10 +13,10 @@ import {
   localVaultSnippet,
 } from './localVaultMarkdown'
 import {
-  evaluateMobileSavedView,
   orderedMobileSavedViews,
   parseMobileSavedViewFile,
 } from './mobileSavedViews'
+import { buildMobileSidebarSections } from './mobileSidebarSections'
 import type {
   MobileNote,
   MobileProperty,
@@ -24,8 +24,6 @@ import type {
   MobileRelationship,
   MobileRelationshipKind,
   MobileRelationshipValue,
-  MobileSidebarFolder,
-  MobileSidebarSection,
   MobileSavedView,
   MobileTone,
   MobileWorkspaceSnapshot,
@@ -108,7 +106,7 @@ export function buildLocalVaultWorkspaceSnapshot({
     noteListSubtitle: noteListSubtitle(notes.length, visibleEntries.length),
     notes,
     selectedNoteId,
-    sidebarSections: sidebarSections(entries, noteEntries, allNotes, views),
+    sidebarSections: buildMobileSidebarSections({ notes: allNotes, views }),
     source: {
       kind: 'localVault',
       label: vaultLabel,
@@ -236,137 +234,6 @@ function noteListSubtitle(visibleCount: number, totalCount: number): string {
   return `${visibleCount.toLocaleString()} / ${totalCount.toLocaleString()}`
 }
 
-function sidebarSections(
-  entries: LocalVaultEntry[],
-  noteEntries: LocalVaultEntry[],
-  notes: MobileNote[],
-  views: MobileSavedView[],
-): MobileSidebarSection[] {
-  const activeNotes = noteEntries.filter((entry) => !entry.archived)
-  const archivedNotes = noteEntries.filter((entry) => entry.archived)
-  const inboxNotes = activeNotes.filter((entry) => !entry.organized)
-
-  const sections: MobileSidebarSection[] = [
-    {
-      id: 'primary',
-      items: [
-        { active: true, count: countText(inboxNotes.length), icon: 'inbox', id: 'inbox', label: 'Inbox' },
-        { count: countText(activeNotes.length), icon: 'file', id: 'all-notes', label: 'All Notes' },
-        { count: countText(archivedNotes.length), icon: 'archive', id: 'archive', label: 'Archive' },
-      ],
-    },
-    favoritesSection(activeNotes),
-    viewsSection(views, notes),
-    typesSection(activeNotes),
-    foldersSection(entries),
-  ]
-
-  return sections.filter(hasSidebarContent)
-}
-
-function favoritesSection(entries: LocalVaultEntry[]): MobileSidebarSection {
-  return {
-    id: 'favorites',
-    items: entries.filter((entry) => entry.favorite).slice(0, 8).map((entry) => ({
-      icon: 'star',
-      id: `favorite-${entry.id}`,
-      label: entry.title,
-      tone: entry.typeTone,
-    })),
-    label: 'Favorites',
-  }
-}
-
-function viewsSection(views: MobileSavedView[], notes: MobileNote[]): MobileSidebarSection {
-  return {
-    id: 'views',
-    items: views.map((view) => ({
-      count: countText(evaluateMobileSavedView(view, notes).length),
-      icon: 'view',
-      id: view.id,
-      label: view.definition.name,
-      tone: toneFromDesktopColor(view.definition.color, 'Note'),
-      viewId: view.id,
-    })),
-    label: 'Views',
-  }
-}
-
-function hasSidebarContent(section: MobileSidebarSection): boolean {
-  return Boolean(section.items?.length || section.folders?.length || section.id === 'primary')
-}
-
-function typesSection(entries: LocalVaultEntry[]): MobileSidebarSection {
-  const counts = new Map<string, { count: number; tone: MobileTone }>()
-  for (const entry of entries) {
-    const current = counts.get(entry.type) ?? { count: 0, tone: entry.typeTone }
-    counts.set(entry.type, { ...current, count: current.count + 1 })
-  }
-
-  return {
-    count: countText(entries.length),
-    id: 'types',
-    items: [...counts.entries()]
-      .sort((left, right) => right[1].count - left[1].count)
-      .slice(0, 10)
-      .map(([type, value]) => ({
-        count: countText(value.count),
-        icon: 'file',
-        id: `type-${type}`,
-        label: pluralizeType(type),
-        tone: value.tone,
-      })),
-    label: 'Types',
-  }
-}
-
-function foldersSection(entries: LocalVaultEntry[]): MobileSidebarSection {
-  return {
-    folders: folderTree(entries),
-    id: 'folders',
-    label: 'Folders',
-  }
-}
-
-function folderTree(entries: LocalVaultEntry[]): MobileSidebarFolder[] {
-  const roots: MobileSidebarFolder[] = []
-
-  for (const entry of entries) {
-    const parts = entry.path.split('/').slice(0, -1).filter(visibleFolderSegment)
-    let level = roots
-
-    for (const part of parts) {
-      const folder = findOrCreateFolder(level, part)
-      level = folder.children
-    }
-  }
-
-  sortFolderTree(roots)
-  return roots
-}
-
-function findOrCreateFolder(folders: MobileSidebarFolder[], name: string): MobileSidebarFolder {
-  const existing = folders.find((folder) => folder.name === name)
-  if (existing) return existing
-
-  const folder = { children: [], expanded: true, id: name, name }
-  folders.push(folder)
-  return folder
-}
-
-function sortFolderTree(folders: MobileSidebarFolder[]) {
-  folders.sort(compareFolders)
-  folders.forEach((folder) => sortFolderTree(folder.children))
-}
-
-function compareFolders(left: MobileSidebarFolder, right: MobileSidebarFolder): number {
-  return left.name.localeCompare(right.name)
-}
-
-function visibleFolderSegment(segment: string): boolean {
-  return Boolean(segment) && !segment.startsWith('.') && segment !== 'type'
-}
-
 function mobileRelationships(
   relationships: Record<RelationshipLabel, WikilinkTarget[]>,
   resolveRelationship: RelationshipResolver,
@@ -487,16 +354,6 @@ function absoluteDate(timestamp: TimestampMs | null): string {
 
 function linkCount(body: string): number {
   return body.match(/\[\[[^\]]+\]\]/g)?.length ?? 0
-}
-
-function countText(count: number): string {
-  return count.toLocaleString()
-}
-
-function pluralizeType(type: NoteTypeName): string {
-  if (type.endsWith('s')) return type
-  if (type.endsWith('y')) return `${type.slice(0, -1)}ies`
-  return `${type}s`
 }
 
 function humanizeRelationshipKey(label: RelationshipLabel): string {

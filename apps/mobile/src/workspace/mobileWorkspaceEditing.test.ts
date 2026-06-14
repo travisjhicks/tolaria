@@ -6,7 +6,7 @@ import {
   replaceTrailingWikilinkQuery,
   trailingWikilinkQuery,
 } from './mobileWorkspaceEditing'
-import type { MobileWorkspaceSnapshot } from './mobileWorkspaceModel'
+import type { MobileSidebarFolder, MobileWorkspaceSnapshot } from './mobileWorkspaceModel'
 
 describe('applyMobileWorkspaceEdit', () => {
   it('creates a selected editable note with markdown content', () => {
@@ -125,6 +125,15 @@ describe('applyMobileWorkspaceEdit', () => {
       kind: 'saveNote',
       path: 'Tolaria/Mobile UI/Workflow Orchestration Essay.md',
     }])
+    expect(sidebarItems(result.snapshot, 'types')).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ count: '2', id: 'procedures', label: 'Procedures' }),
+        expect.objectContaining({ count: '1', label: 'Releases' }),
+      ]),
+    )
+    expect(sidebarItems(result.snapshot, 'types')).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: 'essays' })]),
+    )
   })
 
   it('moves notes to another folder by changing the relative path and planning delete plus save writes', () => {
@@ -150,6 +159,9 @@ describe('applyMobileWorkspaceEdit', () => {
         path: 'Writing/Essays/Workflow Orchestration Essay.md',
       },
     ])
+    expect(sidebarFolders(result.snapshot)).toContainEqual(
+      expect.objectContaining({ id: 'Writing/Essays', name: 'Essays' }),
+    )
   })
 
   it('retargets path-backed note ids when a local-vault note moves folders', () => {
@@ -173,6 +185,37 @@ describe('applyMobileWorkspaceEdit', () => {
       id: 'Writing/Essays/Workflow Orchestration Essay.md',
       path: 'Writing/Essays/Workflow Orchestration Essay.md',
     })
+  })
+
+  it('rebuilds primary and favorites sidebar sections after note state edits', () => {
+    const base = workspaceScenarioForId('default')
+    const editableNote = {
+      ...base.notes[0],
+      rawContent: '# Workflow Orchestration Essay\n\nArchive me.\n',
+    }
+    const archived = applyMobileWorkspaceEdit({ ...base, notes: [editableNote, ...base.notes.slice(1)] }, {
+      archived: true,
+      noteId: editableNote.id,
+      type: 'setArchived',
+    })
+
+    expect(sidebarItems(archived, 'primary')).toEqual([
+      expect.objectContaining({ count: '2', id: 'inbox' }),
+      expect.objectContaining({ count: '2', id: 'all-notes' }),
+      expect.objectContaining({ count: '1', id: 'archive' }),
+    ])
+    expect(sidebarItems(archived, 'favorites')).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ label: 'Workflow Orchestration Essay' })]),
+    )
+
+    const favorited = applyMobileWorkspaceEdit(base, {
+      noteId: 'open-source-project',
+      type: 'toggleFavorite',
+    })
+
+    expect(sidebarItems(favorited, 'favorites')).toEqual(
+      expect.arrayContaining([expect.objectContaining({ label: 'How I Run an Open Source Project' })]),
+    )
   })
 
   it('normalizes built-in relationship labels to desktop frontmatter keys', () => {
@@ -372,3 +415,16 @@ describe('mobile wikilink editing helpers', () => {
     )
   })
 })
+
+function sidebarItems(snapshot: MobileWorkspaceSnapshot, sectionId: string) {
+  return snapshot.sidebarSections.find((section) => section.id === sectionId)?.items ?? []
+}
+
+function sidebarFolders(snapshot: MobileWorkspaceSnapshot) {
+  const folders = snapshot.sidebarSections.find((section) => section.id === 'folders')?.folders ?? []
+  return flattenSidebarFolders(folders)
+}
+
+function flattenSidebarFolders(folders: MobileSidebarFolder[]): MobileSidebarFolder[] {
+  return folders.flatMap((folder) => [folder, ...flattenSidebarFolders(folder.children)])
+}

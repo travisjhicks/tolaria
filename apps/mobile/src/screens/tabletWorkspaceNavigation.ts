@@ -132,7 +132,7 @@ function activeSidebarItem(item: MobileSidebarItem) {
 
 function notesForSidebarSelection(snapshot: MobileWorkspaceSnapshot, selection: TabletSidebarSelection) {
   const notes = workspaceNotes(snapshot)
-  if (selection.kind === 'folder') return notes.filter((note) => noteBelongsToFolder(note, selection.label))
+  if (selection.kind === 'folder') return notes.filter((note) => noteBelongsToFolder(note, selection))
 
   const sectionResolver = sidebarSectionResolvers[selection.sectionId]
   return sectionResolver?.(snapshot, notes, selection) ?? primaryNotesForSelection(notes, selection)
@@ -183,8 +183,12 @@ function inboxNotes(notes: MobileNote[]) {
   return filteredNotes.length > 0 ? filteredNotes : notes
 }
 
-function noteBelongsToFolder(note: MobileNote, folderName: SidebarLabel) {
-  return (note.path ?? '').split('/').slice(0, -1).some((segment) => normalizedLabel(segment) === normalizedLabel(folderName))
+function noteBelongsToFolder(note: MobileNote, selection: Extract<TabletSidebarSelection, { kind: 'folder' }>) {
+  const folderPath = noteFolderPath(note)
+  if (!folderPath) return false
+  if (normalizedFolderPath(folderPath) === normalizedFolderPath(selection.id)) return true
+
+  return folderPath.split('/').some((segment) => normalizedLabel(segment) === normalizedLabel(selection.label))
 }
 
 function noteMatchesType(note: MobileNote, selection: TabletSidebarItemSelection) {
@@ -194,6 +198,14 @@ function noteMatchesType(note: MobileNote, selection: TabletSidebarItemSelection
 
 function normalizedLabel(label: SidebarLabel) {
   return label.toLowerCase().replace(/[^a-z0-9]+/g, '')
+}
+
+function normalizedFolderPath(path: SidebarLabel) {
+  return path.toLowerCase().replace(/^\/+|\/+$/g, '').replace(/\/+/g, '/')
+}
+
+function noteFolderPath(note: MobileNote) {
+  return (note.path ?? note.id).split('/').slice(0, -1).join('/')
 }
 
 function normalizedSearchQuery(value: SearchQuery) {

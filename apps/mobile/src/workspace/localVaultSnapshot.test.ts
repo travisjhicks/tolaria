@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildLocalVaultWorkspaceSnapshot, type LocalVaultFile } from './localVaultSnapshot'
+import type { MobileSidebarFolder } from './mobileWorkspaceModel'
 
 describe('buildLocalVaultWorkspaceSnapshot', () => {
   it('maps real vault frontmatter into mobile notes, relationships, and type colors', () => {
@@ -92,6 +93,53 @@ _organized: false
       viewId: 'view-active-projects',
     })
   })
+
+  it('derives sidebar primary counts, type counts, and folder paths from local vault notes', () => {
+    const snapshot = buildLocalVaultWorkspaceSnapshot({
+      files: [
+        vaultFile('types/project.md', projectTypeContent),
+        vaultFile('Writing/Projects/Active Project.md', `---
+type: Project
+_organized: false
+---
+# Active Project
+`),
+        vaultFile('Writing/Drafts/Organized Note.md', `---
+type: Note
+_organized: true
+---
+# Organized Note
+`),
+        vaultFile('Archive/Old Project.md', `---
+type: Project
+_archived: true
+---
+# Old Project
+`),
+      ],
+      vaultLabel: 'Laputa',
+      vaultPath: '/Users/luca/Laputa',
+    })
+
+    expect(snapshot.sidebarSections.find((section) => section.id === 'primary')?.items).toEqual([
+      expect.objectContaining({ count: '1', id: 'inbox' }),
+      expect.objectContaining({ count: '2', id: 'all-notes' }),
+      expect.objectContaining({ count: '1', id: 'archive' }),
+    ])
+    expect(snapshot.sidebarSections.find((section) => section.id === 'types')?.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ count: '1', label: 'Projects' }),
+        expect.objectContaining({ count: '1', label: 'Notes' }),
+      ]),
+    )
+    expect(flattenSidebarFolders(snapshot.sidebarSections.find((section) => section.id === 'folders')?.folders ?? [])).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'Writing', name: 'Writing' }),
+        expect.objectContaining({ id: 'Writing/Projects', name: 'Projects' }),
+        expect.objectContaining({ id: 'Writing/Drafts', name: 'Drafts' }),
+      ]),
+    )
+  })
 })
 
 function vaultFile(relativePath: string, content: string, index = 0): LocalVaultFile {
@@ -149,3 +197,7 @@ _organized: true
 
 Reference note.
 `
+
+function flattenSidebarFolders(folders: MobileSidebarFolder[]): MobileSidebarFolder[] {
+  return folders.flatMap((folder) => [folder, ...flattenSidebarFolders(folder.children)])
+}

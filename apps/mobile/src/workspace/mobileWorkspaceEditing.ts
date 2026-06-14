@@ -22,19 +22,17 @@ import type {
   MobileRelationshipKind,
   MobileRelationshipValue,
   MobileSavedView,
-  MobileSidebarSection,
-  MobileTone,
   MobileViewDefinition,
   MobileWorkspaceSnapshot,
 } from './mobileWorkspaceModel'
 import {
   createMobileSavedViewFilename,
-  evaluateMobileSavedView,
   mobileSavedViewId,
   mobileSavedViewPath,
   orderedMobileSavedViews,
   serializeMobileSavedViewDefinition,
 } from './mobileSavedViews'
+import { buildMobileSidebarSections } from './mobileSidebarSections'
 import { normalizeRelationshipKey } from './mobileWorkspaceSuggestions'
 
 type EditableNoteInput = MobileNote & { rawContent: string }
@@ -383,7 +381,11 @@ function rebuildSnapshot(
     noteListSubtitle: noteListSubtitle(resolvedNotes),
     notes: resolvedNotes,
     selectedNoteId: selectedNote?.id,
-    sidebarSections: rebuildViewSidebarSection(snapshot.sidebarSections, snapshot.views, resolvedAllNotes),
+    sidebarSections: buildMobileSidebarSections({
+      notes: resolvedAllNotes,
+      previousSections: snapshot.sidebarSections,
+      views: snapshot.views,
+    }),
   }
 }
 
@@ -434,7 +436,11 @@ function createMobileView(
   const views = orderedMobileSavedViews([...existingViews, view])
   const nextSnapshot = {
     ...snapshot,
-    sidebarSections: rebuildViewSidebarSection(snapshot.sidebarSections, views, workspaceNotePool(snapshot)),
+    sidebarSections: buildMobileSidebarSections({
+      notes: workspaceNotePool(snapshot),
+      previousSections: snapshot.sidebarSections,
+      views,
+    }),
     views,
   }
 
@@ -497,64 +503,13 @@ function snapshotWithViews(
 ): MobileWorkspaceSnapshot {
   return {
     ...snapshot,
-    sidebarSections: rebuildViewSidebarSection(snapshot.sidebarSections, views, workspaceNotePool(snapshot)),
+    sidebarSections: buildMobileSidebarSections({
+      notes: workspaceNotePool(snapshot),
+      previousSections: snapshot.sidebarSections,
+      views,
+    }),
     views,
   }
-}
-
-function rebuildViewSidebarSection(
-  sections: MobileSidebarSection[],
-  views: MobileSavedView[] | undefined,
-  notes: MobileNote[],
-): MobileSidebarSection[] {
-  if (!views?.length) return sections.filter((section) => section.id !== 'views')
-
-  const nextViewsSection = viewsSidebarSection(views, notes)
-  const existingIndex = sections.findIndex((section) => section.id === 'views')
-  if (existingIndex !== -1) return sections.map((section) => section.id === 'views' ? nextViewsSection : section)
-
-  const insertIndex = sections.findIndex((section) => section.id === 'types')
-  if (insertIndex === -1) return [...sections, nextViewsSection]
-
-  return [
-    ...sections.slice(0, insertIndex),
-    nextViewsSection,
-    ...sections.slice(insertIndex),
-  ]
-}
-
-function viewsSidebarSection(views: MobileSavedView[], notes: MobileNote[]): MobileSidebarSection {
-  return {
-    id: 'views',
-    items: views.map((view) => ({
-      count: countText(evaluateMobileSavedView(view, notes).length),
-      icon: 'view',
-      id: view.id,
-      label: view.definition.name,
-      tone: toneFromViewColor(view.definition.color),
-      viewId: view.id,
-    })),
-    label: 'Views',
-  }
-}
-
-function toneFromViewColor(color: string | null): MobileTone {
-  if (isMobileTone(color)) return color
-  return 'gray'
-}
-
-function isMobileTone(value: string | null): value is MobileTone {
-  return value === 'blue'
-    || value === 'gray'
-    || value === 'green'
-    || value === 'orange'
-    || value === 'purple'
-    || value === 'red'
-    || value === 'yellow'
-}
-
-function countText(count: number): string {
-  return count.toLocaleString()
 }
 
 function saveNoteWrites(
