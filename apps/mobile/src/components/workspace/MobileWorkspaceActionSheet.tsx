@@ -26,11 +26,14 @@ type MobileWorkspaceActionSheetProps = {
   createTitle: string
   notes: MobileNote[]
   onClose: () => void
+  onCreateNote: () => void
   onCreateTitleChange: (value: string) => void
   onPropertyNameChange: (value: string) => void
   onPropertyValueChange: (value: string) => void
   onRelationshipNameChange: (value: string) => void
   onRelationshipNoteTitleChange: (value: string) => void
+  onSaveProperty: () => void
+  onSaveRelationship: () => void
   onSearchQueryChange: (value: string) => void
   onSelectNote: (noteId: string) => void
   propertyName: string
@@ -46,11 +49,14 @@ export function MobileWorkspaceActionSheet({
   createTitle,
   notes,
   onClose,
+  onCreateNote,
   onCreateTitleChange,
   onPropertyNameChange,
   onPropertyValueChange,
   onRelationshipNameChange,
   onRelationshipNoteTitleChange,
+  onSaveProperty,
+  onSaveRelationship,
   onSearchQueryChange,
   onSelectNote,
   propertyName,
@@ -74,11 +80,14 @@ export function MobileWorkspaceActionSheet({
           createTitle={createTitle}
           notes={notes}
           onClose={onClose}
+          onCreateNote={onCreateNote}
           onCreateTitleChange={onCreateTitleChange}
           onPropertyNameChange={onPropertyNameChange}
           onPropertyValueChange={onPropertyValueChange}
           onRelationshipNameChange={onRelationshipNameChange}
           onRelationshipNoteTitleChange={onRelationshipNoteTitleChange}
+          onSaveProperty={onSaveProperty}
+          onSaveRelationship={onSaveRelationship}
           onSearchQueryChange={onSearchQueryChange}
           onSelectNote={onSelectNote}
           propertyName={propertyName}
@@ -131,6 +140,7 @@ function SearchContent({
             trailing={<MobileTypeIcon size={16} tone={note.typeTone} type={note.type} />}
             onPress={() => {
               onSelectNote(note.id)
+              onSearchQueryChange('')
               onClose()
             }}
           />
@@ -143,6 +153,7 @@ function SearchContent({
 function CreateNoteContent({
   createTitle,
   onClose,
+  onCreateNote,
   onCreateTitleChange,
 }: MobileWorkspaceActionSheetProps) {
   return (
@@ -157,7 +168,7 @@ function CreateNoteContent({
       />
       <SheetFooter>
         <MobileButton label={mobileText('common.cancel')} variant="ghost" onPress={onClose} />
-        <MobileButton disabled={createTitle.trim().length === 0} label={mobileText('common.create')} variant="primary" onPress={onClose} />
+        <MobileButton disabled={createTitle.trim().length === 0} label={mobileText('common.create')} variant="primary" onPress={onCreateNote} />
       </SheetFooter>
     </View>
   )
@@ -167,6 +178,7 @@ function AddPropertyContent({
   onClose,
   onPropertyNameChange,
   onPropertyValueChange,
+  onSaveProperty,
   propertyName,
   propertyValue,
 }: MobileWorkspaceActionSheetProps) {
@@ -189,19 +201,23 @@ function AddPropertyContent({
       />
       <SheetFooter>
         <MobileButton label={mobileText('common.cancel')} variant="ghost" onPress={onClose} />
-        <MobileButton disabled={propertyName.trim().length === 0} label={mobileText('common.save')} variant="primary" onPress={onClose} />
+        <MobileButton disabled={propertyName.trim().length === 0} label={mobileText('common.save')} variant="primary" onPress={onSaveProperty} />
       </SheetFooter>
     </View>
   )
 }
 
 function AddRelationshipContent({
+  notes,
   onClose,
   onRelationshipNameChange,
   onRelationshipNoteTitleChange,
+  onSaveRelationship,
   relationshipName,
   relationshipNoteTitle,
 }: MobileWorkspaceActionSheetProps) {
+  const suggestions = relationshipSuggestions(notes, relationshipNoteTitle)
+
   return (
     <View style={styles.content}>
       <MobileTextInput
@@ -219,9 +235,27 @@ function AddRelationshipContent({
         value={relationshipNoteTitle}
         onChangeText={onRelationshipNoteTitleChange}
       />
+      {suggestions.length > 0 ? (
+        <View style={styles.suggestionList} testID="workspace-relationship-note-suggestions">
+          {suggestions.map((note) => (
+            <Pressable
+              accessibilityLabel={note.title}
+              accessibilityRole="button"
+              key={note.id}
+              style={({ pressed }) => [styles.suggestionRow, pressed ? styles.suggestionRowPressed : null]}
+              testID={`workspace-relationship-note-suggestion-${note.id}`}
+              onPress={() => onRelationshipNoteTitleChange(note.title)}
+            >
+              <MobileTypeIcon size={16} tone={note.typeTone} type={note.type} />
+              <Text numberOfLines={1} style={styles.suggestionTitle}>{note.title}</Text>
+              <MobileChip label={note.type} tone={chipTone(note.typeTone)} />
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
       <SheetFooter>
         <MobileButton label={mobileText('common.cancel')} variant="ghost" onPress={onClose} />
-        <MobileButton disabled={relationshipName.trim().length === 0 || relationshipNoteTitle.trim().length === 0} label={mobileText('inspector.relationship.add')} variant="primary" onPress={onClose} />
+        <MobileButton disabled={relationshipName.trim().length === 0 || relationshipNoteTitle.trim().length === 0} label={mobileText('inspector.relationship.add')} variant="primary" onPress={onSaveRelationship} />
       </SheetFooter>
     </View>
   )
@@ -294,6 +328,20 @@ function NoteRowChips({ note }: { note: MobileNote }) {
   )
 }
 
+function relationshipSuggestions(notes: MobileNote[], query: string) {
+  const normalized = query.trim().toLowerCase()
+  if (!normalized) return []
+
+  return notes
+    .filter((note) => !note.archived && [
+      note.title,
+      note.type,
+      note.path ?? '',
+      note.tags.join(' '),
+    ].join(' ').toLowerCase().includes(normalized))
+    .slice(0, 6)
+}
+
 function actionTitle(action: MobileWorkspaceAction) {
   if (action === 'search') return mobileText('noteList.searchAction')
   if (action === 'createNote') return mobileText('command.note.newNote')
@@ -360,6 +408,28 @@ const styles = StyleSheet.create({
   resultList: {
     borderColor: mobileColors.border,
     borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  suggestionList: {
+    gap: mobileSpace.xs,
+  },
+  suggestionRow: {
+    minHeight: 34,
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: mobileSpace.sm,
+    borderRadius: 6,
+    paddingHorizontal: mobileSpace.sm,
+    paddingVertical: mobileSpace.xs,
+  },
+  suggestionRowPressed: {
+    backgroundColor: mobileColors.graySoft,
+  },
+  suggestionTitle: {
+    minWidth: 0,
+    flex: 1,
+    color: mobileColors.text,
+    fontSize: mobileType.body,
+    fontWeight: '500',
   },
   sheet: {
     maxHeight: 620,

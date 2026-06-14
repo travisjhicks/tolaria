@@ -74,24 +74,25 @@ Current primitives:
 | `MobileChip` | Type, tag, and relationship labels |
 | `MobilePropertyRow` | Properties panel label/value rows |
 
-Read-only workspace surfaces now sit one level above those primitives:
+Workspace surfaces now sit one level above those primitives:
 
 | Surface | Purpose |
 |---|---|
-| `MobileWorkspaceSnapshot` | Production-shaped read-only data contract for mobile workspace UI |
-| `TabletWorkspace` | Tablet shell that owns selected-note state and panel layout |
+| `MobileWorkspaceSnapshot` | Production-shaped data contract for mobile workspace UI |
+| `mobileWorkspaceEditing.ts` | Pure in-process reducer for note creation, markdown body/title edits, frontmatter scalar properties, favorite/archive flags, relationship add/remove, and wikilink suggestions |
+| `TabletWorkspace` | Tablet shell that owns selected-note state, panel layout, action-sheet forms, and editable snapshot state |
 | `MobileWorkspaceSidebar` | Sidebar groups, counts, and folder tree |
 | `MobileNoteListPanel` | Note-list toolbar, rows, chips, and empty state |
-| `MobileWorkspaceActionSheet` | Read-only search, create, property, relationship, and more-action sheets |
-| `TabletEditorPanel` | Read-only editor rendering for title, markdown blocks, quotes, and tables |
-| `MobilePropertiesPanel` | Read-only scalar properties, tags, and typed relationships |
+| `MobileWorkspaceActionSheet` | Search, create, property, relationship, and more-action sheets |
+| `TabletEditorPanel` | Editor rendering plus body-only markdown editing with wikilink suggestions |
+| `MobilePropertiesPanel` | Scalar properties, tags, and typed relationship display/removal |
 | `MobileSyncStatusBar` | Bottom sync/status footer |
 
 Mobile UI copy should reuse the localization catalog in `src/lib/locales/en.json` whenever the desktop concept already exists. New mobile-specific copy must be added to that catalog and translated through the normal Lara workflow.
 
-The mobile UI lab uses a fixture-backed read-only repository until a surface has passed visual and interaction QA. The same repository boundary can read an injected host snapshot from `tolaria:mobile-workspace-snapshot` for local large-vault QA. `localVaultSnapshot.ts` owns the pure read-only conversion from scanned Markdown files into `MobileWorkspaceSnapshot`, including type-color inheritance, relationship value resolution, markdown block previews, sidebar counts, and a capped visible note list. Vault storage, editor, Git, and sync mutation logic should be wired only after the corresponding native shell has a stable fixture state and screenshot target.
+The mobile UI lab uses a fixture-backed repository until a surface has passed visual and interaction QA. The same repository boundary can read an injected host snapshot from `tolaria:mobile-workspace-snapshot` for local large-vault QA. `localVaultSnapshot.ts` owns the pure read-only conversion from scanned Markdown files into `MobileWorkspaceSnapshot`, including type-color inheritance, relationship value resolution, markdown block previews, sidebar counts, custom scalar properties, raw note content, and a capped visible note list. Vault storage, Git, and sync mutation logic should be wired only after the corresponding native shell has a stable fixture state and screenshot target.
 
-The tablet workspace is allowed to own temporary read-only interaction state: selected sidebar scope, selected note, search query, action-sheet form values, and local favorite toggles. Those states prove navigation and touch flows without writing to disk. Persistence must enter later through the action boundaries (`MobileWorkspaceActionSheet`, note selection, sidebar navigation), not by embedding vault writes into visual components.
+The tablet workspace is allowed to own temporary interaction state: selected sidebar scope, selected note, search query, action-sheet form values, and an editable snapshot derived by `mobileWorkspaceEditing.ts`. Those states prove navigation and touch flows without writing to disk. Persistence must enter later through a repository boundary that writes reducer results to the filesystem before updating the committed snapshot, not by embedding vault writes into visual components.
 
 `apps/mobile/docs/ui-parity-inventory.md` is the working checklist for mobile surface parity. `pnpm mobile:qa:screenshots` is the fast visual QA command for this branch: it exports the Expo web bundle, serves it locally, and captures tablet/phone screenshots for the UI lab without running the full desktop/native Tolaria suite. The harness uses `$HOME/Laputa` as the default representative large-vault path when available; set `MOBILE_QA_VAULT_PATH` to override it. The local-vault pass scans that vault read-only, adds local-vault screenshots, and checks snapshot load/render/navigation budgets without committing vault content.
 

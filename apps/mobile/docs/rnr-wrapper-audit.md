@@ -15,7 +15,7 @@ This audit tracks the current Nativewind / React Native Reusables primitive boun
 | `ui/MobilePanel.tsx` | OK | Panel/toolbar chrome intentionally uses StyleSheet tokens rather than generic RNR classes because these surfaces must match desktop shell borders and spacing. |
 | `ui/MobileListRow.tsx` | OK | The note-list row is a Tolaria product component, not a generic primitive. It uses desktop note-row hierarchy directly. |
 | `ui/MobilePropertyRow.tsx` | OK | Property rows are product-specific and intentionally dense; labels/values follow desktop `propertyPanelLayout`. |
-| `components/workspace/MobileWorkspaceActionSheet.tsx` | OK | Action sheets compose Tolaria wrappers for read-only search/create/property/relationship/more flows. They intentionally avoid persistence until the visual and navigation shell is stable. |
+| `components/workspace/MobileWorkspaceActionSheet.tsx` | OK | Action sheets compose Tolaria wrappers for search/create/property/relationship/more flows. They target the mobile editable snapshot reducer and intentionally keep disk persistence outside the visual components. |
 
 ## Rules
 

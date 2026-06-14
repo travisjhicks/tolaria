@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Dimensions, Platform, StyleSheet, useWindowDimensions, View } from 'react-native'
 import { MobileNoteListPanel } from '../components/workspace/MobileNoteListPanel'
 import { MobilePropertiesPanel } from '../components/workspace/MobilePropertiesPanel'
@@ -6,13 +6,11 @@ import { MobileSyncStatusBar } from '../components/workspace/MobileSyncStatusBar
 import { MobileWorkspaceActionSheet, type MobileWorkspaceAction } from '../components/workspace/MobileWorkspaceActionSheet'
 import { MobileWorkspaceSidebar } from '../components/workspace/MobileWorkspaceSidebar'
 import type { MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
+import { applyMobileWorkspaceEdit, type MobileWorkspaceEdit } from '../workspace/mobileWorkspaceEditing'
 import { mobileColors } from '../ui/tokens'
 import { useHorizontalSwipe } from '../ui/useHorizontalSwipe'
 import { TabletEditorPanel } from './TabletEditorPanel'
-import {
-  snapshotWithFavoriteOverrides,
-  useTabletWorkspaceNavigation,
-} from './tabletWorkspaceNavigation'
+import { useTabletWorkspaceNavigation } from './tabletWorkspaceNavigation'
 import type { TabletPanel, TabletReadOnlyForm, TabletWorkspaceChromeProps } from './tabletWorkspaceTypes'
 
 const emptyReadOnlyForm: TabletReadOnlyForm = {
@@ -31,11 +29,10 @@ export function TabletWorkspace({
   snapshot: MobileWorkspaceSnapshot
 }) {
   const { height, width } = useWindowDimensions()
-  const [favoriteOverrides, setFavoriteOverrides] = useState<Record<string, boolean>>({})
+  const [workspaceSnapshot, setWorkspaceSnapshot] = useState(snapshot)
   const [openAction, setOpenAction] = useState<MobileWorkspaceAction | null>(null)
   const [readOnlyForm, setReadOnlyForm] = useState<TabletReadOnlyForm>(emptyReadOnlyForm)
   const [searchQuery, setSearchQuery] = useState('')
-  const workspaceSnapshot = useMemo(() => snapshotWithFavoriteOverrides(snapshot, favoriteOverrides), [favoriteOverrides, snapshot])
   const {
     activeFolderId,
     activeItemId,
@@ -58,13 +55,45 @@ export function TabletWorkspace({
   const updateReadOnlyForm = useCallback(<Key extends keyof TabletReadOnlyForm,>(key: Key, value: TabletReadOnlyForm[Key]) => {
     setReadOnlyForm((current) => ({ ...current, [key]: value }))
   }, [])
+  const resetForm = useCallback(() => setReadOnlyForm(emptyReadOnlyForm), [])
+  const closeAction = useCallback(() => {
+    setOpenAction(null)
+    resetForm()
+  }, [resetForm])
+  const applyEdit = useCallback((edit: MobileWorkspaceEdit) => {
+    setWorkspaceSnapshot((current) => {
+      const next = applyMobileWorkspaceEdit(current, edit)
+      if (next.selectedNoteId) setSelectedNoteId(next.selectedNoteId)
+      return next
+    })
+  }, [setSelectedNoteId])
   const toggleFavorite = useCallback(() => {
+    if (selectedNote) applyEdit({ noteId: selectedNote.id, type: 'toggleFavorite' })
+  }, [applyEdit, selectedNote])
+  const createNote = useCallback(() => {
+    applyEdit({ title: readOnlyForm.createTitle, type: 'createNote' })
+    closeAction()
+  }, [applyEdit, closeAction, readOnlyForm.createTitle])
+  const saveProperty = useCallback(() => {
     if (!selectedNote) return
-    setFavoriteOverrides((current) => ({
-      ...current,
-      [selectedNote.id]: !(current[selectedNote.id] ?? selectedNote.favorite),
-    }))
-  }, [selectedNote])
+    applyEdit({
+      key: readOnlyForm.propertyName,
+      noteId: selectedNote.id,
+      type: 'updateProperty',
+      value: readOnlyForm.propertyValue,
+    })
+    closeAction()
+  }, [applyEdit, closeAction, readOnlyForm.propertyName, readOnlyForm.propertyValue, selectedNote])
+  const saveRelationship = useCallback(() => {
+    if (!selectedNote) return
+    applyEdit({
+      key: readOnlyForm.relationshipName,
+      noteId: selectedNote.id,
+      targetTitle: readOnlyForm.relationshipNoteTitle,
+      type: 'addRelationship',
+    })
+    closeAction()
+  }, [applyEdit, closeAction, readOnlyForm.relationshipName, readOnlyForm.relationshipNoteTitle, selectedNote])
 
   return (
     <View style={styles.shellRoot}>
@@ -87,13 +116,18 @@ export function TabletWorkspace({
         snapshot={workspaceSnapshot}
         onAddProperty={() => setOpenAction('addProperty')}
         onAddRelationship={() => setOpenAction('addRelationship')}
-        onCloseAction={() => setOpenAction(null)}
+        onCloseAction={closeAction}
+        onCreateNote={createNote}
         onCreateTitleChange={(value) => updateReadOnlyForm('createTitle', value)}
+        onDeleteProperty={(noteId, key) => applyEdit({ key, noteId, type: 'deleteProperty' })}
         onOpenCreateNote={() => setOpenAction('createNote')}
         onOpenMoreActions={() => setOpenAction('moreActions')}
         onOpenSearch={() => setOpenAction('search')}
         onPropertyNameChange={(value) => updateReadOnlyForm('propertyName', value)}
         onPropertyValueChange={(value) => updateReadOnlyForm('propertyValue', value)}
+        onRemoveRelationship={(noteId, key, ref) => applyEdit({ key, noteId, ref, type: 'removeRelationship' })}
+        onSaveProperty={saveProperty}
+        onSaveRelationship={saveRelationship}
         onRelationshipNameChange={(value) => updateReadOnlyForm('relationshipName', value)}
         onRelationshipNoteTitleChange={(value) => updateReadOnlyForm('relationshipNoteTitle', value)}
         onSearchQueryChange={setSearchQuery}
@@ -101,6 +135,9 @@ export function TabletWorkspace({
         onSelectNote={setSelectedNoteId}
         onSelectSidebarItem={selectSidebarItem}
         onToggleFavorite={toggleFavorite}
+        onUpdateNoteContent={(noteId, content) => applyEdit({ content, noteId, type: 'updateNoteContent' })}
+        onUpdateNoteTitle={(noteId, title) => applyEdit({ noteId, title, type: 'renameNoteTitle' })}
+        onUpdateProperty={(noteId, key, value) => applyEdit({ key, noteId, type: 'updateProperty', value })}
       />
       <MobileSyncStatusBar sync={snapshot.sync} />
     </View>
@@ -122,7 +159,9 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
     onAddProperty,
     onAddRelationship,
     onCloseAction,
+    onCreateNote,
     onCreateTitleChange,
+    onDeleteProperty,
     onOpenCreateNote,
     onOpenMoreActions,
     onOpenSearch,
@@ -130,11 +169,17 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
     onPropertyValueChange,
     onRelationshipNameChange,
     onRelationshipNoteTitleChange,
+    onRemoveRelationship,
+    onSaveProperty,
+    onSaveRelationship,
     onSearchQueryChange,
     onSelectFolder,
     onSelectNote,
     onSelectSidebarItem,
     onToggleFavorite,
+    onUpdateNoteContent,
+    onUpdateNoteTitle,
+    onUpdateProperty,
     openAction,
     readOnlyForm,
     searchQuery,
@@ -179,12 +224,23 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
         bullets={editorBullets}
         compact={compactTablet}
         note={selectedNote}
+        notes={snapshot.notes}
         onOpenMoreActions={onOpenMoreActions}
         onToggleFavorite={onToggleFavorite}
+        onUpdateContent={onUpdateNoteContent}
+        onUpdateTitle={onUpdateNoteTitle}
       />
       {gestures.propertiesVisible ? (
         <View {...gestures.propertiesSwipe} style={styles.panelHost}>
-          <MobilePropertiesPanel compact={compactTablet} note={selectedNote} onAddProperty={onAddProperty} onAddRelationship={onAddRelationship} />
+          <MobilePropertiesPanel
+            compact={compactTablet}
+            note={selectedNote}
+            onAddProperty={onAddProperty}
+            onAddRelationship={onAddRelationship}
+            onDeleteProperty={onDeleteProperty}
+            onRemoveRelationship={onRemoveRelationship}
+            onUpdateProperty={onUpdateProperty}
+          />
         </View>
       ) : <SwipeRail edge="right" swipeHandlers={gestures.propertiesRevealSwipe} />}
       {openAction ? (
@@ -199,11 +255,14 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
           searchQuery={searchQuery}
           selectedNote={selectedNote}
           onClose={onCloseAction}
+          onCreateNote={onCreateNote}
           onCreateTitleChange={onCreateTitleChange}
           onPropertyNameChange={onPropertyNameChange}
           onPropertyValueChange={onPropertyValueChange}
           onRelationshipNameChange={onRelationshipNameChange}
           onRelationshipNoteTitleChange={onRelationshipNoteTitleChange}
+          onSaveProperty={onSaveProperty}
+          onSaveRelationship={onSaveRelationship}
           onSearchQueryChange={onSearchQueryChange}
           onSelectNote={onSelectNote}
         />

@@ -1,6 +1,7 @@
 import {
   frontmatterFlag,
   frontmatterList,
+  frontmatterProperties,
   frontmatterRelationships,
   frontmatterScalar,
   parseLocalVaultDocument,
@@ -13,6 +14,8 @@ import {
 } from './localVaultMarkdown'
 import type {
   MobileNote,
+  MobileProperty,
+  MobilePropertyValue,
   MobileRelationship,
   MobileRelationshipKind,
   MobileRelationshipValue,
@@ -60,6 +63,8 @@ type LocalVaultEntry = {
   modifiedAt: TimestampMs | null
   organized: boolean
   path: RelativeVaultPath
+  properties: MobileProperty[]
+  rawContent: string
   relationships: Record<RelationshipLabel, WikilinkTarget[]>
   status: string
   tags: string[]
@@ -135,6 +140,8 @@ function parseLocalVaultEntry(file: LocalVaultFile): LocalVaultEntry {
     modifiedAt: file.modifiedAt,
     organized: frontmatterFlag(document.frontmatter, ['_organized']),
     path: file.relativePath,
+    properties: mobileProperties(frontmatterProperties(document.frontmatter)),
+    rawContent: file.content,
     relationships: frontmatterRelationships(document.frontmatter),
     status: frontmatterScalar(document.frontmatter, ['Status', 'status']) ?? '',
     tags: frontmatterList(document.frontmatter, ['tags', 'Tags']).slice(0, 8),
@@ -171,6 +178,8 @@ function localEntryToMobileNote(
     archived: entry.archived,
     organized: entry.organized,
     path: entry.path,
+    properties: entry.properties,
+    rawContent: entry.rawContent,
     relationships: mobileRelationships(entry.relationships, resolveRelationship),
     snippet: localVaultSnippet(entry.body),
     status: entry.status,
@@ -307,6 +316,7 @@ function mobileRelationships(
   resolveRelationship: RelationshipResolver,
 ): MobileRelationship[] {
   return Object.entries(relationships).map(([label, values]) => ({
+    key: label,
     kind: relationshipKind(label),
     label: relationshipLabel(label),
     values: values.map((value) => relationshipValue(value, resolveRelationship)),
@@ -330,10 +340,26 @@ function relationshipValue(rawValue: WikilinkTarget, resolveRelationship: Relati
   const entry = resolveRelationship(target)
 
   return {
+    id: entry?.id,
+    ref: rawValue,
     title: entry?.title ?? target,
     type: entry?.type ?? 'Note',
     typeTone: entry?.typeTone ?? 'gray',
   }
+}
+
+function mobileProperties(properties: Record<string, unknown>): MobileProperty[] {
+  return Object.entries(properties).map(([key, value]) => ({
+    key,
+    label: humanizeRelationshipKey(key),
+    value: mobilePropertyValue(value),
+  }))
+}
+
+function mobilePropertyValue(value: unknown): MobilePropertyValue {
+  if (Array.isArray(value)) return value.filter((item): item is string => typeof item === 'string')
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value
+  return ''
 }
 
 function relationshipResolver(entries: LocalVaultEntry[]): RelationshipResolver {

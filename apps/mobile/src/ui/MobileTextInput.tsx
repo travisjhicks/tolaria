@@ -6,6 +6,7 @@ import { mobileColors, mobileRadius, mobileSpace, mobileType } from './tokens'
 
 export function MobileTextInput({
   label,
+  style,
   testID,
   ...props
 }: TextInputProps & {
@@ -19,7 +20,7 @@ export function MobileTextInput({
         autoCapitalize="none"
         clearButtonMode="while-editing"
         placeholderTextColor={mobileColors.textFaint}
-        style={styles.input}
+        style={[styles.input, style]}
         testID={testID}
         {...props}
       />

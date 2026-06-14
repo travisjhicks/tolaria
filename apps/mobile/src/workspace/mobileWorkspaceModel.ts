@@ -12,6 +12,8 @@ export type MobileNote = {
   modified: string
   organized?: boolean
   path?: string
+  properties?: MobileProperty[]
+  rawContent?: string
   relationships: MobileRelationship[]
   status: string
   snippet: string
@@ -26,14 +28,25 @@ export type MobileRelationshipKind = 'belongsTo' | 'has' | 'relatedTo' | 'custom
 
 export type MobileRelationship = {
   kind: MobileRelationshipKind
+  key?: string
   label?: string
   values: MobileRelationshipValue[]
 }
 
 export type MobileRelationshipValue = {
+  id?: string
+  ref?: string
   title: string
   type: string
   typeTone: MobileTone
+}
+
+export type MobilePropertyValue = string | number | boolean | string[]
+
+export type MobileProperty = {
+  key: string
+  label: string
+  value: MobilePropertyValue
 }
 
 export type MobileSidebarIcon =

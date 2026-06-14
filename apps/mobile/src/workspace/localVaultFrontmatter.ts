@@ -76,6 +76,19 @@ export function frontmatterRelationships(
   return relationships
 }
 
+export function frontmatterProperties(
+  frontmatter: LocalVaultFrontmatter,
+): Record<string, LocalVaultFrontmatterValue> {
+  const properties: Record<string, LocalVaultFrontmatterValue> = {}
+
+  for (const [key, value] of Object.entries(frontmatter)) {
+    if (reservedFrontmatterKeys.has(key) || wikilinkValues(value).length > 0) continue
+    properties[key] = value
+  }
+
+  return properties
+}
+
 function parseFrontmatterLines(lines: FrontmatterLine[]): LocalVaultFrontmatter {
   const frontmatter: LocalVaultFrontmatter = {}
   let listKey: string | null = null
@@ -213,6 +226,8 @@ const reservedFrontmatterKeys = new Set([
   'template',
   'title',
   'type',
+  'Tags',
+  'tags',
   'view',
   'visible',
   'width',

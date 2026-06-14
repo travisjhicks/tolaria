@@ -6,6 +6,7 @@ import type {
 import type {
   MobileEditorBlock,
   MobileNote,
+  MobilePropertyValue,
   MobileWorkspaceSnapshot,
 } from '../workspace/mobileWorkspaceModel'
 import type {
@@ -40,10 +41,18 @@ export type TabletWorkspaceChromeProps = {
   onAddProperty: () => void
   onAddRelationship: () => void
   onCloseAction: () => void
+  onCreateNote: () => void
   onCreateTitleChange: (value: ReadOnlyFormValue) => void
+  onDeleteProperty: (noteId: NoteId, key: string) => void
   onOpenCreateNote: () => void
   onOpenMoreActions: () => void
   onOpenSearch: () => void
+  onRemoveRelationship: (noteId: NoteId, key: string, ref: string) => void
+  onSaveProperty: () => void
+  onSaveRelationship: () => void
+  onUpdateNoteContent: (noteId: NoteId, content: string) => void
+  onUpdateNoteTitle: (noteId: NoteId, title: string) => void
+  onUpdateProperty: (noteId: NoteId, key: string, value: MobilePropertyValue) => void
   onPropertyNameChange: (value: ReadOnlyFormValue) => void
   onPropertyValueChange: (value: ReadOnlyFormValue) => void
   onRelationshipNameChange: (value: ReadOnlyFormValue) => void

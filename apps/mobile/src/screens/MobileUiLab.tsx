@@ -8,16 +8,20 @@ export function MobileUiLab() {
   const { width } = useWindowDimensions()
   const isWideEnoughForTablet = width >= 900
   const searchParams = useMobileUiSearchParams()
+  const scenarioId = currentScenarioId(searchParams)
+  const source = currentSnapshotSource(searchParams)
+  const layoutProbe = layoutProbeEnabled(searchParams)
   const snapshot = readOnlyWorkspaceRepository.readSnapshot({
-    scenarioId: currentScenarioId(searchParams),
-    source: currentSnapshotSource(searchParams),
+    scenarioId,
+    source,
   })
+  const workspaceKey = mobileWorkspaceKey({ layoutProbe, scenarioId, snapshot, source })
 
   if (isWideEnoughForTablet) {
-    return <TabletWorkspace layoutProbe={layoutProbeEnabled(searchParams)} snapshot={snapshot} />
+    return <TabletWorkspace key={workspaceKey} layoutProbe={layoutProbe} snapshot={snapshot} />
   }
 
-  return <PhoneWorkspaceMock initialState={currentPhoneState(searchParams)} snapshot={snapshot} />
+  return <PhoneWorkspaceMock key={workspaceKey} initialState={currentPhoneState(searchParams)} snapshot={snapshot} />
 }
 
 function currentScenarioId(searchParams: URLSearchParams) {
@@ -38,6 +42,27 @@ function currentSnapshotSource(searchParams: URLSearchParams) {
 
 function layoutProbeEnabled(searchParams: URLSearchParams) {
   return searchParams.get('layoutProbe') === '1' || envFlagEnabled('EXPO_PUBLIC_TOLARIA_LAYOUT_PROBE')
+}
+
+function mobileWorkspaceKey({
+  layoutProbe,
+  scenarioId,
+  snapshot,
+  source,
+}: {
+  layoutProbe: boolean
+  scenarioId: string | null
+  snapshot: ReturnType<typeof readOnlyWorkspaceRepository.readSnapshot>
+  source: ReturnType<typeof currentSnapshotSource>
+}) {
+  return [
+    source,
+    scenarioId ?? 'default',
+    layoutProbe ? 'probe' : 'view',
+    snapshot.source?.kind ?? 'fixture',
+    snapshot.source?.totalNotes ?? snapshot.notes.length,
+    snapshot.notes[0]?.id ?? 'empty',
+  ].join(':')
 }
 
 function useMobileUiSearchParams() {

@@ -8,7 +8,7 @@ import { MobilePanel, MobileToolbar, MobileToolbarTitle } from '../../ui/MobileP
 import { MobilePropertyRow } from '../../ui/MobilePropertyRow'
 import { desktopPanelParity, desktopPropertyParity, desktopRelationshipParity } from '../../ui/desktopParity'
 import { mobileColors, mobileRadius, mobileSpace, mobileType } from '../../ui/tokens'
-import type { MobileNote, MobileRelationship, MobileRelationshipValue, MobileTone } from '../../workspace/mobileWorkspaceModel'
+import type { MobileNote, MobileProperty, MobilePropertyValue, MobileRelationship, MobileTone } from '../../workspace/mobileWorkspaceModel'
 import { MobileTypeIcon } from './MobileWorkspaceIcons'
 import { chipTone, noteTypeColor, noteTypeSoftColor, statusTone, tagTone } from './mobileWorkspaceTone'
 
@@ -17,11 +17,17 @@ export function MobilePropertiesPanel({
   note,
   onAddProperty,
   onAddRelationship,
+  onDeleteProperty,
+  onRemoveRelationship,
+  onUpdateProperty,
 }: {
   compact: boolean
   note: MobileNote | null
   onAddProperty: () => void
   onAddRelationship: () => void
+  onDeleteProperty: (noteId: string, key: string) => void
+  onRemoveRelationship: (noteId: string, key: string, ref: string) => void
+  onUpdateProperty: (noteId: string, key: string, value: MobilePropertyValue) => void
 }) {
   return (
     <MobilePanel style={[panelStyles.panel, compact ? panelStyles.panelCompact : null]} testID="properties-panel">
@@ -29,7 +35,16 @@ export function MobilePropertiesPanel({
         <MobileToolbarTitle testID="properties-toolbar-title" title={mobileCopy.properties} variant="inspector" />
       </MobileToolbar>
       <ScrollView contentContainerStyle={panelStyles.content}>
-        {note ? <NoteProperties note={note} onAddProperty={onAddProperty} onAddRelationship={onAddRelationship} /> : <PropertiesEmptyState />}
+        {note ? (
+          <NoteProperties
+            note={note}
+            onAddProperty={onAddProperty}
+            onAddRelationship={onAddRelationship}
+            onDeleteProperty={onDeleteProperty}
+            onRemoveRelationship={onRemoveRelationship}
+            onUpdateProperty={onUpdateProperty}
+          />
+        ) : <PropertiesEmptyState />}
       </ScrollView>
     </MobilePanel>
   )
@@ -39,10 +54,16 @@ function NoteProperties({
   note,
   onAddProperty,
   onAddRelationship,
+  onDeleteProperty,
+  onRemoveRelationship,
+  onUpdateProperty,
 }: {
   note: MobileNote
   onAddProperty: () => void
   onAddRelationship: () => void
+  onDeleteProperty: (noteId: string, key: string) => void
+  onRemoveRelationship: (noteId: string, key: string, ref: string) => void
+  onUpdateProperty: (noteId: string, key: string, value: MobilePropertyValue) => void
 }) {
   return (
     <>
@@ -55,18 +76,69 @@ function NoteProperties({
         <TagWrap labels={note.tags} />
       </PropertySection>
       <MobilePropertyRow label="Links" testID="property-row-links" value={`${note.links}`} />
+      {note.properties?.map((property) => (
+        <EditablePropertyRow
+          key={property.key}
+          noteId={note.id}
+          property={property}
+          onDeleteProperty={onDeleteProperty}
+          onUpdateProperty={onUpdateProperty}
+        />
+      ))}
       {note.relationships.map((relationship) => (
         <PropertySection
           key={`${relationship.kind}-${relationship.label ?? relationship.values.map((value) => value.title).join('-')}`}
           label={relationshipHeading(relationship)}
           testID={`property-section-${relationship.kind}`}
         >
-          <RelationshipValues values={relationship.values} />
+          <RelationshipValues
+            noteId={note.id}
+            relationship={relationship}
+            onRemoveRelationship={onRemoveRelationship}
+          />
         </PropertySection>
       ))}
       <PropertyActionRow label={mobileText('inspector.properties.addProperty')} testID="property-action-add-property" onPress={onAddProperty} />
       <PropertyActionRow label={mobileText('inspector.relationship.addRelationship')} testID="property-action-add-relationship" onPress={onAddRelationship} />
     </>
+  )
+}
+
+function EditablePropertyRow({
+  noteId,
+  onDeleteProperty,
+  onUpdateProperty,
+  property,
+}: {
+  noteId: string
+  onDeleteProperty: (noteId: string, key: string) => void
+  onUpdateProperty: (noteId: string, key: string, value: MobilePropertyValue) => void
+  property: MobileProperty
+}) {
+  return (
+    <MobilePropertyRow
+      label={property.label}
+      testID={`property-row-${testIdSegment(property.key)}`}
+      value={(
+        <Pressable
+          accessibilityLabel={`${property.label}: ${propertyValueText(property.value)}`}
+          accessibilityRole="button"
+          style={({ pressed }) => [propertyStyles.editableValue, pressed ? propertyStyles.editableValuePressed : null]}
+          onLongPress={() => onDeleteProperty(noteId, property.key)}
+          onPress={() => onUpdateProperty(noteId, property.key, property.value)}
+        >
+          <Text numberOfLines={1} style={propertyStyles.editableText}>{propertyValueText(property.value)}</Text>
+          <Pressable
+            accessibilityLabel={mobileText('inspector.properties.deleteProperty')}
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={() => onDeleteProperty(noteId, property.key)}
+          >
+            <X color={mobileColors.textMuted} size={desktopRelationshipParity.removeIconSize} weight="bold" />
+          </Pressable>
+        </Pressable>
+      )}
+    />
   )
 }
 
@@ -120,16 +192,32 @@ function PropertyActionRow({
   )
 }
 
-function RelationshipValues({ values }: { values: MobileRelationshipValue[] }) {
+function RelationshipValues({
+  noteId,
+  onRemoveRelationship,
+  relationship,
+}: {
+  noteId: string
+  relationship: MobileRelationship
+  onRemoveRelationship: (noteId: string, key: string, ref: string) => void
+}) {
   return (
     <View style={relationshipStyles.values}>
-      {values.map((value) => (
+      {relationship.values.map((value) => (
         <View key={`${value.type}-${value.title}`} style={[relationshipStyles.row, relationshipRowTone(value.typeTone)]} testID={`relationship-row-${testIdSegment(value.title)}`}>
           <MobileTypeIcon size={desktopRelationshipParity.iconSize} tone={value.typeTone} type={value.type} />
           <Text numberOfLines={1} style={[relationshipStyles.text, relationshipTextTone(value.typeTone)]} testID={`relationship-row-${testIdSegment(value.title)}-text`}>{value.title}</Text>
-          <View style={relationshipStyles.remove}>
+          <Pressable
+            accessibilityLabel={mobileText('common.remove')}
+            accessibilityRole="button"
+            hitSlop={8}
+            style={relationshipStyles.remove}
+            onPress={() => {
+              if (relationship.key && value.ref) onRemoveRelationship(noteId, relationship.key, value.ref)
+            }}
+          >
             <X color={noteTypeColor(value.typeTone)} size={desktopRelationshipParity.removeIconSize} weight="bold" />
-          </View>
+          </Pressable>
         </View>
       ))}
     </View>
@@ -168,6 +256,12 @@ function relationshipTextTone(tone: MobileTone) {
 
 function testIdSegment(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+}
+
+function propertyValueText(value: MobilePropertyValue): string {
+  if (Array.isArray(value)) return value.join(', ')
+  if (typeof value === 'boolean') return value ? mobileText('inspector.properties.yes') : mobileText('inspector.properties.no')
+  return String(value)
 }
 
 const panelStyles = StyleSheet.create({
@@ -251,6 +345,24 @@ const propertyStyles = StyleSheet.create({
   },
   sectionValue: {
     minWidth: 0,
+  },
+  editableText: {
+    minWidth: 0,
+    flex: 1,
+    color: mobileColors.text,
+    fontSize: mobileType.caption,
+  },
+  editableValue: {
+    minWidth: 0,
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: mobileSpace.xs,
+    borderRadius: 4,
+    paddingHorizontal: mobileSpace.xs,
+    paddingVertical: 2,
+  },
+  editableValuePressed: {
+    backgroundColor: mobileColors.graySoft,
   },
   tagWrap: {
     alignItems: 'flex-start',

@@ -12,12 +12,17 @@ describe('buildLocalVaultWorkspaceSnapshot', () => {
     expect(snapshot.source).toMatchObject({ kind: 'localVault', label: 'Laputa', totalNotes: 2 })
     expect(snapshot.notes).toHaveLength(1)
     expect(snapshot.notes[0]).toMatchObject({
+      rawContent: tolariaMobileContent,
       title: 'Tolaria Mobile',
       type: 'Project',
       typeTone: 'red',
       workspace: 'Laputa',
     })
+    expect(snapshot.notes[0]?.relationships[0]).toMatchObject({
+      key: 'related_to',
+    })
     expect(snapshot.notes[0]?.relationships[0]?.values[0]).toMatchObject({
+      ref: '[[workflow-orchestration|Workflow Orchestration]]',
       title: 'Workflow Orchestration',
       type: 'Note',
     })
