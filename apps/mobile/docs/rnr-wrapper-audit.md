@@ -11,9 +11,11 @@ This audit tracks the current Nativewind / React Native Reusables primitive boun
 | `components/ui/text.tsx` | Fixed | Default `text-foreground text-base` now applies only when callers do not provide an explicit `style`. This prevents RNR defaults from overriding Tolaria StyleSheet typography in dense UI surfaces. |
 | `components/ui/button.tsx` | OK | Button owns structure, focus/press states, and text context. Tolaria wrappers (`MobileButton`, `MobileIconButton`) own product sizing, variant mapping, and visible label classes. |
 | `components/ui/badge.tsx` | OK | Badge owns the pill primitive. `MobileChip` supplies Tolaria tone classes and smaller desktop-aligned typography. |
+| `components/ui/input.tsx` | OK | Input owns the RNR-style text entry primitive. `MobileTextInput` supplies Tolaria label, border, and density values for command/property sheets. |
 | `ui/MobilePanel.tsx` | OK | Panel/toolbar chrome intentionally uses StyleSheet tokens rather than generic RNR classes because these surfaces must match desktop shell borders and spacing. |
 | `ui/MobileListRow.tsx` | OK | The note-list row is a Tolaria product component, not a generic primitive. It uses desktop note-row hierarchy directly. |
 | `ui/MobilePropertyRow.tsx` | OK | Property rows are product-specific and intentionally dense; labels/values follow desktop `propertyPanelLayout`. |
+| `components/workspace/MobileWorkspaceActionSheet.tsx` | OK | Action sheets compose Tolaria wrappers for read-only search/create/property/relationship/more flows. They intentionally avoid persistence until the visual and navigation shell is stable. |
 
 ## Rules
 

@@ -15,9 +15,13 @@ import { chipTone, noteTypeColor, noteTypeSoftColor, statusTone, tagTone } from 
 export function MobilePropertiesPanel({
   compact,
   note,
+  onAddProperty,
+  onAddRelationship,
 }: {
   compact: boolean
   note: MobileNote | null
+  onAddProperty: () => void
+  onAddRelationship: () => void
 }) {
   return (
     <MobilePanel style={[panelStyles.panel, compact ? panelStyles.panelCompact : null]} testID="properties-panel">
@@ -25,13 +29,21 @@ export function MobilePropertiesPanel({
         <MobileToolbarTitle testID="properties-toolbar-title" title={mobileCopy.properties} variant="inspector" />
       </MobileToolbar>
       <ScrollView contentContainerStyle={panelStyles.content}>
-        {note ? <NoteProperties note={note} /> : <PropertiesEmptyState />}
+        {note ? <NoteProperties note={note} onAddProperty={onAddProperty} onAddRelationship={onAddRelationship} /> : <PropertiesEmptyState />}
       </ScrollView>
     </MobilePanel>
   )
 }
 
-function NoteProperties({ note }: { note: MobileNote }) {
+function NoteProperties({
+  note,
+  onAddProperty,
+  onAddRelationship,
+}: {
+  note: MobileNote
+  onAddProperty: () => void
+  onAddRelationship: () => void
+}) {
   return (
     <>
       <MobilePropertyRow label="Type" testID="property-row-type" value={<MobileChip label={note.type} tone={chipTone(note.typeTone)} />} />
@@ -52,8 +64,8 @@ function NoteProperties({ note }: { note: MobileNote }) {
           <RelationshipValues values={relationship.values} />
         </PropertySection>
       ))}
-      <PropertyActionRow label={mobileText('inspector.properties.addProperty')} testID="property-action-add-property" />
-      <PropertyActionRow label={mobileText('inspector.relationship.addRelationship')} testID="property-action-add-relationship" />
+      <PropertyActionRow label={mobileText('inspector.properties.addProperty')} testID="property-action-add-property" onPress={onAddProperty} />
+      <PropertyActionRow label={mobileText('inspector.relationship.addRelationship')} testID="property-action-add-relationship" onPress={onAddRelationship} />
     </>
   )
 }
@@ -84,11 +96,19 @@ function PropertySection({
   )
 }
 
-function PropertyActionRow({ label, testID }: { label: string; testID: string }) {
+function PropertyActionRow({
+  label,
+  onPress,
+  testID,
+}: {
+  label: string
+  onPress: () => void
+  testID: string
+}) {
   const visibleLabel = label.replace(/^\+\s*/, '')
 
   return (
-    <Pressable accessibilityLabel={label} accessibilityRole="button" style={({ pressed }) => [actionStyles.row, pressed ? actionStyles.rowPressed : null]} testID={testID}>
+    <Pressable accessibilityLabel={label} accessibilityRole="button" style={({ pressed }) => [actionStyles.row, pressed ? actionStyles.rowPressed : null]} testID={testID} onPress={onPress}>
       <View style={actionStyles.label}>
         <View style={actionStyles.iconSlot}>
           <Plus color={mobileColors.textMuted} size={14} />

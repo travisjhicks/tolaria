@@ -12,23 +12,30 @@ import type { MobileNote } from '../../workspace/mobileWorkspaceModel'
 import { MobileTypeIcon } from './MobileWorkspaceIcons'
 import { chipTone, noteTypeColor, noteTypeSoftColor, statusTone, tagTone } from './mobileWorkspaceTone'
 
-export function MobileNoteListPanel({
-  compact,
-  notes,
-  onSelectNote,
-  searchQuery,
-  selectedNoteId,
-  subtitle,
-  title = mobileCopy.inbox,
-}: {
+type MobileNoteListPanelProps = {
   compact: boolean
   notes: MobileNote[]
+  onOpenCreateNote: () => void
+  onOpenSearch: () => void
   onSelectNote: (noteId: string) => void
   searchQuery?: string
   selectedNoteId: string | null
   subtitle: string
   title?: string
-}) {
+}
+
+export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
+  const {
+    compact,
+    notes,
+    onOpenCreateNote,
+    onOpenSearch,
+    onSelectNote,
+    searchQuery,
+    selectedNoteId,
+    subtitle,
+    title = mobileCopy.inbox,
+  } = props
   const activeNoteId = selectedNoteId ?? notes[0]?.id ?? null
 
   return (
@@ -39,16 +46,16 @@ export function MobileNoteListPanel({
           <Text style={styles.toolbarSubtitle} testID="note-list-toolbar-subtitle">{subtitle}</Text>
         </View>
         <MobileToolbarSpacer />
-        <MobileIconButton accessibilityLabel={mobileCopy.searchNotes} testID="note-list-search-action">
+        <MobileIconButton accessibilityLabel={mobileCopy.searchNotes} testID="note-list-search-action" onPress={onOpenSearch}>
           <MagnifyingGlass color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />
         </MobileIconButton>
-        <MobileIconButton accessibilityLabel={mobileCopy.createNote} testID="note-list-create-action">
+        <MobileIconButton accessibilityLabel={mobileCopy.createNote} testID="note-list-create-action" onPress={onOpenCreateNote}>
           <Plus color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />
         </MobileIconButton>
       </MobileToolbar>
       {searchQuery ? <SearchPill searchQuery={searchQuery} /> : null}
       {notes.length === 0 ? (
-        <NoteListEmptyState />
+        <NoteListEmptyState searchQuery={searchQuery} />
       ) : (
         <FlatList
           contentContainerStyle={styles.listContent}
@@ -87,10 +94,10 @@ function SearchPill({ searchQuery }: { searchQuery: string }) {
   )
 }
 
-function NoteListEmptyState() {
+function NoteListEmptyState({ searchQuery }: { searchQuery?: string }) {
   return (
     <View style={styles.emptyState}>
-      <Text style={styles.emptyTitle}>{mobileText('noteList.empty.allOrganized')}</Text>
+      <Text style={styles.emptyTitle}>{mobileText(searchQuery ? 'noteList.empty.noMatching' : 'noteList.empty.allOrganized')}</Text>
       <Text style={styles.emptyText}>{mobileText('noteList.empty.noNotes')}</Text>
     </View>
   )

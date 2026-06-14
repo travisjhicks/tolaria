@@ -22,6 +22,13 @@ export const mobileParityInventory = [
     surface: 'Status-density buttons',
   },
   {
+    assertions: ['action-sheet input computed styles through user-flow checks'],
+    contracts: ['desktopPropertyParity'],
+    desktopSource: 'shadcn Input wrappers used by desktop dialogs and property editors',
+    mobileFile: 'src/ui/MobileTextInput.tsx',
+    surface: 'Mobile text inputs',
+  },
+  {
     assertions: ['property chips and sidebar count computed styles'],
     contracts: ['desktopPropertyParity', 'desktopSidebarParity'],
     desktopSource: 'SidebarCountPill and property chip styles',
@@ -83,6 +90,13 @@ export const mobileParityInventory = [
     desktopSource: 'NoteItem type indicators and inspector relationship icons',
     mobileFile: 'src/components/workspace/MobileWorkspaceIcons.tsx',
     surface: 'Workspace type icons',
+  },
+  {
+    assertions: ['search/create/properties/more user-flow checks'],
+    contracts: ['desktopPanelParity', 'desktopPropertyParity', 'desktopToolbarActionParity'],
+    desktopSource: 'Desktop command dialogs, note-list search, and inspector property forms',
+    mobileFile: 'src/components/workspace/MobileWorkspaceActionSheet.tsx',
+    surface: 'Read-only workspace action sheets',
   },
   {
     assertions: ['editor computed styles'],

@@ -1,11 +1,9 @@
 import { expect, test, type Page } from '@playwright/test'
-import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises'
-import { basename, join, relative } from 'node:path'
-import { buildLocalVaultWorkspaceSnapshot, type LocalVaultFile } from '../src/workspace/localVaultSnapshot'
-import type { MobileWorkspaceSnapshot } from '../src/workspace/mobileWorkspaceModel'
-import { HOST_WORKSPACE_SNAPSHOT_STORAGE_KEY } from '../src/workspace/readOnlyWorkspaceRepository'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { basename, join } from 'node:path'
 import { assertDesktopParitySources } from './mobile-ui-desktopParitySources'
 import { assertTabletDesktopParity } from './mobile-ui-parityAssertions'
+import { installLocalVaultSnapshot, localVaultPath } from './local-vault-snapshot-loader'
 
 type ScreenshotRecord = {
   description: string
@@ -15,7 +13,6 @@ type ScreenshotRecord = {
 }
 
 const screenshotDir = process.env.MOBILE_QA_SCREENSHOT_DIR ?? '/tmp/tolaria-mobile-ui-screenshots'
-const localVaultPath = process.env.MOBILE_QA_VAULT_PATH
 
 const tabletScenarioStates = [
   {
@@ -86,8 +83,6 @@ const currentScreenshotNames = new Set([
   ] : []),
 ])
 
-let localVaultSnapshotPromise: Promise<MobileWorkspaceSnapshot | null> | null = null
-
 async function recordScreenshot(record: ScreenshotRecord) {
   const manifestPath = join(screenshotDir, 'manifest.json')
   let existing: ScreenshotRecord[] = []
@@ -123,21 +118,6 @@ async function captureUiState({
 }
 
 test.describe('mobile UI lab screenshots', () => {
-  test.beforeEach(async ({ page }) => {
-    const snapshot = await localVaultSnapshot()
-    if (!snapshot) return
-
-    await page.addInitScript(
-      ({ key, value }) => {
-        window.localStorage.setItem(key, value)
-      },
-      {
-        key: HOST_WORKSPACE_SNAPSHOT_STORAGE_KEY,
-        value: JSON.stringify(snapshot),
-      },
-    )
-  })
-
   test('captures the initial workspace reference state', async ({ page }, testInfo) => {
     await page.goto('/')
 
@@ -302,13 +282,13 @@ test.describe('mobile UI lab screenshots', () => {
   }
 
   test('captures an injected local vault read-only state', async ({ page }, testInfo) => {
-    const snapshot = await localVaultSnapshot()
-    test.skip(!snapshot, 'Set MOBILE_QA_VAULT_PATH to capture a real local vault snapshot.')
-    if (!snapshot) return
+    const state = await installLocalVaultSnapshot(page)
+    test.skip(!state, `Local vault path is not readable: ${localVaultPath}`)
+    if (!state) return
 
     await page.goto('/?source=host-vault')
 
-    await expect(page.getByText(snapshot.notes[0]?.title ?? '').first()).toBeVisible()
+    await expect(page.getByText(state.snapshot.notes[0]?.title ?? '').first()).toBeVisible()
 
     await captureUiState({
       description: 'local-vault',
@@ -343,63 +323,4 @@ async function swipeHorizontally(
     type: 'touchEnd',
   })
   await client.detach()
-}
-
-async function localVaultSnapshot(): Promise<MobileWorkspaceSnapshot | null> {
-  if (!localVaultPath) return null
-
-  localVaultSnapshotPromise ??= readLocalVaultFiles(localVaultPath).then((files) => buildLocalVaultWorkspaceSnapshot({
-    files,
-    vaultLabel: basename(localVaultPath),
-    vaultPath: localVaultPath,
-  }))
-
-  return localVaultSnapshotPromise
-}
-
-async function readLocalVaultFiles(vaultPath: string): Promise<LocalVaultFile[]> {
-  const markdownPaths = await listMarkdownFiles(vaultPath)
-  const files: LocalVaultFile[] = []
-
-  for (let index = 0; index < markdownPaths.length; index += 64) {
-    files.push(...await Promise.all(markdownPaths.slice(index, index + 64).map((absolutePath) => readLocalVaultFile(vaultPath, absolutePath))))
-  }
-
-  return files
-}
-
-async function listMarkdownFiles(rootPath: string): Promise<string[]> {
-  const entries = await readdir(rootPath, { withFileTypes: true })
-  const files: string[] = []
-
-  for (const entry of entries) {
-    const absolutePath = join(rootPath, entry.name)
-    if (entry.isDirectory() && shouldReadDirectory(entry.name)) {
-      files.push(...await listMarkdownFiles(absolutePath))
-    } else if (entry.isFile() && entry.name.endsWith('.md')) {
-      files.push(absolutePath)
-    }
-  }
-
-  return files
-}
-
-function shouldReadDirectory(name: string): boolean {
-  return !name.startsWith('.') && name !== 'node_modules'
-}
-
-async function readLocalVaultFile(vaultPath: string, absolutePath: string): Promise<LocalVaultFile> {
-  const [content, metadata] = await Promise.all([
-    readFile(absolutePath, 'utf8'),
-    stat(absolutePath),
-  ])
-
-  return {
-    absolutePath,
-    content,
-    createdAt: metadata.birthtimeMs,
-    modifiedAt: metadata.mtimeMs,
-    relativePath: relative(vaultPath, absolutePath).replaceAll('\\', '/'),
-    size: metadata.size,
-  }
 }

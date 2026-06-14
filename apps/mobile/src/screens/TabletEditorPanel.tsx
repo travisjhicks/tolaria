@@ -18,11 +18,15 @@ export function TabletEditorPanel({
   bullets,
   compact,
   note,
+  onOpenMoreActions,
+  onToggleFavorite,
 }: {
   blocks: MobileEditorBlock[]
   bullets: string[]
   compact: boolean
   note: MobileNote | null
+  onOpenMoreActions: () => void
+  onToggleFavorite: () => void
 }) {
   if (!note) {
     return <EmptyEditorPanel />
@@ -34,10 +38,14 @@ export function TabletEditorPanel({
         <FileText color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />
         <MobileToolbarTitle testID="editor-toolbar-title" title={note.title} />
         <MobileChip label={note.workspace} tone="gray" />
-        <MobileIconButton accessibilityLabel={mobileText('command.note.addFavorite')} testID="editor-favorite-action">
+        <MobileIconButton
+          accessibilityLabel={mobileText(note.favorite ? 'command.note.removeFavorite' : 'command.note.addFavorite')}
+          testID="editor-favorite-action"
+          onPress={onToggleFavorite}
+        >
           <Star color={note.favorite ? mobileColors.primary : mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} weight={note.favorite ? 'fill' : 'regular'} />
         </MobileIconButton>
-        <MobileIconButton accessibilityLabel={mobileText('command.group.note')} testID="editor-more-action">
+        <MobileIconButton accessibilityLabel={mobileText('editor.toolbar.moreActions')} testID="editor-more-action" onPress={onOpenMoreActions}>
           <DotsThree color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} weight="bold" />
         </MobileIconButton>
       </MobileToolbar>

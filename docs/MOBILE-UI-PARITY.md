@@ -77,6 +77,22 @@ The screenshot suite also contains objective parity assertions for tablet landsc
 
 The same Playwright suite also compares the primary tablet-landscape screen against a committed pixel baseline and checks that mobile parity constants still match desktop `src/index.css` and `src/theme.json`.
 
+The harness also exercises a read-only real-vault path. By default it looks for:
+
+```text
+/Users/luca/Laputa
+```
+
+Set `MOBILE_QA_VAULT_PATH` to override that path. The loader scans Markdown files read-only, injects a `MobileWorkspaceSnapshot` into local storage, and captures `local-vault` tablet/phone screenshots without touching vault content.
+
+Large-vault QA currently checks:
+
+- local snapshot read/build duration
+- initial tablet render from the injected snapshot
+- note switching
+- type navigation
+- folder navigation
+
 The default screenshot matrix is:
 
 | Target | Viewport | Purpose |
@@ -95,6 +111,7 @@ The tablet state matrix currently captures:
 | `long-title` | Long title pressure across note rows, toolbar, and editor heading |
 | `property-heavy` | Multi-tag note, grouped multi-value relationships, and property actions |
 | `folder-tree` | Vault folder tree pressure in tablet landscape |
+| `local-vault` | Real read-only vault data, large counts, real folders/types, relationships, and markdown pressure |
 
 The phone navigation matrix currently captures:
 
@@ -123,6 +140,23 @@ TOLARIA_MOBILE_FULL_GATE=1 git push
 | P1 | Search and quick open | Native search overlay/sheet | empty query, results, no results, keyboard focus | Results can be scanned quickly; mouse/touch selection is deterministic |
 | P1 | Create note/type/status actions | Native modal/sheet controls | valid input, invalid input, type selection, collision | Controls use Tolaria primitives; disabled/loading/error states are visible |
 | P2 | Phone shell | Reduced navigation and panels | list-only, editor-only, properties sheet, back stack | Phone removes surfaces deliberately after tablet parity is established |
+
+## Read-Only Interaction Boundary
+
+The tablet shell is clickable before it is writable. These interactions are intentionally state-local and do not persist to the vault:
+
+| Flow | Current behavior |
+| --- | --- |
+| Sidebar sections and folders | Filter the note list and select the first visible note |
+| Note rows | Select the note and refresh editor/properties |
+| Search | Opens a desktop-parity sheet, filters the visible note list, and lets results select a note |
+| Create note | Opens a localized title form with disabled create state until a title exists |
+| Add property | Opens localized property name/value fields |
+| Add relationship | Opens localized relationship name/note-title fields |
+| Favorite | Toggles local star state only |
+| More actions | Opens localized note actions without persistence |
+
+Persistence should be added later behind the same action boundaries. Do not wire direct vault writes into presentation components.
 
 ## Mobile Primitive Layer
 

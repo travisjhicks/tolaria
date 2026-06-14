@@ -18,6 +18,7 @@ The machine-readable coverage source lives in `src/ui/mobileParityInventory.ts`.
 | `MobilePanel`, `MobileToolbar` | App shell panels and toolbar chrome | White/card surfaces, hairline borders, compact 13-16px toolbar labels, muted icons. |
 | `MobileButton` | `src/components/ui/button.tsx`, `StatusBarAction` | Use RNR/shadcn-like button primitive; labels should be medium, not bold. Status-density buttons copy the 12px, 24px-high desktop status-bar action shape. |
 | `MobileIconButton` | `NoteListHeader` action buttons, `InspectorHeader` icon buttons | Toolbar-density icon buttons are visually 24px, transparent, rounded 4px, with 16px icons; touch hit slop can exceed the visual box. |
+| `MobileTextInput` | Desktop shadcn input usage in command/property forms | Thin Tolaria wrapper over the local RNR-style input primitive; muted 12px label, compact border, and no browser-default styling. |
 | `MobileChip` | `SidebarCountPill`, note property chips | Rounded compact pills, muted labels, small type. Count pills are 10px, rounded-full, tabular. |
 | `MobileListRow` | `src/components/NoteItem.tsx` | Row padding 14/16, title 13px medium default and semibold only when selected, snippets 12px muted, dates/meta 10-12px muted, type icon only at the row edge. |
 | `MobilePropertyRow` | `src/components/propertyPanelLayout.ts` | Dense rows, 12px muted labels, 12px normal values, no heavy text weight. |
@@ -30,10 +31,11 @@ The machine-readable coverage source lives in `src/ui/mobileParityInventory.ts`.
 | `MobileNoteListPanel` | `NoteItem.tsx`, note-list header | Owns tablet note-list chrome and row composition. |
 | `TabletEditorPanel` | `EditorTheme.css`, `theme.json` | Owns read-only tablet editor rendering for H1, paragraphs, headings, bullets, quotes, inline styles, and tables. |
 | `MobilePropertiesPanel` | `propertyPanelLayout.ts`, `RelationshipsPanel.tsx` | Owns read-only properties and relationship display. |
+| `MobileWorkspaceActionSheet` | Desktop command dialogs, note-list search, inspector forms | Owns read-only search/create/property/relationship/more action flows without persistence. |
 | `MobileSyncStatusBar` | `StatusBar.tsx` | Owns subtle bottom sync footer display. |
 | `TabletWorkspace` | Desktop four-panel layout | Owns tablet shell layout and selected-note state only. |
 
-The tablet shell consumes `MobileWorkspaceSnapshot` from `src/workspace/mobileWorkspaceModel.ts`. The default repository is fixture-backed for UI lab speed, and the Playwright harness can inject a read-only local-vault snapshot from `MOBILE_QA_VAULT_PATH` through the same boundary. Native vault loading should replace the snapshot provider, not the tablet surfaces.
+The tablet shell consumes `MobileWorkspaceSnapshot` from `src/workspace/mobileWorkspaceModel.ts`. The default repository is fixture-backed for UI lab speed, and the Playwright harness can inject a read-only local-vault snapshot from `MOBILE_QA_VAULT_PATH` through the same boundary. When the env var is not set, the harness uses `/Users/luca/Laputa` if it exists. Native vault loading should replace the snapshot provider, not the tablet surfaces.
 
 ## Tablet Screens
 
@@ -73,5 +75,6 @@ The same Playwright suite also runs a source-drift check against desktop `src/in
 
 - Fixture screens are still static mocks; they validate UI structure and visual parity before full mobile business logic is wired.
 - Local-vault screenshots are read-only QA fixtures generated at test time. They should exercise large-vault metadata, real type colors, real relationship keys, and markdown body pressure without committing vault content.
+- Tablet read-only action sheets are clickable and tested, but create/property/relationship/more actions do not persist yet.
 - Phone navigation is represented as discrete states for screenshot QA. Gestures and native navigation transitions will come after the visual language is stable.
 - Mobile wrappers are thin Tolaria wrappers over RNR-style primitives so the eventual implementation can swap in more RNR coverage without changing Tolaria-specific tokens and semantics.

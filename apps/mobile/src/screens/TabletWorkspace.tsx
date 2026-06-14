@@ -3,37 +3,26 @@ import { Dimensions, Platform, StyleSheet, useWindowDimensions, View } from 'rea
 import { MobileNoteListPanel } from '../components/workspace/MobileNoteListPanel'
 import { MobilePropertiesPanel } from '../components/workspace/MobilePropertiesPanel'
 import { MobileSyncStatusBar } from '../components/workspace/MobileSyncStatusBar'
+import { MobileWorkspaceActionSheet, type MobileWorkspaceAction } from '../components/workspace/MobileWorkspaceActionSheet'
 import {
   MobileWorkspaceSidebar,
-  type MobileSidebarFolderSelection,
-  type MobileSidebarItemSelection,
 } from '../components/workspace/MobileWorkspaceSidebar'
-import type { MobileEditorBlock, MobileNote, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
+import type { MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
 import { mobileColors } from '../ui/tokens'
 import { useHorizontalSwipe } from '../ui/useHorizontalSwipe'
 import { TabletEditorPanel } from './TabletEditorPanel'
+import {
+  snapshotWithFavoriteOverrides,
+  useTabletWorkspaceNavigation,
+} from './tabletWorkspaceNavigation'
+import type { TabletPanel, TabletReadOnlyForm, TabletWorkspaceChromeProps } from './tabletWorkspaceTypes'
 
-type TabletPanel = 'noteList' | 'properties' | 'sidebar'
-type TabletSidebarSelection =
-  | { count?: string; id: string; kind: 'item'; label: string; sectionId: string }
-  | { id: string; kind: 'folder'; label: string }
-type TabletWorkspaceChromeProps = {
-  activeFolderId: string | null
-  activeItemId: string | null
-  compactTablet: boolean
-  defaultPropertiesVisible: boolean
-  editorBlocks: MobileEditorBlock[]
-  editorBullets: string[]
-  noteListSubtitle: string
-  noteListTitle: string
-  notes: MobileNote[]
-  onSelectFolder: (selection: MobileSidebarFolderSelection) => void
-  onSelectNote: (noteId: string) => void
-  onSelectSidebarItem: (selection: MobileSidebarItemSelection) => void
-  searchQuery?: string
-  selectedNote: MobileNote | null
-  selectedNoteId: string | null
-  snapshot: MobileWorkspaceSnapshot
+const emptyReadOnlyForm: TabletReadOnlyForm = {
+  createTitle: '',
+  propertyName: '',
+  propertyValue: '',
+  relationshipName: '',
+  relationshipNoteTitle: '',
 }
 
 export function TabletWorkspace({
@@ -42,6 +31,11 @@ export function TabletWorkspace({
   snapshot: MobileWorkspaceSnapshot
 }) {
   const { height, width } = useWindowDimensions()
+  const [favoriteOverrides, setFavoriteOverrides] = useState<Record<string, boolean>>({})
+  const [openAction, setOpenAction] = useState<MobileWorkspaceAction | null>(null)
+  const [readOnlyForm, setReadOnlyForm] = useState<TabletReadOnlyForm>(emptyReadOnlyForm)
+  const [searchQuery, setSearchQuery] = useState('')
+  const workspaceSnapshot = useMemo(() => snapshotWithFavoriteOverrides(snapshot, favoriteOverrides), [favoriteOverrides, snapshot])
   const {
     activeFolderId,
     activeItemId,
@@ -55,11 +49,21 @@ export function TabletWorkspace({
     selectedNoteId,
     selectSidebarItem,
     setSelectedNoteId,
-  } = useTabletWorkspaceNavigation(snapshot)
+  } = useTabletWorkspaceNavigation(workspaceSnapshot, searchQuery)
   const screen = Dimensions.get('screen')
   const nativeIpad = Platform.OS === 'ios' && Platform.isPad
   const compactTablet = !nativeIpad && width < 1080 && width < height && screen.width < screen.height
   const defaultPropertiesVisible = !nativeIpad || width >= 1200
+  const updateReadOnlyForm = useCallback(<Key extends keyof TabletReadOnlyForm,>(key: Key, value: TabletReadOnlyForm[Key]) => {
+    setReadOnlyForm((current) => ({ ...current, [key]: value }))
+  }, [])
+  const toggleFavorite = useCallback(() => {
+    if (!selectedNote) return
+    setFavoriteOverrides((current) => ({
+      ...current,
+      [selectedNote.id]: !(current[selectedNote.id] ?? selectedNote.favorite),
+    }))
+  }, [selectedNote])
 
   return (
     <View style={styles.shellRoot}>
@@ -73,13 +77,28 @@ export function TabletWorkspace({
         noteListSubtitle={noteListSubtitle}
         noteListTitle={noteListTitle}
         notes={notes}
-        searchQuery={snapshot.searchQuery}
+        openAction={openAction}
+        readOnlyForm={readOnlyForm}
+        searchQuery={searchQuery}
         selectedNote={selectedNote}
         selectedNoteId={selectedNoteId}
-        snapshot={snapshot}
+        snapshot={workspaceSnapshot}
+        onAddProperty={() => setOpenAction('addProperty')}
+        onAddRelationship={() => setOpenAction('addRelationship')}
+        onCloseAction={() => setOpenAction(null)}
+        onCreateTitleChange={(value) => updateReadOnlyForm('createTitle', value)}
+        onOpenCreateNote={() => setOpenAction('createNote')}
+        onOpenMoreActions={() => setOpenAction('moreActions')}
+        onOpenSearch={() => setOpenAction('search')}
+        onPropertyNameChange={(value) => updateReadOnlyForm('propertyName', value)}
+        onPropertyValueChange={(value) => updateReadOnlyForm('propertyValue', value)}
+        onRelationshipNameChange={(value) => updateReadOnlyForm('relationshipName', value)}
+        onRelationshipNoteTitleChange={(value) => updateReadOnlyForm('relationshipNoteTitle', value)}
+        onSearchQueryChange={setSearchQuery}
         onSelectFolder={selectFolder}
         onSelectNote={setSelectedNoteId}
         onSelectSidebarItem={selectSidebarItem}
+        onToggleFavorite={toggleFavorite}
       />
       <MobileSyncStatusBar sync={snapshot.sync} />
     </View>
@@ -97,9 +116,24 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
     noteListSubtitle,
     noteListTitle,
     notes,
+    onAddProperty,
+    onAddRelationship,
+    onCloseAction,
+    onCreateTitleChange,
+    onOpenCreateNote,
+    onOpenMoreActions,
+    onOpenSearch,
+    onPropertyNameChange,
+    onPropertyValueChange,
+    onRelationshipNameChange,
+    onRelationshipNoteTitleChange,
+    onSearchQueryChange,
     onSelectFolder,
     onSelectNote,
     onSelectSidebarItem,
+    onToggleFavorite,
+    openAction,
+    readOnlyForm,
     searchQuery,
     selectedNote,
     selectedNoteId,
@@ -126,20 +160,50 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
           <MobileNoteListPanel
             compact={compactTablet}
             notes={notes}
-            searchQuery={searchQuery}
+            searchQuery={searchQuery || undefined}
             selectedNoteId={selectedNoteId}
             subtitle={noteListSubtitle}
             title={noteListTitle}
+            onOpenCreateNote={onOpenCreateNote}
+            onOpenSearch={onOpenSearch}
             onSelectNote={onSelectNote}
           />
         </View>
       ) : <SwipeRail edge="left" swipeHandlers={gestures.noteListRevealSwipe} />}
-      <TabletEditorPanel blocks={editorBlocks} compact={compactTablet} note={selectedNote} bullets={editorBullets} />
+      <TabletEditorPanel
+        blocks={editorBlocks}
+        bullets={editorBullets}
+        compact={compactTablet}
+        note={selectedNote}
+        onOpenMoreActions={onOpenMoreActions}
+        onToggleFavorite={onToggleFavorite}
+      />
       {gestures.propertiesVisible ? (
         <View {...gestures.propertiesSwipe} style={styles.panelHost}>
-          <MobilePropertiesPanel compact={compactTablet} note={selectedNote} />
+          <MobilePropertiesPanel compact={compactTablet} note={selectedNote} onAddProperty={onAddProperty} onAddRelationship={onAddRelationship} />
         </View>
       ) : <SwipeRail edge="right" swipeHandlers={gestures.propertiesRevealSwipe} />}
+      {openAction ? (
+        <MobileWorkspaceActionSheet
+          action={openAction}
+          createTitle={readOnlyForm.createTitle}
+          notes={notes}
+          propertyName={readOnlyForm.propertyName}
+          propertyValue={readOnlyForm.propertyValue}
+          relationshipName={readOnlyForm.relationshipName}
+          relationshipNoteTitle={readOnlyForm.relationshipNoteTitle}
+          searchQuery={searchQuery}
+          selectedNote={selectedNote}
+          onClose={onCloseAction}
+          onCreateTitleChange={onCreateTitleChange}
+          onPropertyNameChange={onPropertyNameChange}
+          onPropertyValueChange={onPropertyValueChange}
+          onRelationshipNameChange={onRelationshipNameChange}
+          onRelationshipNoteTitleChange={onRelationshipNoteTitleChange}
+          onSearchQueryChange={onSearchQueryChange}
+          onSelectNote={onSelectNote}
+        />
+      ) : null}
     </View>
   )
 }
@@ -206,107 +270,6 @@ function useTabletPanelGestures(compactTablet: boolean, defaultPropertiesVisible
       onSwipeLeft: () => hidePanel('sidebar'),
     }),
   }
-}
-
-function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot) {
-  const [sidebarSelection, setSidebarSelection] = useState<TabletSidebarSelection>(() => initialSidebarSelection(snapshot))
-  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(initialSelectedNoteId(snapshot))
-  const notes = useMemo(() => notesForSidebarSelection(snapshot.notes, sidebarSelection), [sidebarSelection, snapshot.notes])
-  const selectedNote = selectedMobileNote(notes, selectedNoteId)
-
-  const selectSidebarSelection = useCallback((selection: TabletSidebarSelection) => {
-    const nextNotes = notesForSidebarSelection(snapshot.notes, selection)
-    setSidebarSelection(selection)
-    setSelectedNoteId(nextNotes[0]?.id ?? null)
-  }, [snapshot.notes])
-
-  return {
-    activeFolderId: sidebarSelection.kind === 'folder' ? sidebarSelection.id : null,
-    activeItemId: sidebarSelection.kind === 'item' ? sidebarSelection.id : null,
-    editorBlocks: selectedNote?.editorBlocks ?? snapshot.editorBlocks,
-    editorBullets: selectedNote?.editorBullets ?? snapshot.editorBullets,
-    noteListSubtitle: noteListSubtitle(sidebarSelection, snapshot.noteListSubtitle, notes.length),
-    noteListTitle: sidebarSelection.label,
-    notes,
-    selectFolder: useCallback((selection: MobileSidebarFolderSelection) => {
-      selectSidebarSelection({
-        id: selection.id,
-        kind: 'folder',
-        label: selection.name,
-      })
-    }, [selectSidebarSelection]),
-    selectSidebarItem: useCallback((selection: MobileSidebarItemSelection) => {
-      selectSidebarSelection({
-        count: selection.count,
-        id: selection.id,
-        kind: 'item',
-        label: selection.label,
-        sectionId: selection.sectionId,
-      })
-    }, [selectSidebarSelection]),
-    selectedNote,
-    selectedNoteId: selectedNote?.id ?? selectedNoteId,
-    setSelectedNoteId,
-  }
-}
-
-function initialSelectedNoteId(snapshot: MobileWorkspaceSnapshot) {
-  return snapshot.selectedNoteId ?? snapshot.notes[0]?.id ?? null
-}
-
-function initialSidebarSelection(snapshot: MobileWorkspaceSnapshot): TabletSidebarSelection {
-  const primaryItem = snapshot.sidebarSections
-    .find((section) => section.id === 'primary')
-    ?.items
-    ?.find((item) => item.active)
-
-  return {
-    count: primaryItem?.count,
-    id: primaryItem?.id ?? 'inbox',
-    kind: 'item',
-    label: primaryItem?.label ?? 'Inbox',
-    sectionId: 'primary',
-  }
-}
-
-function notesForSidebarSelection(notes: MobileNote[], selection: TabletSidebarSelection) {
-  if (selection.kind === 'folder') return notes.filter((note) => noteBelongsToFolder(note, selection.label))
-  if (selection.sectionId === 'favorites') return notes.filter((note) => note.favorite || note.title === selection.label)
-  if (selection.sectionId === 'types') return notes.filter((note) => noteMatchesType(note, selection))
-  if (selection.id === 'archive') return notes.filter((note) => note.archived)
-  if (selection.id === 'all-notes') return notes.filter((note) => !note.archived)
-  if (selection.id === 'inbox') return inboxNotes(notes)
-
-  return notes
-}
-
-function inboxNotes(notes: MobileNote[]) {
-  const filteredNotes = notes.filter((note) => !note.archived && !note.organized)
-  return filteredNotes.length > 0 ? filteredNotes : notes
-}
-
-function noteBelongsToFolder(note: MobileNote, folderName: string) {
-  return (note.path ?? '').split('/').slice(0, -1).some((segment) => normalizedLabel(segment) === normalizedLabel(folderName))
-}
-
-function noteMatchesType(note: MobileNote, selection: Extract<TabletSidebarSelection, { kind: 'item' }>) {
-  return normalizedLabel(selection.id) === normalizedLabel(`type-${note.type}`)
-    || normalizedLabel(selection.label).replace(/s$/, '') === normalizedLabel(note.type)
-}
-
-function normalizedLabel(label: string) {
-  return label.toLowerCase().replace(/[^a-z0-9]+/g, '')
-}
-
-function noteListSubtitle(selection: TabletSidebarSelection, inboxSubtitle: string, noteCount: number) {
-  if (selection.kind !== 'item') return noteCount.toLocaleString()
-  if (selection.id === 'inbox') return inboxSubtitle
-
-  return selection.count ?? noteCount.toLocaleString()
-}
-
-function selectedMobileNote(notes: MobileNote[], selectedNoteId: string | null) {
-  return notes.find((note) => note.id === selectedNoteId) ?? notes[0] ?? null
 }
 
 const styles = StyleSheet.create({
