@@ -6,9 +6,12 @@ type RelationshipKey = string
 type SuggestionQuery = string
 type SuggestionText = string
 type NormalizedSuggestionKey = string
+type ViewField = string
+type ViewFieldValue = string
 
 const DESKTOP_SUGGESTED_PROPERTY_KEYS = ['Status', 'Date', 'URL'] as const
 const DESKTOP_SUGGESTED_RELATIONSHIP_KEYS = ['belongs_to', 'related_to', 'has'] as const
+const DESKTOP_VIEW_BUILT_IN_FIELDS = ['type', 'status', 'title', 'favorite', 'body'] as const
 const CANONICAL_RELATIONSHIP_KEYS: Partial<Record<NormalizedSuggestionKey, RelationshipKey>> = {
   belongs_to: 'belongs_to',
   has: 'has',
@@ -47,6 +50,23 @@ export function mobileRelationshipKeySuggestions(
   return visibleSuggestions(relationshipKeyCandidates(notes), query)
 }
 
+export function mobileViewFieldSuggestions(
+  notes: MobileNote[],
+  query: SuggestionQuery,
+): ViewField[] {
+  return visibleSuggestions(viewFieldCandidates(notes), query)
+}
+
+export function mobileViewValueSuggestions(
+  notes: MobileNote[],
+  field: ViewField,
+  query: SuggestionQuery,
+): ViewFieldValue[] {
+  const normalizedKey = canonicalSuggestionKey(field)
+  if (!normalizedKey) return []
+  return visibleSuggestions(viewValueCandidates(notes, normalizedKey), query)
+}
+
 export function normalizeRelationshipKey(key: RelationshipKey): RelationshipKey {
   const trimmed = key.trim()
   const canonical = canonicalSuggestionKey(trimmed)
@@ -75,6 +95,21 @@ function relationshipKeyCandidates(notes: MobileNote[]): RelationshipKey[] {
   ]
 }
 
+function viewFieldCandidates(notes: MobileNote[]): ViewField[] {
+  return [
+    ...DESKTOP_VIEW_BUILT_IN_FIELDS,
+    ...notes.flatMap((note) => propertiesForNote(note).map((property) => property.key)),
+    ...notes.flatMap((note) => note.relationships.map(relationshipFrontmatterKey)),
+  ]
+}
+
+function viewValueCandidates(
+  notes: MobileNote[],
+  normalizedKey: NormalizedSuggestionKey,
+): ViewFieldValue[] {
+  return notes.flatMap((note) => viewValuesForSuggestion(note, normalizedKey))
+}
+
 function visibleSuggestions(
   values: readonly SuggestionText[],
   query: SuggestionQuery,
@@ -82,6 +117,42 @@ function visibleSuggestions(
   return uniqueSuggestedKeys(values)
     .filter((value) => matchesSuggestionQuery(value, query))
     .slice(0, 8)
+}
+
+function viewValuesForSuggestion(
+  note: MobileNote,
+  normalizedKey: NormalizedSuggestionKey,
+): ViewFieldValue[] {
+  const builtInValues = builtInViewValues(note, normalizedKey)
+  if (builtInValues !== null) return builtInValues
+
+  return [
+    ...propertyValuesForSuggestion(note, normalizedKey),
+    ...relationshipValuesForSuggestion(note, normalizedKey),
+  ]
+}
+
+function builtInViewValues(
+  note: MobileNote,
+  normalizedKey: NormalizedSuggestionKey,
+): ViewFieldValue[] | null {
+  if (normalizedKey === 'type') return [note.type]
+  if (normalizedKey === 'status') return note.status ? [note.status] : []
+  if (normalizedKey === 'title') return [note.title]
+  if (normalizedKey === 'favorite') return [String(note.favorite)]
+  if (normalizedKey === 'body') return note.snippet ? [note.snippet] : []
+  return null
+}
+
+function relationshipValuesForSuggestion(
+  note: MobileNote,
+  normalizedKey: NormalizedSuggestionKey,
+): ViewFieldValue[] {
+  const relationship = note.relationships.find((candidate) => {
+    return canonicalSuggestionKey(relationshipFrontmatterKey(candidate)) === normalizedKey
+  })
+
+  return relationship?.values.flatMap((value) => [value.title, value.ref ?? value.title]) ?? []
 }
 
 function selectedPropertyKeys(note: MobileNote | null): Set<NormalizedSuggestionKey> {

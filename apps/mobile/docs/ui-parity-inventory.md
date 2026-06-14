@@ -32,6 +32,7 @@ The machine-readable coverage source lives in `src/ui/mobileParityInventory.ts`.
 | `TabletEditorPanel` | `EditorTheme.css`, `theme.json` | Owns read-only tablet editor rendering for H1, paragraphs, headings, bullets, quotes, inline styles, and tables. |
 | `MobilePropertiesPanel` | `propertyPanelLayout.ts`, `RelationshipsPanel.tsx` | Owns properties and relationship display/removal. |
 | `MobileWorkspaceActionSheet` | Desktop command dialogs, note-list search, inspector forms | Owns search/create/property/relationship/more action flows against the editable snapshot. |
+| `MobileViewFilterBuilder` | `FilterBuilder`, `FilterFieldCombobox` | Owns saved-view AND/OR groups, filter rows, field/value suggestions, operator selection, regex flag, and add/remove controls. |
 | `MobileSyncStatusBar` | `StatusBar.tsx` | Owns subtle bottom sync footer display. |
 | `TabletWorkspace` | Desktop four-panel layout | Owns tablet shell layout, selected-note state, and the in-process editable snapshot. |
 
@@ -63,6 +64,8 @@ The tablet landscape parity test now checks these computed-style contracts:
 | Sync footer | 30px height, sidebar background, 8px horizontal padding, 12px muted status text |
 
 The same Playwright suite also runs a source-drift check against desktop `src/index.css` and `src/theme.json`, plus a tablet-landscape pixel baseline for the primary iPad reference screen.
+
+React Native Web screenshots are a fast preflight only. Layout-sensitive mobile UI work must also pass the native iOS simulator metric check and produce a simulator screenshot before it is accepted, because spacing, safe-area, and text layout can diverge between web and the actual Expo app.
 
 ## Phone Screens
 

@@ -337,6 +337,25 @@ files:
     viewDialog.nameLabel: 49ee3087348e8d44e1feda1917443987
     viewDialog.namePlaceholder: dbb077d36957a33c4147eb24919192e1
     viewDialog.filtersLabel: f3f43e30c8c7d78c6ac0173515e57a00
+    viewDialog.filter.addFilter: 61fe70d0ace83164738433e164bd1987
+    viewDialog.filter.addGroup: 9851adcbf8570b7c667d1a99d541b29b
+    viewDialog.filter.and: 558ffc8f5770d8e4f95f51d822685532
+    viewDialog.filter.fieldLabel: 6f16a5f8ff5d75ab84c018adacdfcbb7
+    viewDialog.filter.matchAll: c57014f392d01152dec9773af80795bc
+    viewDialog.filter.matchAny: eda0fefd18bb2b44eda1e9b1b6ebe761
+    viewDialog.filter.operator.after: 632a2406bbcbcd553eec45ac14b40a0a
+    viewDialog.filter.operator.any_of: 685351b83de52f7e4c65f7ecd84f2b64
+    viewDialog.filter.operator.before: 2f44417567bc123bd7c60de8c2a2b444
+    viewDialog.filter.operator.contains: 857af22f119fefbfa24769ed2ad6d5e7
+    viewDialog.filter.operator.equals: 51c3f59625962b899c03595d6cdfb284
+    viewDialog.filter.operator.is_empty: bf943ad8b2ad1f26745e6236f04b74df
+    viewDialog.filter.operator.is_not_empty: 9de4085ca524c6eb4ab0fcc2171ebdb3
+    viewDialog.filter.operator.none_of: ce089471f2eec807561c4beeabccce48
+    viewDialog.filter.operator.not_contains: 8d7e73dd080ef9034a50c7a7719de26b
+    viewDialog.filter.operator.not_equals: 217b812faa0d80cf2e6d0f6c427bfcf9
+    viewDialog.filter.or: 1d00e7dce692e8dc3f6877f035e3a616
+    viewDialog.filter.regex: 86f600672d32a7be1dd6cb035ac61577
+    viewDialog.filter.valueLabel: 689202409e48743b914713f96d93947c
     viewDialog.saveError: 80fe81f3ca09ea03af03fdb9ae809eda
     viewDialog.selectedIcon: 5f98b507ccec0bbc51ca7e8a5b270250
     viewDialog.selectedColor: 192ec1a9973f328c3620cd3fa670c745

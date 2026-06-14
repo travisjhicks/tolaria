@@ -28,6 +28,7 @@ const emptyReadOnlyForm: TabletReadOnlyForm = {
   propertyValue: '',
   relationshipName: '',
   relationshipNoteTitle: '',
+  viewFilters: { all: [] },
   viewName: '',
 }
 
@@ -73,9 +74,12 @@ export function useTabletWorkspaceController({
   const editorActions = editorWorkspaceActions({ applyEdit, selectedNote })
   const actionSheetActions = actionSheetWorkspaceActions({
     closeAction,
+    navigation,
     noteListTitle: navigation.noteListTitle,
+    selectedNote,
     setOpenAction,
     updateReadOnlyForm,
+    workspaceSnapshot,
   })
   useHydrateSelectedNote({ applyEdit, repository, repositoryRequest, selectedNote })
 
@@ -254,24 +258,40 @@ function useHydrateSelectedNote({
 
 function actionSheetWorkspaceActions({
   closeAction,
+  navigation,
   noteListTitle,
+  selectedNote,
   setOpenAction,
   updateReadOnlyForm,
+  workspaceSnapshot,
 }: {
   closeAction: () => void
+  navigation: TabletWorkspaceNavigation
   noteListTitle: string
+  selectedNote: MobileNote | null
   setOpenAction: SetOpenAction
   updateReadOnlyForm: ReadOnlyFormUpdater
+  workspaceSnapshot: MobileWorkspaceSnapshot
 }) {
   return {
     onAddProperty: () => setOpenAction('addProperty'),
     onAddRelationship: () => setOpenAction('addRelationship'),
     onCloseAction: closeAction,
     onOpenCreateNote: () => setOpenAction('createNote'),
-    onOpenCreateView: () => openCreateView({ noteListTitle, setOpenAction, updateReadOnlyForm }),
+    onOpenCreateView: () => openCreateView({
+      filters: viewFiltersForSelection(navigation.sidebarSelection, navigation.notes, selectedNote, workspaceSnapshot.views ?? []),
+      noteListTitle,
+      setOpenAction,
+      updateReadOnlyForm,
+    }),
     onOpenMoreActions: () => setOpenAction('moreActions'),
     onOpenSearch: () => setOpenAction('search'),
-    onOpenViewActions: (selection: MobileSidebarItemSelection) => openViewActions({ selection, setOpenAction, updateReadOnlyForm }),
+    onOpenViewActions: (selection: MobileSidebarItemSelection) => openViewActions({
+      selection,
+      setOpenAction,
+      updateReadOnlyForm,
+      views: workspaceSnapshot.views ?? [],
+    }),
   }
 }
 
@@ -298,20 +318,21 @@ function createWorkspaceActions({
     onCreateView: () => createView({
       applyEdit,
       closeAction,
+      filters: readOnlyForm.viewFilters,
       name: readOnlyForm.viewName,
-      notes: navigation.notes,
       selectedNote,
       selection: navigation.sidebarSelection,
-      views: workspaceSnapshot.views ?? [],
     }),
     onDeleteView: () => deleteView({ applyEdit, closeAction, viewId: readOnlyForm.editingViewId }),
     onSaveView: () => updateView({
       applyEdit,
       closeAction,
+      filters: readOnlyForm.viewFilters,
       name: readOnlyForm.viewName,
       viewId: readOnlyForm.editingViewId,
       views: workspaceSnapshot.views ?? [],
     }),
+    onViewFiltersChange: (value: MobileViewFilterGroup) => updateReadOnlyForm('viewFilters', value),
     onViewNameChange: (value: string) => updateReadOnlyForm('viewName', value),
   }
 }
@@ -372,14 +393,17 @@ function editorWorkspaceActions({
 }
 
 function openCreateView({
+  filters,
   noteListTitle,
   setOpenAction,
   updateReadOnlyForm,
 }: {
+  filters: MobileViewFilterGroup
   noteListTitle: string
   setOpenAction: SetOpenAction
   updateReadOnlyForm: ReadOnlyFormUpdater
 }) {
+  updateReadOnlyForm('viewFilters', cloneFilterGroup(filters))
   updateReadOnlyForm('viewName', defaultViewName(noteListTitle))
   setOpenAction('createView')
 }
@@ -388,13 +412,18 @@ function openViewActions({
   selection,
   setOpenAction,
   updateReadOnlyForm,
+  views,
 }: {
   selection: MobileSidebarItemSelection
   setOpenAction: SetOpenAction
   updateReadOnlyForm: ReadOnlyFormUpdater
+  views: NonNullable<MobileWorkspaceSnapshot['views']>
 }) {
   if (selection.sectionId !== 'views') return
+  const view = views.find((candidate) => candidate.id === (selection.viewId ?? selection.id))
+  if (!view) return
   updateReadOnlyForm('editingViewId', selection.viewId ?? selection.id)
+  updateReadOnlyForm('viewFilters', cloneFilterGroup(view.definition.filters))
   updateReadOnlyForm('viewName', selection.label)
   setOpenAction('editView')
 }
@@ -415,19 +444,17 @@ function createNote({
 function createView({
   applyEdit,
   closeAction,
+  filters,
   name,
-  notes,
   selectedNote,
   selection,
-  views,
 }: {
   applyEdit: (edit: MobileWorkspaceEdit) => void
   closeAction: () => void
+  filters: MobileViewFilterGroup
   name: string
-  notes: MobileNote[]
   selectedNote: MobileNote | null
   selection: TabletSidebarSelection
-  views: NonNullable<MobileWorkspaceSnapshot['views']>
 }) {
   const trimmedName = name.trim()
   if (!trimmedName) return
@@ -435,7 +462,7 @@ function createView({
   applyEdit({
     definition: {
       color: viewColorForSelection(selection, selectedNote),
-      filters: viewFiltersForSelection(selection, notes, selectedNote, views),
+      filters,
       icon: null,
       name: trimmedName,
       sort: 'modified:desc',
@@ -448,12 +475,14 @@ function createView({
 function updateView({
   applyEdit,
   closeAction,
+  filters,
   name,
   viewId,
   views,
 }: {
   applyEdit: (edit: MobileWorkspaceEdit) => void
   closeAction: () => void
+  filters: MobileViewFilterGroup
   name: string
   viewId: string
   views: NonNullable<MobileWorkspaceSnapshot['views']>
@@ -463,7 +492,7 @@ function updateView({
   if (!view || !trimmedName) return
 
   applyEdit({
-    definition: { ...view.definition, name: trimmedName },
+    definition: { ...view.definition, filters, name: trimmedName },
     type: 'updateView',
     viewId,
   })
@@ -551,6 +580,19 @@ function existingViewFilters(
 
 function allFilters(filters: MobileViewFilterNode[]): MobileViewFilterGroup {
   return { all: filters }
+}
+
+function cloneFilterGroup(group: MobileViewFilterGroup): MobileViewFilterGroup {
+  if ('any' in group) return { any: group.any.map(cloneFilterNode) }
+  return { all: group.all.map(cloneFilterNode) }
+}
+
+function cloneFilterNode(node: MobileViewFilterNode): MobileViewFilterNode {
+  if ('all' in node || 'any' in node) return cloneFilterGroup(node)
+  return {
+    ...node,
+    value: Array.isArray(node.value) ? [...node.value] : node.value,
+  }
 }
 
 function singularLabel(label: string) {

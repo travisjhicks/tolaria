@@ -5,6 +5,8 @@ import {
   mobilePropertyKeySuggestions,
   mobilePropertyValueSuggestions,
   mobileRelationshipKeySuggestions,
+  mobileViewFieldSuggestions,
+  mobileViewValueSuggestions,
 } from './mobileWorkspaceSuggestions'
 
 describe('mobile workspace suggestions', () => {
@@ -41,5 +43,14 @@ describe('mobile workspace suggestions', () => {
 
     expect(suggestions.slice(0, 3)).toEqual(['belongs_to', 'related_to', 'has'])
     expect(mobileRelationshipKeySuggestions(workspaceScenarioForId('default').notes, 'ment')).toEqual(['Mentions'])
+  })
+
+  it('suggests desktop saved-view fields and values from notes', () => {
+    const notes = workspaceScenarioForId('default').notes
+
+    expect(mobileViewFieldSuggestions(notes, '').slice(0, 5)).toEqual(['type', 'status', 'title', 'favorite', 'body'])
+    expect(mobileViewFieldSuggestions(notes, 'bel')).toContain('belongs_to')
+    expect(mobileViewValueSuggestions(notes, 'type', 'ess')).toEqual(['Essay'])
+    expect(mobileViewValueSuggestions(notes, 'belongs_to', 'mvp')).toContain('Tolaria MVP')
   })
 })

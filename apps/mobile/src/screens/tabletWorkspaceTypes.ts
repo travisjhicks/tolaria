@@ -7,6 +7,7 @@ import type {
   MobileEditorBlock,
   MobileNote,
   MobilePropertyValue,
+  MobileViewFilterGroup,
   MobileWorkspaceSnapshot,
 } from '../workspace/mobileWorkspaceModel'
 import type {
@@ -26,6 +27,7 @@ export type TabletReadOnlyForm = {
   propertyValue: ReadOnlyFormValue
   relationshipName: ReadOnlyFormValue
   relationshipNoteTitle: ReadOnlyFormValue
+  viewFilters: MobileViewFilterGroup
   viewName: ReadOnlyFormValue
 }
 
@@ -59,6 +61,7 @@ export type TabletWorkspaceChromeProps = {
   onUpdateNoteContent: (noteId: NoteId, content: string) => void
   onUpdateNoteTitle: (noteId: NoteId, title: string) => void
   onUpdateProperty: (noteId: NoteId, key: string, value: MobilePropertyValue) => void
+  onViewFiltersChange: (value: MobileViewFilterGroup) => void
   onViewNameChange: (value: ReadOnlyFormValue) => void
   onSaveView: () => void
   onPropertyNameChange: (value: ReadOnlyFormValue) => void

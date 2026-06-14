@@ -120,6 +120,13 @@ export const mobileParityInventory = [
     surface: 'Workspace action-sheet suggestions',
   },
   {
+    assertions: ['saved-view filter edit user-flow checks'],
+    contracts: ['desktopPropertyParity'],
+    desktopSource: 'FilterBuilder, FilterFieldCombobox, shadcn inputs and buttons',
+    mobileFile: 'src/components/workspace/MobileViewFilterBuilder.tsx',
+    surface: 'Saved-view filter builder',
+  },
+  {
     assertions: ['editor computed styles'],
     contracts: ['desktopEditorParity', 'desktopPanelParity', 'desktopToolbarParity'],
     desktopSource: 'EditorTheme.css, theme.json, BreadcrumbBar',

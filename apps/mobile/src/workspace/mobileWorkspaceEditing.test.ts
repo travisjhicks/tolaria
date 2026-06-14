@@ -241,6 +241,10 @@ describe('applyMobileWorkspaceEdit', () => {
       kind: 'saveView',
       path: 'views/active-procedures.yml',
     }])
+    expect(result.writes[0]).toEqual(expect.objectContaining({
+      content: expect.stringContaining('value: "Active"'),
+      kind: 'saveView',
+    }))
     expect(result.snapshot.views?.[0]?.definition.name).toBe('Active Workflows')
     expect(result.snapshot.sidebarSections.find((section) => section.id === 'views')?.items?.[0]).toMatchObject({
       id: 'view-active-procedures',

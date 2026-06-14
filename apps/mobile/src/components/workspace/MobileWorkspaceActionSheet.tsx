@@ -10,13 +10,14 @@ import { MobilePanel, MobileToolbar, MobileToolbarSpacer, MobileToolbarTitle } f
 import { MobileTextInput } from '../../ui/MobileTextInput'
 import { desktopPanelParity, desktopToolbarActionParity } from '../../ui/desktopParity'
 import { mobileColors, mobileSpace, mobileType } from '../../ui/tokens'
-import type { MobileNote } from '../../workspace/mobileWorkspaceModel'
+import type { MobileNote, MobileViewFilterGroup } from '../../workspace/mobileWorkspaceModel'
 import {
   mobilePropertyKeySuggestions,
   mobilePropertyValueSuggestions,
   mobileRelationshipKeySuggestions,
 } from '../../workspace/mobileWorkspaceSuggestions'
 import { MobileTypeIcon } from './MobileWorkspaceIcons'
+import { MobileViewFilterBuilder } from './MobileViewFilterBuilder'
 import { MobileWorkspaceSuggestionList } from './MobileWorkspaceSuggestionList'
 import { chipTone, statusTone, tagTone } from './mobileWorkspaceTone'
 
@@ -47,6 +48,7 @@ type MobileWorkspaceActionSheetProps = {
   onSaveView: () => void
   onSearchQueryChange: (value: string) => void
   onSelectNote: (noteId: string) => void
+  onViewFiltersChange: (value: MobileViewFilterGroup) => void
   onViewNameChange: (value: string) => void
   propertyName: string
   propertyValue: string
@@ -54,10 +56,12 @@ type MobileWorkspaceActionSheetProps = {
   relationshipNoteTitle: string
   searchQuery: string
   selectedNote: MobileNote | null
+  viewFilters: MobileViewFilterGroup
   viewName: string
 }
 
 type SingleTextFieldConfig = {
+  extraContent?: ReactNode
   inputLabel: string
   inputPlaceholder: string
   inputTestId: string
@@ -87,6 +91,7 @@ export function MobileWorkspaceActionSheet({
   onSaveView,
   onSearchQueryChange,
   onSelectNote,
+  onViewFiltersChange,
   onViewNameChange,
   propertyName,
   propertyValue,
@@ -94,6 +99,7 @@ export function MobileWorkspaceActionSheet({
   relationshipNoteTitle,
   searchQuery,
   selectedNote,
+  viewFilters,
   viewName,
 }: MobileWorkspaceActionSheetProps) {
   return (
@@ -123,6 +129,7 @@ export function MobileWorkspaceActionSheet({
           onSaveView={onSaveView}
           onSearchQueryChange={onSearchQueryChange}
           onSelectNote={onSelectNote}
+          onViewFiltersChange={onViewFiltersChange}
           onViewNameChange={onViewNameChange}
           propertyName={propertyName}
           propertyValue={propertyValue}
@@ -130,6 +137,7 @@ export function MobileWorkspaceActionSheet({
           relationshipNoteTitle={relationshipNoteTitle}
           searchQuery={searchQuery}
           selectedNote={selectedNote}
+          viewFilters={viewFilters}
           viewName={viewName}
         />
       </MobilePanel>
@@ -218,7 +226,7 @@ function searchText(note: MobileNote) {
 }
 
 function SingleTextFieldContent({ config }: { config: SingleTextFieldConfig }) {
-  const { inputLabel, inputPlaceholder, inputTestId, inputValue, onCancel, onChangeText, onSubmit, secondaryAction, submitLabel } = config
+  const { extraContent, inputLabel, inputPlaceholder, inputTestId, inputValue, onCancel, onChangeText, onSubmit, secondaryAction, submitLabel } = config
 
   return (
     <View style={styles.content}>
@@ -230,6 +238,7 @@ function SingleTextFieldContent({ config }: { config: SingleTextFieldConfig }) {
         value={inputValue}
         onChangeText={onChangeText}
       />
+      {extraContent}
       <SheetFooter>
         {secondaryAction}
         <MobileButton label={mobileText('common.cancel')} variant="ghost" onPress={onCancel} />
@@ -242,6 +251,7 @@ function SingleTextFieldContent({ config }: { config: SingleTextFieldConfig }) {
 function singleTextFieldConfig(props: MobileWorkspaceActionSheetProps) {
   if (props.action === 'editView') {
     return {
+      extraContent: viewFilterBuilder(props),
       inputLabel: mobileText('viewDialog.nameLabel'),
       inputPlaceholder: mobileText('viewDialog.namePlaceholder'),
       inputTestId: 'workspace-edit-view-name-input',
@@ -256,6 +266,7 @@ function singleTextFieldConfig(props: MobileWorkspaceActionSheetProps) {
 
   if (props.action === 'createView') {
     return {
+      extraContent: viewFilterBuilder(props),
       inputLabel: mobileText('viewDialog.nameLabel'),
       inputPlaceholder: mobileText('viewDialog.namePlaceholder'),
       inputTestId: 'workspace-create-view-name-input',
@@ -277,6 +288,16 @@ function singleTextFieldConfig(props: MobileWorkspaceActionSheetProps) {
     onSubmit: props.onCreateNote,
     submitLabel: mobileText('common.create'),
   }
+}
+
+function viewFilterBuilder(props: MobileWorkspaceActionSheetProps) {
+  return (
+    <MobileViewFilterBuilder
+      group={props.viewFilters}
+      notes={props.notes}
+      onChange={props.onViewFiltersChange}
+    />
+  )
 }
 
 function DeleteViewButton({ onPress }: { onPress: () => void }) {
