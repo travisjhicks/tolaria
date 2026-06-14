@@ -9,6 +9,7 @@ import type {
   MobileSidebarIcon,
   MobileSidebarItem,
   MobileSidebarSection,
+  MobileSavedView,
   MobileSyncStatus,
   MobileTone,
   MobileWorkspaceSnapshot,
@@ -23,6 +24,7 @@ export type FixtureSidebarIcon = MobileSidebarIcon
 export type FixtureSidebarItem = MobileSidebarItem
 export type FixtureSidebarSection = MobileSidebarSection
 export type FixtureSidebarFolder = MobileSidebarFolder
+export type FixtureSavedView = MobileSavedView
 export type FixtureSyncStatus = MobileSyncStatus
 export type FixtureEditorInline = MobileEditorInline
 export type FixtureEditorBlock = MobileEditorBlock
@@ -330,6 +332,13 @@ const defaultSidebarSections: FixtureSidebarSection[] = [
     ],
   },
   {
+    id: 'views',
+    label: 'Views',
+    items: [
+      { id: 'view-active-procedures', count: '1', icon: 'view', label: 'Active Procedures', tone: 'purple', viewId: 'view-active-procedures' },
+    ],
+  },
+  {
     count: '517',
     id: 'types',
     label: 'Types',
@@ -363,6 +372,25 @@ const defaultSidebarSections: FixtureSidebarSection[] = [
         ],
       },
     ],
+  },
+]
+
+const fixtureViews: FixtureSavedView[] = [
+  {
+    filename: 'active-procedures.yml',
+    id: 'view-active-procedures',
+    definition: {
+      color: 'purple',
+      filters: {
+        all: [
+          { field: 'type', op: 'equals', value: 'Procedure' },
+          { field: 'status', op: 'equals', value: 'Active' },
+        ],
+      },
+      icon: null,
+      name: 'Active Procedures',
+      sort: 'modified:desc',
+    },
   },
 ]
 
@@ -425,6 +453,7 @@ export const workspaceScenarios: Record<WorkspaceScenarioId, WorkspaceScenario> 
     selectedNoteId: fixtureNotes[0].id,
     sidebarSections: defaultSidebarSections,
     sync: { kind: 'synced', minutesAgo: 2 },
+    views: fixtureViews,
   },
   'folder-tree': {
     editorBlocks: fixtureEditorBlocks,
@@ -435,6 +464,7 @@ export const workspaceScenarios: Record<WorkspaceScenarioId, WorkspaceScenario> 
     selectedNoteId: fixtureNotes[1].id,
     sidebarSections: folderTreePressureSections,
     sync: { kind: 'synced', minutesAgo: 8 },
+    views: fixtureViews,
   },
   'empty-inbox': {
     editorBlocks: fixtureEditorBlocks,
@@ -445,6 +475,7 @@ export const workspaceScenarios: Record<WorkspaceScenarioId, WorkspaceScenario> 
     searchQuery: 'Inbox',
     sidebarSections: defaultSidebarSections,
     sync: { kind: 'pullRequired' },
+    views: fixtureViews,
   },
   'long-title': {
     editorBlocks: longTitleEditorBlocks,
@@ -458,6 +489,7 @@ export const workspaceScenarios: Record<WorkspaceScenarioId, WorkspaceScenario> 
     selectedNoteId: longTitleNote.id,
     sidebarSections: defaultSidebarSections,
     sync: { kind: 'synced', minutesAgo: 1 },
+    views: fixtureViews,
   },
   'property-heavy': {
     editorBlocks: propertyHeavyEditorBlocks,
@@ -471,6 +503,7 @@ export const workspaceScenarios: Record<WorkspaceScenarioId, WorkspaceScenario> 
     selectedNoteId: propertyHeavyNote.id,
     sidebarSections: defaultSidebarSections,
     sync: { kind: 'conflict' },
+    views: fixtureViews,
   },
 }
 

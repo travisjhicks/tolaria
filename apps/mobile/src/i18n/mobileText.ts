@@ -16,4 +16,5 @@ export const mobileCopy = {
   properties: mobileText('inspector.title.properties'),
   searchNotes: mobileText('noteList.searchAction'),
   types: mobileText('sidebar.group.types'),
+  views: mobileText('sidebar.group.views'),
 }

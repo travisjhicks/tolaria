@@ -5,7 +5,7 @@ import { MobilePropertiesPanel } from '../components/workspace/MobilePropertiesP
 import { MobileSyncStatusBar } from '../components/workspace/MobileSyncStatusBar'
 import { MobileWorkspaceActionSheet, type MobileWorkspaceAction } from '../components/workspace/MobileWorkspaceActionSheet'
 import { MobileWorkspaceSidebar } from '../components/workspace/MobileWorkspaceSidebar'
-import type { MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
+import type { MobileNote, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
 import { applyMobileWorkspaceEdit, type MobileWorkspaceEdit } from '../workspace/mobileWorkspaceEditing'
 import { mobileColors } from '../ui/tokens'
 import { useHorizontalSwipe } from '../ui/useHorizontalSwipe'
@@ -28,7 +28,6 @@ export function TabletWorkspace({
   layoutProbe?: boolean
   snapshot: MobileWorkspaceSnapshot
 }) {
-  const { height, width } = useWindowDimensions()
   const [workspaceSnapshot, setWorkspaceSnapshot] = useState(snapshot)
   const [openAction, setOpenAction] = useState<MobileWorkspaceAction | null>(null)
   const [readOnlyForm, setReadOnlyForm] = useState<TabletReadOnlyForm>(emptyReadOnlyForm)
@@ -47,11 +46,7 @@ export function TabletWorkspace({
     selectSidebarItem,
     setSelectedNoteId,
   } = useTabletWorkspaceNavigation(workspaceSnapshot, searchQuery)
-  const screen = Dimensions.get('screen')
-  const nativeIpad = Platform.OS === 'ios' && Platform.isPad
-  const effectiveTabletWidth = nativeIpad ? Math.max(width, height, screen.width, screen.height) : width
-  const compactTablet = !nativeIpad && width < 1080 && width < height && screen.width < screen.height
-  const defaultPropertiesVisible = nativeIpad ? effectiveTabletWidth >= 1200 : true
+  const { compactTablet, defaultPropertiesVisible } = useTabletScreenMode()
   const updateReadOnlyForm = useCallback(<Key extends keyof TabletReadOnlyForm,>(key: Key, value: TabletReadOnlyForm[Key]) => {
     setReadOnlyForm((current) => ({ ...current, [key]: value }))
   }, [])
@@ -144,6 +139,18 @@ export function TabletWorkspace({
   )
 }
 
+function useTabletScreenMode() {
+  const { height, width } = useWindowDimensions()
+  const screen = Dimensions.get('screen')
+  const nativeIpad = Platform.OS === 'ios' && Platform.isPad
+  const effectiveTabletWidth = nativeIpad ? Math.max(width, height, screen.width, screen.height) : width
+
+  return {
+    compactTablet: !nativeIpad && width < 1080 && width < height && screen.width < screen.height,
+    defaultPropertiesVisible: nativeIpad ? effectiveTabletWidth >= 1200 : true,
+  }
+}
+
 function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
   const {
     activeFolderId,
@@ -158,21 +165,11 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
     notes,
     onAddProperty,
     onAddRelationship,
-    onCloseAction,
-    onCreateNote,
-    onCreateTitleChange,
     onDeleteProperty,
     onOpenCreateNote,
     onOpenMoreActions,
     onOpenSearch,
-    onPropertyNameChange,
-    onPropertyValueChange,
-    onRelationshipNameChange,
-    onRelationshipNoteTitleChange,
     onRemoveRelationship,
-    onSaveProperty,
-    onSaveRelationship,
-    onSearchQueryChange,
     onSelectFolder,
     onSelectNote,
     onSelectSidebarItem,
@@ -180,14 +177,13 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
     onUpdateNoteContent,
     onUpdateNoteTitle,
     onUpdateProperty,
-    openAction,
-    readOnlyForm,
     searchQuery,
     selectedNote,
     selectedNoteId,
     snapshot,
   } = props
   const gestures = useTabletPanelGestures(compactTablet, defaultPropertiesVisible)
+  const suggestionNotes = snapshot.allNotes ?? snapshot.notes
 
   return (
     <View style={styles.shell}>
@@ -224,7 +220,7 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
         bullets={editorBullets}
         compact={compactTablet}
         note={selectedNote}
-        notes={snapshot.notes}
+        notes={suggestionNotes}
         onOpenMoreActions={onOpenMoreActions}
         onToggleFavorite={onToggleFavorite}
         onUpdateContent={onUpdateNoteContent}
@@ -243,31 +239,55 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
           />
         </View>
       ) : <SwipeRail edge="right" swipeHandlers={gestures.propertiesRevealSwipe} />}
-      {openAction ? (
-        <MobileWorkspaceActionSheet
-          action={openAction}
-          createTitle={readOnlyForm.createTitle}
-          notes={notes}
-          propertyName={readOnlyForm.propertyName}
-          propertyValue={readOnlyForm.propertyValue}
-          relationshipName={readOnlyForm.relationshipName}
-          relationshipNoteTitle={readOnlyForm.relationshipNoteTitle}
-          searchQuery={searchQuery}
-          selectedNote={selectedNote}
-          onClose={onCloseAction}
-          onCreateNote={onCreateNote}
-          onCreateTitleChange={onCreateTitleChange}
-          onPropertyNameChange={onPropertyNameChange}
-          onPropertyValueChange={onPropertyValueChange}
-          onRelationshipNameChange={onRelationshipNameChange}
-          onRelationshipNoteTitleChange={onRelationshipNoteTitleChange}
-          onSaveProperty={onSaveProperty}
-          onSaveRelationship={onSaveRelationship}
-          onSearchQueryChange={onSearchQueryChange}
-          onSelectNote={onSelectNote}
-        />
-      ) : null}
+      <WorkspaceActionSheetHost {...props} suggestionNotes={suggestionNotes} />
     </View>
+  )
+}
+
+function WorkspaceActionSheetHost(props: TabletWorkspaceChromeProps & { suggestionNotes: MobileNote[] }) {
+  const {
+    onCloseAction,
+    onCreateNote,
+    onCreateTitleChange,
+    onPropertyNameChange,
+    onPropertyValueChange,
+    onRelationshipNameChange,
+    onRelationshipNoteTitleChange,
+    onSaveProperty,
+    onSaveRelationship,
+    onSearchQueryChange,
+    onSelectNote,
+    openAction,
+    readOnlyForm,
+    searchQuery,
+    selectedNote,
+    suggestionNotes,
+  } = props
+  if (!openAction) return null
+
+  return (
+    <MobileWorkspaceActionSheet
+      action={openAction}
+      createTitle={readOnlyForm.createTitle}
+      notes={suggestionNotes}
+      propertyName={readOnlyForm.propertyName}
+      propertyValue={readOnlyForm.propertyValue}
+      relationshipName={readOnlyForm.relationshipName}
+      relationshipNoteTitle={readOnlyForm.relationshipNoteTitle}
+      searchQuery={searchQuery}
+      selectedNote={selectedNote}
+      onClose={onCloseAction}
+      onCreateNote={onCreateNote}
+      onCreateTitleChange={onCreateTitleChange}
+      onPropertyNameChange={onPropertyNameChange}
+      onPropertyValueChange={onPropertyValueChange}
+      onRelationshipNameChange={onRelationshipNameChange}
+      onRelationshipNoteTitleChange={onRelationshipNoteTitleChange}
+      onSaveProperty={onSaveProperty}
+      onSaveRelationship={onSaveRelationship}
+      onSearchQueryChange={onSearchQueryChange}
+      onSelectNote={onSelectNote}
+    />
   )
 }
 

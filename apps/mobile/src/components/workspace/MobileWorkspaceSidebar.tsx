@@ -4,6 +4,7 @@ import {
   CaretDown,
   FileText,
   FolderOpen,
+  Funnel,
   SidebarSimple,
   StackSimple,
   Star,
@@ -35,6 +36,7 @@ export type MobileSidebarItemSelection = {
   id: string
   label: string
   sectionId: string
+  viewId?: string
 }
 
 export function MobileWorkspaceSidebar({
@@ -95,6 +97,7 @@ export function MobileWorkspaceSidebar({
                     id: item.id,
                     label,
                     sectionId: section.id,
+                    viewId: item.viewId,
                   })}
                 />
               )
@@ -214,6 +217,7 @@ function sidebarIcon(icon: MobileSidebarIcon, tone?: MobileNote['typeTone'] | 'p
   if (icon === 'procedure') return <StackSimple color={color} size={15} />
   if (icon === 'star') return <Star color={color} size={15} />
   if (icon === 'tag') return <Tag color={color} size={15} />
+  if (icon === 'view') return <Funnel color={color} size={15} />
 
   return <FileText color={color} size={15} />
 }
@@ -245,6 +249,7 @@ function sidebarSectionLabel(id: string, fallback: string) {
   if (id === 'folders') return mobileText('sidebar.group.folders')
   if (id === 'favorites') return mobileCopy.favorites
   if (id === 'types') return mobileCopy.types
+  if (id === 'views') return mobileCopy.views
 
   return fallback
 }

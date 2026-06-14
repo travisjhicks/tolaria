@@ -117,6 +117,8 @@ function SearchContent({
   onSelectNote,
   searchQuery,
 }: MobileWorkspaceActionSheetProps) {
+  const searchResults = searchNotes(notes, searchQuery)
+
   return (
     <View style={styles.content}>
       <MobileTextInput
@@ -128,8 +130,8 @@ function SearchContent({
         onChangeText={onSearchQueryChange}
       />
       <ScrollView contentContainerStyle={styles.resultList} keyboardShouldPersistTaps="handled" testID="workspace-search-results">
-        {notes.length === 0 ? <EmptyState>{mobileText('noteList.empty.noMatching')}</EmptyState> : null}
-        {notes.slice(0, 16).map((note) => (
+        {searchResults.length === 0 ? <EmptyState>{mobileText('noteList.empty.noMatching')}</EmptyState> : null}
+        {searchResults.map((note) => (
           <MobileListRow
             key={note.id}
             chips={<NoteRowChips note={note} />}
@@ -148,6 +150,27 @@ function SearchContent({
       </ScrollView>
     </View>
   )
+}
+
+function searchNotes(notes: MobileNote[], query: string) {
+  const normalizedQuery = query.trim().toLowerCase()
+  const activeNotes = notes.filter((note) => !note.archived)
+  if (!normalizedQuery) return activeNotes.slice(0, 16)
+
+  return activeNotes
+    .filter((note) => searchText(note).includes(normalizedQuery))
+    .slice(0, 16)
+}
+
+function searchText(note: MobileNote) {
+  return [
+    note.title,
+    note.snippet,
+    note.type,
+    note.status,
+    note.tags.join(' '),
+    note.path ?? '',
+  ].join(' ').toLowerCase()
 }
 
 function CreateNoteContent({

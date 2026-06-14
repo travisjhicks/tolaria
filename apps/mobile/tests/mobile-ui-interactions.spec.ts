@@ -70,6 +70,17 @@ test.describe('mobile UI lab interactions', () => {
     await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
   })
 
+  test('navigates fixture saved views', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'tablet-landscape', 'Saved-view navigation is exercised in the full-width tablet layout.')
+
+    await page.goto('/')
+
+    await page.getByRole('button', { name: 'Active Procedures' }).click()
+    await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('Active Procedures')
+    await expect(page.getByText('How I Run an Open Source Project').first()).toBeVisible()
+    await expect(page.getByText('Workflow Orchestration Essay').first()).toBeHidden()
+  })
+
   test('keeps large local-vault read-only interactions within tablet budgets', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'tablet-landscape', 'Large-vault performance checks run once on the primary tablet layout.')
 
@@ -77,6 +88,7 @@ test.describe('mobile UI lab interactions', () => {
     assertSnapshotBuildBudgets(state)
     await assertLocalVaultRenderBudget(page, state)
     await assertNoteSwitchBudget(page, state)
+    await assertSavedViewNavigationBudget(page, state)
     await assertTypeNavigationBudget(page, state)
     await assertFolderNavigationBudget(page, state)
   })
@@ -126,6 +138,17 @@ async function assertTypeNavigationBudget(page: PageLike, state: LocalVaultSnaps
     await expect(page.getByTestId('note-list-toolbar-title')).toHaveText(typeItem.label)
   })
   expect(typeNavigationDurationMs).toBeLessThan(700)
+}
+
+async function assertSavedViewNavigationBudget(page: PageLike, state: LocalVaultSnapshotState) {
+  const viewItem = state.snapshot.sidebarSections.find((section) => section.id === 'views')?.items?.[0]
+  if (!viewItem) return
+
+  const viewNavigationDurationMs = await measureDuration(async () => {
+    await page.getByRole('button', { name: viewItem.label }).click()
+    await expect(page.getByTestId('note-list-toolbar-title')).toHaveText(viewItem.label)
+  })
+  expect(viewNavigationDurationMs).toBeLessThan(700)
 }
 
 async function assertFolderNavigationBudget(page: PageLike, state: LocalVaultSnapshotState) {

@@ -159,7 +159,7 @@ test.describe('mobile UI lab screenshots', () => {
 
     await page.goto('/')
 
-    await page.getByRole('button', { name: 'Procedures' }).click()
+    await page.getByTestId('sidebar-item-procedures').click()
     await expect(page.getByText('How I Run an Open Source Project').first()).toBeVisible()
     await expect(page.getByText('Procedure').last()).toBeVisible()
 

@@ -15,6 +15,7 @@ export const fixtureReadOnlyWorkspaceRepository: ReadOnlyWorkspaceRepository = {
 }
 
 export const HOST_WORKSPACE_SNAPSHOT_STORAGE_KEY = 'tolaria:mobile-workspace-snapshot'
+export const HOST_WORKSPACE_SNAPSHOT_GLOBAL_KEY = '__TOLARIA_MOBILE_WORKSPACE_SNAPSHOT__'
 
 export const readOnlyWorkspaceRepository: ReadOnlyWorkspaceRepository = {
   readSnapshot: (request) => {
@@ -27,6 +28,9 @@ export const readOnlyWorkspaceRepository: ReadOnlyWorkspaceRepository = {
 }
 
 function readHostWorkspaceSnapshot(): MobileWorkspaceSnapshot | null {
+  const injectedSnapshot = hostGlobalSnapshot()
+  if (injectedSnapshot) return injectedSnapshot
+
   const storage = hostStorage()
   if (!storage) return null
 
@@ -39,6 +43,11 @@ function readHostWorkspaceSnapshot(): MobileWorkspaceSnapshot | null {
   } catch {
     return null
   }
+}
+
+function hostGlobalSnapshot(): MobileWorkspaceSnapshot | null {
+  const maybeSnapshot = (globalThis as Record<string, unknown>)[HOST_WORKSPACE_SNAPSHOT_GLOBAL_KEY]
+  return isMobileWorkspaceSnapshot(maybeSnapshot) ? maybeSnapshot : null
 }
 
 function hostStorage(): Pick<Storage, 'getItem'> | null {

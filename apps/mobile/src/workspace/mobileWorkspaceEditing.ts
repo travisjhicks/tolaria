@@ -42,10 +42,53 @@ export type MobileWorkspaceEdit =
   | { key: FrontmatterKey; noteId: NoteId; ref: WikilinkRef; type: 'removeRelationship' }
   | { noteId: NoteId; type: 'toggleFavorite' }
   | { archived: boolean; noteId: NoteId; type: 'setArchived' }
+type MobileNoteEdit = Exclude<MobileWorkspaceEdit, { type: 'createNote' }>
 
 type DerivedNote = {
   note: EditableNoteInput
   rawRelationships: Record<string, WikilinkRef[]>
+}
+
+type MobileNoteEditContext = {
+  editableNote: EditableNoteInput
+  note: MobileNote
+  notes: MobileNote[]
+}
+type MobileNoteEditHandler = (context: MobileNoteEditContext, edit: MobileNoteEdit) => MobileNote
+
+const mobileNoteEditHandlers: Record<MobileNoteEdit['type'], MobileNoteEditHandler> = {
+  addRelationship: ({ editableNote, notes }, edit) => {
+    if (edit.type !== 'addRelationship') return editableNote
+    return addRelationship(editableNote, notes, edit.key, edit.targetTitle)
+  },
+  deleteProperty: ({ editableNote }, edit) => {
+    if (edit.type !== 'deleteProperty') return editableNote
+    return deriveEditedNote(editableNote, writeFrontmatterValue(editableNote.rawContent, edit.key, null))
+  },
+  removeRelationship: ({ editableNote }, edit) => {
+    if (edit.type !== 'removeRelationship') return editableNote
+    return removeRelationship(editableNote, edit.key, edit.ref)
+  },
+  renameNoteTitle: ({ editableNote }, edit) => {
+    if (edit.type !== 'renameNoteTitle') return editableNote
+    return deriveEditedNote(editableNote, replaceMarkdownTitle(editableNote.rawContent, edit.title))
+  },
+  setArchived: ({ editableNote }, edit) => {
+    if (edit.type !== 'setArchived') return editableNote
+    return deriveEditedNote(editableNote, writeFrontmatterValue(editableNote.rawContent, '_archived', edit.archived))
+  },
+  toggleFavorite: ({ editableNote, note }, edit) => {
+    if (edit.type !== 'toggleFavorite') return editableNote
+    return deriveEditedNote(editableNote, writeFrontmatterValue(editableNote.rawContent, '_favorite', !note.favorite))
+  },
+  updateNoteContent: ({ editableNote }, edit) => {
+    if (edit.type !== 'updateNoteContent') return editableNote
+    return deriveEditedNote(editableNote, contentEditWithPreservedFrontmatter(editableNote.rawContent, edit.content))
+  },
+  updateProperty: ({ editableNote }, edit) => {
+    if (edit.type !== 'updateProperty') return editableNote
+    return deriveEditedNote(editableNote, writeFrontmatterValue(editableNote.rawContent, edit.key, edit.value))
+  },
 }
 
 export function applyMobileWorkspaceEdit(
@@ -56,8 +99,10 @@ export function applyMobileWorkspaceEdit(
     return createMobileNote(snapshot, edit.title)
   }
 
-  const notes = snapshot.notes.map((note) => applyMobileNoteEdit(note, snapshot.notes, edit))
-  return rebuildSnapshot({ ...snapshot, notes }, notes)
+  const notePool = workspaceNotePool(snapshot)
+  const notes = snapshot.notes.map((note) => applyMobileNoteEdit(note, notePool, edit))
+  const allNotes = snapshot.allNotes?.map((note) => applyMobileNoteEdit(note, notePool, edit))
+  return rebuildSnapshot({ ...snapshot, allNotes, notes }, notes, allNotes)
 }
 
 export function mobileWikilinkSuggestions(notes: MobileNote[], query: string): MobileNote[] {
@@ -94,7 +139,8 @@ function createMobileNote(snapshot: MobileWorkspaceSnapshot, title: NoteTitle): 
   const trimmedTitle = title.trim()
   if (!trimmedTitle) return snapshot
 
-  const id = uniqueNoteId(snapshot.notes, `${slugifyTitle(trimmedTitle)}.md`)
+  const notePool = workspaceNotePool(snapshot)
+  const id = uniqueNoteId(notePool, `${slugifyTitle(trimmedTitle)}.md`)
   const now = Date.now()
   const rawContent = `# ${trimmedTitle}\n\n`
   const note = deriveEditableNote({
@@ -122,57 +168,19 @@ function createMobileNote(snapshot: MobileWorkspaceSnapshot, title: NoteTitle): 
   return rebuildSnapshot(
     { ...snapshot, selectedNoteId: id },
     [note, ...snapshot.notes],
+    [note, ...notePool],
   )
 }
 
 function applyMobileNoteEdit(
   note: MobileNote,
   notes: MobileNote[],
-  edit: Exclude<MobileWorkspaceEdit, { type: 'createNote' }>,
+  edit: MobileNoteEdit,
 ): MobileNote {
   if (note.id !== edit.noteId) return note
 
   const editableNote = withEditableContent(note)
-  if (edit.type === 'updateNoteContent') {
-    return deriveEditableNote({
-      fallback: editableNote,
-      rawContent: contentEditWithPreservedFrontmatter(editableNote.rawContent, edit.content),
-    }).note
-  }
-  if (edit.type === 'renameNoteTitle') {
-    return deriveEditableNote({
-      fallback: editableNote,
-      rawContent: replaceMarkdownTitle(editableNote.rawContent, edit.title),
-    }).note
-  }
-  if (edit.type === 'updateProperty') {
-    return deriveEditableNote({
-      fallback: editableNote,
-      rawContent: writeFrontmatterValue(editableNote.rawContent, edit.key, edit.value),
-    }).note
-  }
-  if (edit.type === 'deleteProperty') {
-    return deriveEditableNote({
-      fallback: editableNote,
-      rawContent: writeFrontmatterValue(editableNote.rawContent, edit.key, null),
-    }).note
-  }
-  if (edit.type === 'addRelationship') {
-    return addRelationship(editableNote, notes, edit.key, edit.targetTitle)
-  }
-  if (edit.type === 'removeRelationship') {
-    return removeRelationship(editableNote, edit.key, edit.ref)
-  }
-  if (edit.type === 'toggleFavorite') {
-    return deriveEditableNote({
-      fallback: editableNote,
-      rawContent: writeFrontmatterValue(editableNote.rawContent, '_favorite', !note.favorite),
-    }).note
-  }
-  return deriveEditableNote({
-    fallback: editableNote,
-    rawContent: writeFrontmatterValue(editableNote.rawContent, '_archived', edit.archived),
-  }).note
+  return mobileNoteEditHandlers[edit.type]({ editableNote, note, notes }, edit)
 }
 
 function addRelationship(
@@ -214,22 +222,39 @@ function removeRelationship(
 function rebuildSnapshot(
   snapshot: MobileWorkspaceSnapshot,
   notes: MobileNote[],
+  allNotes = notes,
 ): MobileWorkspaceSnapshot {
-  const derived = notes.map((note) => deriveEditableNote({ fallback: withEditableContent(note), rawContent: withEditableContent(note).rawContent }))
-  const resolvedNotes = derived.map(({ note, rawRelationships }) => ({
+  const derivedAllNotes = allNotes.map(deriveMobileNote)
+  const resolvedAllNotes = derivedAllNotes.map(({ note, rawRelationships }) => ({
     ...note,
-    relationships: mobileRelationships(rawRelationships, derived),
+    relationships: mobileRelationships(rawRelationships, derivedAllNotes),
   }))
+  const resolvedNoteById = new Map(resolvedAllNotes.map((note) => [note.id, note]))
+  const resolvedNotes = notes.map((note) => resolvedNoteById.get(note.id) ?? note)
   const selectedNote = resolvedNotes.find((note) => note.id === snapshot.selectedNoteId) ?? resolvedNotes[0] ?? null
 
   return {
     ...snapshot,
+    allNotes: snapshot.allNotes ? resolvedAllNotes : undefined,
     editorBlocks: selectedNote?.editorBlocks ?? [],
     editorBullets: selectedNote?.editorBullets ?? [],
     noteListSubtitle: noteListSubtitle(resolvedNotes),
     notes: resolvedNotes,
     selectedNoteId: selectedNote?.id,
   }
+}
+
+function deriveMobileNote(note: MobileNote): DerivedNote {
+  const editable = withEditableContent(note)
+  return deriveEditableNote({ fallback: editable, rawContent: editable.rawContent })
+}
+
+function deriveEditedNote(fallback: EditableNoteInput, rawContent: MarkdownContent): MobileNote {
+  return deriveEditableNote({ fallback, rawContent }).note
+}
+
+function workspaceNotePool(snapshot: MobileWorkspaceSnapshot): MobileNote[] {
+  return snapshot.allNotes ?? snapshot.notes
 }
 
 function deriveEditableNote({
@@ -338,13 +363,19 @@ function writeFrontmatterValue(
   const document = parseLocalVaultDocument(content)
   const nextFrontmatter = { ...document.frontmatter }
 
-  if (value === undefined || value === null || isEmptyArray(value)) {
+  if (shouldRemoveFrontmatterValue(value)) {
     Reflect.deleteProperty(nextFrontmatter, key)
   } else {
     nextFrontmatter[key] = value
   }
 
   return serializeDocument(nextFrontmatter, document.body)
+}
+
+function shouldRemoveFrontmatterValue(
+  value: LocalVaultFrontmatterValue | undefined,
+): value is undefined | null | [] {
+  return value === undefined || value === null || isEmptyArray(value)
 }
 
 function contentEditWithPreservedFrontmatter(

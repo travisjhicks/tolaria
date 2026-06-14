@@ -12,6 +12,11 @@ import {
   localVaultEditorBullets,
   localVaultSnippet,
 } from './localVaultMarkdown'
+import {
+  evaluateMobileSavedView,
+  orderedMobileSavedViews,
+  parseMobileSavedViewFile,
+} from './mobileSavedViews'
 import type {
   MobileNote,
   MobileProperty,
@@ -21,6 +26,7 @@ import type {
   MobileRelationshipValue,
   MobileSidebarFolder,
   MobileSidebarSection,
+  MobileSavedView,
   MobileTone,
   MobileWorkspaceSnapshot,
 } from './mobileWorkspaceModel'
@@ -74,6 +80,7 @@ type LocalVaultEntry = {
 }
 
 type RelationshipResolver = (target: WikilinkTarget) => LocalVaultEntry | null
+type MobileNoteDetailLevel = 'editable' | 'summary'
 
 const DEFAULT_MAX_NOTES = 80
 
@@ -82,21 +89,25 @@ export function buildLocalVaultWorkspaceSnapshot({
   maxNotes = DEFAULT_MAX_NOTES,
   vaultLabel,
 }: LocalVaultSnapshotOptions): MobileWorkspaceSnapshot {
-  const entries = applyTypeDefinitionTones(files.map(parseLocalVaultEntry))
+  const entries = applyTypeDefinitionTones(files.filter(isMarkdownFile).map(parseLocalVaultEntry))
   const noteEntries = entries.filter((entry) => entry.type !== 'Type')
+  const allNoteEntries = [...noteEntries].sort(compareByModifiedDate)
   const visibleEntries = visibleNoteEntries(noteEntries)
   const selectedEntries = visibleEntries.slice(0, maxNotes)
   const resolveRelationship = relationshipResolver(entries)
-  const notes = selectedEntries.map((entry) => localEntryToMobileNote(entry, resolveRelationship, vaultLabel))
+  const allNotes = allNoteEntries.map((entry) => localEntryToMobileNote(entry, resolveRelationship, vaultLabel, 'summary'))
+  const notes = selectedEntries.map((entry) => localEntryToMobileNote(entry, resolveRelationship, vaultLabel, 'editable'))
   const selectedNoteId = notes[0]?.id
+  const views = orderedMobileSavedViews(files.map(parseViewFile).filter(isMobileSavedView))
 
   return {
+    allNotes,
     editorBlocks: notes[0]?.editorBlocks ?? [],
     editorBullets: notes[0]?.editorBullets ?? [],
     noteListSubtitle: noteListSubtitle(notes.length, visibleEntries.length),
     notes,
     selectedNoteId,
-    sidebarSections: sidebarSections(entries, noteEntries),
+    sidebarSections: sidebarSections(entries, noteEntries, allNotes, views),
     source: {
       kind: 'localVault',
       label: vaultLabel,
@@ -104,6 +115,7 @@ export function buildLocalVaultWorkspaceSnapshot({
       visibleNotes: notes.length,
     },
     sync: { kind: 'synced', minutesAgo: 0 },
+    views,
   }
 }
 
@@ -155,6 +167,18 @@ function parseLocalVaultEntry(file: LocalVaultFile): LocalVaultEntry {
   }
 }
 
+function parseViewFile(file: LocalVaultFile, index: number): MobileSavedView | null {
+  return parseMobileSavedViewFile(file, index)
+}
+
+function isMarkdownFile(file: LocalVaultFile): boolean {
+  return file.relativePath.endsWith('.md')
+}
+
+function isMobileSavedView(view: MobileSavedView | null): view is MobileSavedView {
+  return view !== null
+}
+
 function cleanTypeName(value: string): NoteTypeName {
   return wikilinkTarget(value).replace(/\.md$/, '')
 }
@@ -163,23 +187,26 @@ function localEntryToMobileNote(
   entry: LocalVaultEntry,
   resolveRelationship: RelationshipResolver,
   vaultLabel: string,
+  detailLevel: MobileNoteDetailLevel,
 ): MobileNote {
-  const blocks = localVaultEditorBlocks(entry.body)
+  const blocks = detailLevel === 'editable' ? localVaultEditorBlocks(entry.body) : undefined
 
   return {
     created: relativeDate(entry.createdAt),
+    createdAt: entry.createdAt,
     date: absoluteDate(entry.modifiedAt),
     editorBlocks: blocks,
-    editorBullets: localVaultEditorBullets(blocks),
+    editorBullets: blocks ? localVaultEditorBullets(blocks) : undefined,
     favorite: entry.favorite,
     id: entry.id,
     links: entry.links,
     modified: relativeDate(entry.modifiedAt),
+    modifiedAt: entry.modifiedAt,
     archived: entry.archived,
     organized: entry.organized,
     path: entry.path,
     properties: entry.properties,
-    rawContent: entry.rawContent,
+    rawContent: detailLevel === 'editable' ? entry.rawContent : undefined,
     relationships: mobileRelationships(entry.relationships, resolveRelationship),
     snippet: localVaultSnippet(entry.body),
     status: entry.status,
@@ -207,12 +234,17 @@ function noteListSubtitle(visibleCount: number, totalCount: number): string {
   return `${visibleCount.toLocaleString()} / ${totalCount.toLocaleString()}`
 }
 
-function sidebarSections(entries: LocalVaultEntry[], noteEntries: LocalVaultEntry[]): MobileSidebarSection[] {
+function sidebarSections(
+  entries: LocalVaultEntry[],
+  noteEntries: LocalVaultEntry[],
+  notes: MobileNote[],
+  views: MobileSavedView[],
+): MobileSidebarSection[] {
   const activeNotes = noteEntries.filter((entry) => !entry.archived)
   const archivedNotes = noteEntries.filter((entry) => entry.archived)
   const inboxNotes = activeNotes.filter((entry) => !entry.organized)
 
-  return [
+  const sections: MobileSidebarSection[] = [
     {
       id: 'primary',
       items: [
@@ -222,9 +254,12 @@ function sidebarSections(entries: LocalVaultEntry[], noteEntries: LocalVaultEntr
       ],
     },
     favoritesSection(activeNotes),
+    viewsSection(views, notes),
     typesSection(activeNotes),
     foldersSection(entries),
   ]
+
+  return sections.filter(hasSidebarContent)
 }
 
 function favoritesSection(entries: LocalVaultEntry[]): MobileSidebarSection {
@@ -238,6 +273,25 @@ function favoritesSection(entries: LocalVaultEntry[]): MobileSidebarSection {
     })),
     label: 'Favorites',
   }
+}
+
+function viewsSection(views: MobileSavedView[], notes: MobileNote[]): MobileSidebarSection {
+  return {
+    id: 'views',
+    items: views.map((view) => ({
+      count: countText(evaluateMobileSavedView(view, notes).length),
+      icon: 'view',
+      id: view.id,
+      label: view.definition.name,
+      tone: toneFromDesktopColor(view.definition.color, 'Note'),
+      viewId: view.id,
+    })),
+    label: 'Views',
+  }
+}
+
+function hasSidebarContent(section: MobileSidebarSection): boolean {
+  return Boolean(section.items?.length || section.folders?.length || section.id === 'primary')
 }
 
 function typesSection(entries: LocalVaultEntry[]): MobileSidebarSection {

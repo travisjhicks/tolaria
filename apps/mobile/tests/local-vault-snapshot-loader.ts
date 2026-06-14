@@ -4,7 +4,10 @@ import { basename, join, relative } from 'node:path'
 import { performance } from 'node:perf_hooks'
 import { buildLocalVaultWorkspaceSnapshot, type LocalVaultFile } from '../src/workspace/localVaultSnapshot'
 import type { MobileSidebarFolder, MobileWorkspaceSnapshot } from '../src/workspace/mobileWorkspaceModel'
-import { HOST_WORKSPACE_SNAPSHOT_STORAGE_KEY } from '../src/workspace/readOnlyWorkspaceRepository'
+import {
+  HOST_WORKSPACE_SNAPSHOT_GLOBAL_KEY,
+  HOST_WORKSPACE_SNAPSHOT_STORAGE_KEY,
+} from '../src/workspace/readOnlyWorkspaceRepository'
 
 export type LocalVaultSnapshotState = {
   buildDurationMs: number
@@ -25,11 +28,18 @@ export async function installLocalVaultSnapshot(page: Page): Promise<LocalVaultS
   if (!state) return null
 
   await page.addInitScript(
-    ({ key, value }) => {
-      window.localStorage.setItem(key, value)
+    ({ globalKey, key, snapshot, value }) => {
+      Reflect.set(window, globalKey, snapshot)
+      try {
+        window.localStorage.setItem(key, value)
+      } catch {
+        window.localStorage.removeItem(key)
+      }
     },
     {
+      globalKey: HOST_WORKSPACE_SNAPSHOT_GLOBAL_KEY,
       key: HOST_WORKSPACE_SNAPSHOT_STORAGE_KEY,
+      snapshot: state.snapshot,
       value: JSON.stringify(state.snapshot),
     },
   )
@@ -87,7 +97,7 @@ async function buildLocalVaultSnapshotState(): Promise<LocalVaultSnapshotState |
 }
 
 async function readLocalVaultFiles(vaultPath: string): Promise<LocalVaultFile[]> {
-  const markdownPaths = await listMarkdownFiles(vaultPath)
+  const markdownPaths = await listWorkspaceFiles(vaultPath)
   const files: LocalVaultFile[] = []
 
   for (let index = 0; index < markdownPaths.length; index += 64) {
@@ -98,20 +108,24 @@ async function readLocalVaultFiles(vaultPath: string): Promise<LocalVaultFile[]>
   return files
 }
 
-async function listMarkdownFiles(rootPath: string): Promise<string[]> {
-  const entries = await readdir(rootPath, { withFileTypes: true })
+async function listWorkspaceFiles(vaultPath: string, currentPath = vaultPath): Promise<string[]> {
+  const entries = await readdir(currentPath, { withFileTypes: true })
   const files: string[] = []
 
   for (const entry of entries) {
-    const absolutePath = join(rootPath, entry.name)
+    const absolutePath = join(currentPath, entry.name)
     if (entry.isDirectory() && shouldReadDirectory(entry.name)) {
-      files.push(...await listMarkdownFiles(absolutePath))
-    } else if (entry.isFile() && entry.name.endsWith('.md')) {
+      files.push(...await listWorkspaceFiles(vaultPath, absolutePath))
+    } else if (entry.isFile() && shouldReadFile(relative(vaultPath, absolutePath).replaceAll('\\', '/'))) {
       files.push(absolutePath)
     }
   }
 
   return files
+}
+
+function shouldReadFile(relativePath: string): boolean {
+  return relativePath.endsWith('.md') || /^views\/[^/]+\.ya?ml$/u.test(relativePath)
 }
 
 function shouldReadDirectory(name: string): boolean {

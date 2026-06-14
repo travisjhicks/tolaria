@@ -3,6 +3,7 @@ export type MobileTone = 'blue' | 'gray' | 'green' | 'orange' | 'purple' | 'red'
 export type MobileNote = {
   archived?: boolean
   created: string
+  createdAt?: number | null
   date: string
   editorBlocks?: MobileEditorBlock[]
   editorBullets?: string[]
@@ -10,6 +11,7 @@ export type MobileNote = {
   id: string
   links: number
   modified: string
+  modifiedAt?: number | null
   organized?: boolean
   path?: string
   properties?: MobileProperty[]
@@ -57,6 +59,7 @@ export type MobileSidebarIcon =
   | 'procedure'
   | 'star'
   | 'tag'
+  | 'view'
 
 export type MobileSidebarItem = {
   active?: boolean
@@ -65,6 +68,7 @@ export type MobileSidebarItem = {
   id: string
   label: string
   tone?: MobileTone
+  viewId?: string
 }
 
 export type MobileSidebarSection = {
@@ -102,7 +106,36 @@ export type MobileEditorBlock =
   | { content: MobileEditorInline[]; kind: 'quote' }
   | { headers: string[]; kind: 'table'; rows: string[][] }
 
+export type MobileViewFilterOp = 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'any_of' | 'none_of' | 'is_empty' | 'is_not_empty' | 'before' | 'after'
+
+export type MobileViewFilterCondition = {
+  field: string
+  op: MobileViewFilterOp
+  regex?: boolean
+  value?: unknown
+}
+
+export type MobileViewFilterGroup = { all: MobileViewFilterNode[] } | { any: MobileViewFilterNode[] }
+export type MobileViewFilterNode = MobileViewFilterCondition | MobileViewFilterGroup
+
+export type MobileViewDefinition = {
+  color: string | null
+  filters: MobileViewFilterGroup
+  icon: string | null
+  listPropertiesDisplay?: string[]
+  name: string
+  order?: number | null
+  sort: string | null
+}
+
+export type MobileSavedView = {
+  definition: MobileViewDefinition
+  filename: string
+  id: string
+}
+
 export type MobileWorkspaceSnapshot = {
+  allNotes?: MobileNote[]
   editorBlocks: MobileEditorBlock[]
   editorBullets: string[]
   noteListSubtitle: string
@@ -112,6 +145,7 @@ export type MobileWorkspaceSnapshot = {
   sidebarSections: MobileSidebarSection[]
   source?: MobileWorkspaceSource
   sync: MobileSyncStatus
+  views?: MobileSavedView[]
 }
 
 export type MobileWorkspaceSource = {
