@@ -1,4 +1,5 @@
 import type { MobileNote } from './mobileWorkspaceModel'
+import { mobileQuickOpenSearchText, normalizedMobileSearchQuery } from './mobileNoteSearch'
 
 export type MobileQuickOpenDirection = 'next' | 'previous'
 
@@ -9,7 +10,7 @@ export function mobileQuickOpenResults(
   query: string,
   limit = mobileQuickOpenResultLimit,
 ): MobileNote[] {
-  const normalizedQuery = query.trim().toLowerCase()
+  const normalizedQuery = normalizedMobileSearchQuery(query)
   const activeNotes = notes.filter((note) => !note.archived)
   if (!normalizedQuery) return activeNotes.slice(0, limit)
 
@@ -34,15 +35,4 @@ export function mobileQuickOpenSelectedNote(
   selectedIndex: number,
 ): MobileNote | null {
   return results.at(selectedIndex) ?? null
-}
-
-function mobileQuickOpenSearchText(note: MobileNote) {
-  return [
-    note.title,
-    note.snippet,
-    note.type,
-    note.status,
-    note.tags.join(' '),
-    note.path ?? '',
-  ].join(' ').toLowerCase()
 }

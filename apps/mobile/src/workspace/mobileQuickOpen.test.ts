@@ -42,6 +42,20 @@ describe('mobile quick open', () => {
     expect(mobileQuickOpenResults(notes, 'procedure').map((note) => note.id)).toContain('open-source-project')
   })
 
+  it('matches desktop quick-open alias and filename forms', () => {
+    const note = {
+      ...workspaceScenarioForId('default').notes[0]!,
+      aliases: ['Weekly Review'],
+      id: 'cafe-notes',
+      path: 'journal/cafe-notes.md',
+      title: 'Café Notes',
+    }
+
+    expect(mobileQuickOpenResults([note], 'weekly review').map((result) => result.id)).toEqual(['cafe-notes'])
+    expect(mobileQuickOpenResults([note], 'cafe-notes.md').map((result) => result.id)).toEqual(['cafe-notes'])
+    expect(mobileQuickOpenResults([note], 'Cafe Notes').map((result) => result.id)).toEqual(['cafe-notes'])
+  })
+
   it('returns no results for unmatched queries', () => {
     expect(mobileQuickOpenResults(workspaceScenarioForId('default').notes, 'zzzzzzz')).toEqual([])
   })

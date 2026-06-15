@@ -10,6 +10,7 @@ import type {
   MobileSidebarFolderSelection,
   MobileSidebarItemSelection,
 } from '../components/workspace/MobileWorkspaceSidebar'
+import { mobileNoteListMatchesQuery, normalizedMobileSearchQuery } from '../workspace/mobileNoteSearch'
 
 export type NoteCount = number
 export type NoteCountText = string
@@ -37,11 +38,13 @@ export function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot, 
   const [sidebarSelection, setSidebarSelection] = useState<TabletSidebarSelection>(() => initialSidebarSelection(snapshot))
   const [selectedNoteId, setSelectedNoteId] = useState<NoteId | null>(initialSelectedNoteId(snapshot))
   const sidebarNotes = useMemo(() => notesForSidebarSelection(snapshot, sidebarSelection), [sidebarSelection, snapshot])
-  const notes = useMemo(() => filterNotesBySearch(sidebarNotes, searchQuery), [searchQuery, sidebarNotes])
+  const noteListProperties = useMemo(() => noteListPropertiesForSelection(snapshot, sidebarSelection), [sidebarSelection, snapshot])
+  const notes = useMemo(() => filterNotesBySearch(sidebarNotes, searchQuery, noteListProperties), [noteListProperties, searchQuery, sidebarNotes])
   const selectedNote = selectedMobileNote(snapshot, notes, selectedNoteId)
 
   const selectSidebarSelection = useCallback((selection: TabletSidebarSelection, sourceSnapshot = snapshot) => {
-    const nextNotes = filterNotesBySearch(notesForSidebarSelection(sourceSnapshot, selection), searchQuery)
+    const nextNoteListProperties = noteListPropertiesForSelection(sourceSnapshot, selection)
+    const nextNotes = filterNotesBySearch(notesForSidebarSelection(sourceSnapshot, selection), searchQuery, nextNoteListProperties)
     setSidebarSelection(selection)
     setSelectedNoteId(nextNotes[0]?.id ?? null)
   }, [searchQuery, snapshot])
@@ -51,7 +54,7 @@ export function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot, 
     activeItemId: sidebarSelection.kind === 'item' ? sidebarSelection.id : null,
     editorBlocks: editorBlocksForSelection(snapshot, selectedNote),
     editorBullets: editorBulletsForSelection(snapshot, selectedNote),
-    noteListProperties: noteListPropertiesForSelection(snapshot, sidebarSelection),
+    noteListProperties,
     noteListSubtitle: noteListSubtitle(sidebarSelection, snapshot.noteListSubtitle, notes.length, searchQuery),
     noteListTitle: sidebarSelection.label,
     notes,
@@ -209,22 +212,11 @@ function typeNameForSelection(
     ?.typeName ?? null
 }
 
-function filterNotesBySearch(notes: MobileNote[], searchQuery: SearchQuery) {
-  const normalizedSearch = normalizedSearchQuery(searchQuery)
+export function filterNotesBySearch(notes: MobileNote[], searchQuery: SearchQuery, displayPropertyKeys: string[] = []) {
+  const normalizedSearch = normalizedMobileSearchQuery(searchQuery)
   if (!normalizedSearch) return notes
 
-  return notes.filter((note) => searchableNoteText(note).includes(normalizedSearch))
-}
-
-function searchableNoteText(note: MobileNote) {
-  return normalizedSearchQuery([
-    note.title,
-    note.snippet,
-    note.type,
-    note.status,
-    note.tags.join(' '),
-    note.path ?? '',
-  ].join(' '))
+  return notes.filter((note) => mobileNoteListMatchesQuery(note, normalizedSearch, displayPropertyKeys))
 }
 
 function inboxNotes(notes: MobileNote[]) {
@@ -259,13 +251,9 @@ function noteFolderPath(note: MobileNote) {
   return (note.path ?? note.id).split('/').slice(0, -1).join('/')
 }
 
-function normalizedSearchQuery(value: SearchQuery) {
-  return value.trim().toLowerCase()
-}
-
 function noteListSubtitle(selection: TabletSidebarSelection, inboxSubtitle: NoteCountText, noteCount: NoteCount, searchQuery: SearchQuery) {
   const visibleCount = noteCount.toLocaleString()
-  if (normalizedSearchQuery(searchQuery) || selection.kind !== 'item') return visibleCount
+  if (normalizedMobileSearchQuery(searchQuery) || selection.kind !== 'item') return visibleCount
   if (selection.id === 'inbox') return inboxSubtitle
 
   return selection.count ?? visibleCount

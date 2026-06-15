@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  filterNotesBySearch,
   noteListPropertiesForSelection,
   notesForSidebarSelection,
   type TabletSidebarSelection,
@@ -24,6 +25,30 @@ describe('tablet workspace navigation', () => {
 
     expect(notesForSidebarSelection(snapshot, selection).map((candidate) => candidate.id)).toEqual(['high', 'low'])
     expect(noteListPropertiesForSelection(snapshot, selection)).toEqual(['Priority', 'belongs_to'])
+  })
+
+  it('filters note lists by displayed desktop property and relationship chips', () => {
+    const notes = [
+      note({
+        id: 'workflow',
+        properties: [{ key: 'Priority', label: 'Priority', value: 'High' }],
+        relationships: [{
+          kind: 'belongsTo',
+          key: 'belongs_to',
+          values: [{ id: 'parent', title: 'LLM Workflow', type: 'Essay', typeTone: 'green' }],
+        }],
+        title: 'Workflow Orchestration',
+      }),
+      note({
+        id: 'release',
+        properties: [{ key: 'Priority', label: 'Priority', value: 'Low' }],
+        title: 'Release Notes',
+      }),
+    ]
+
+    expect(filterNotesBySearch(notes, 'llm workflow', ['belongs_to']).map((candidate) => candidate.id)).toEqual(['workflow'])
+    expect(filterNotesBySearch(notes, 'high', ['Priority']).map((candidate) => candidate.id)).toEqual(['workflow'])
+    expect(filterNotesBySearch(notes, 'llm workflow', ['Priority'])).toEqual([])
   })
 })
 
