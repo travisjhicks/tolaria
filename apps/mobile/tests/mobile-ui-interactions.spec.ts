@@ -311,6 +311,11 @@ async function moveCreatedSavedView(page: PageLike) {
 
 async function customizeCreatedSavedViewColumns(page: PageLike) {
   await longPress(page, 'sidebar-item-view-mobile-inbox-view')
+  await page.getByTestId('workspace-view-icon-star').click()
+  await page.getByTestId('workspace-view-tone-green').click()
+  await expect(page.getByTestId('workspace-view-selected-icon')).toContainText('star')
+  await expect(page.getByTestId('workspace-view-selected-color')).toContainText('green')
+  await page.getByTestId('workspace-view-property-picker').scrollIntoViewIfNeeded()
   await expect(page.getByTestId('workspace-view-property-picker')).toBeVisible()
   await page.getByTestId('workspace-view-sort-custom-field-input').fill('Pri')
   await page.getByTestId('workspace-view-sort-custom-field-suggestion-priority').click()
@@ -325,6 +330,12 @@ async function customizeCreatedSavedViewColumns(page: PageLike) {
   const workflowRow = page.getByTestId('note-row-workflow-orchestration')
   await expect(workflowRow.getByText('LLM Workflow')).toBeVisible()
   await expect(workflowRow.getByText('Tolaria MVP')).toBeVisible()
+
+  await longPress(page, 'sidebar-item-view-mobile-inbox-view')
+  await expect(page.getByTestId('workspace-view-selected-icon')).toContainText('star')
+  await expect(page.getByTestId('workspace-view-selected-color')).toContainText('green')
+  await page.getByTestId('workspace-action-sheet-toolbar').getByRole('button', { name: 'Cancel' }).click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
 }
 
 async function addPrioritySortFixtures(page: PageLike) {
@@ -355,7 +366,10 @@ async function customizeProcedureTypeSection(page: PageLike) {
   await expect(page.getByTestId('workspace-type-section-label-input')).toHaveValue('Procedures')
   await page.getByTestId('workspace-type-section-label-input').fill('Runbooks')
   await page.getByTestId('workspace-move-type-up-action').click()
+  await page.getByTestId('workspace-type-icon-folder').click()
   await page.getByTestId('workspace-type-tone-green').click()
+  await expect(page.getByTestId('workspace-type-selected-icon')).toContainText('folder')
+  await expect(page.getByTestId('workspace-type-selected-color')).toContainText('green')
   await page.getByTestId('workspace-type-sort-custom-field-input').fill('Priority')
   await page.getByTestId('workspace-type-sort-custom-desc').click()
   await page.getByTestId('workspace-type-template-input').fill('## Checklist\n\nTemplate body from the Procedure type.')
@@ -378,6 +392,8 @@ async function customizeProcedureTypeSection(page: PageLike) {
   await expect(await rowY(runbooksSection)).toBeLessThan(await rowY(essaysSection))
 
   await longPress(page, 'sidebar-item-procedures')
+  await expect(page.getByTestId('workspace-type-selected-icon')).toContainText('folder')
+  await expect(page.getByTestId('workspace-type-selected-color')).toContainText('green')
   await expect(page.getByTestId('workspace-type-sort-custom-field-input')).toHaveValue('Priority')
   await page.getByTestId('workspace-action-sheet-toolbar').getByRole('button', { name: 'Cancel' }).click()
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()

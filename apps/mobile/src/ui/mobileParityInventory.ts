@@ -155,6 +155,13 @@ export const mobileParityInventory = [
     surface: 'Saved-view and Type-section sort picker',
   },
   {
+    assertions: ['saved-view metadata user-flow checks', 'type-section metadata user-flow checks'],
+    contracts: ['desktopPropertyParity', 'desktopSidebarParity'],
+    desktopSource: 'CustomizeTypeDialog, CreateViewDialog, and sidebar icon/color metadata',
+    mobileFile: 'src/components/workspace/MobileMetadataPicker.tsx',
+    surface: 'Saved-view and Type-section metadata picker',
+  },
+  {
     assertions: ['type-section edit user-flow checks', 'type schema/default edit user-flow checks'],
     contracts: ['desktopPropertyParity', 'desktopSidebarParity'],
     desktopSource: 'TypeCustomizePopover, Type document frontmatter schema/defaults, Sidebar type context actions, and NoteListHeader type columns',

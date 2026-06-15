@@ -10,7 +10,7 @@ import { MobilePanel, MobileToolbar, MobileToolbarSpacer, MobileToolbarTitle } f
 import { MobileTextInput } from '../../ui/MobileTextInput'
 import { desktopPanelParity, desktopToolbarActionParity } from '../../ui/desktopParity'
 import { mobileColors, mobileSpace, mobileType } from '../../ui/tokens'
-import type { MobileNote, MobileTone, MobileViewFilterGroup } from '../../workspace/mobileWorkspaceModel'
+import type { MobileNote, MobileSidebarIcon, MobileTone, MobileViewFilterGroup } from '../../workspace/mobileWorkspaceModel'
 import type {
   MobileTypeSchemaProperty,
   MobileTypeSchemaRelationship,
@@ -38,6 +38,7 @@ import {
   mobileTypeSuggestions,
 } from '../../workspace/mobileWorkspaceSuggestions'
 import { MobileTypeIcon } from './MobileWorkspaceIcons'
+import { MobileMetadataPicker } from './MobileMetadataPicker'
 import { MobileSortPicker } from './MobileSortPicker'
 import { MobileBooleanPropertyValuePicker, MobilePropertyValueKindPicker } from './MobilePropertyValueKindPicker'
 import { MobileTypeSectionEditor } from './MobileTypeSectionEditor'
@@ -119,11 +120,13 @@ type MobileWorkspaceActionSheetProps = {
   onSelectNote: (noteId: string) => void
   onSetArchived: (archived: boolean) => void
   onSetOrganized: (organized: boolean) => void
+  onViewIconChange: (value: MobileSidebarIcon) => void
   onViewDisplayPropertiesChange: (value: string[]) => void
   onViewFiltersChange: (value: MobileViewFilterGroup) => void
   onViewNameChange: (value: string) => void
   onViewPropertyQueryChange: (value: string) => void
   onViewSortChange: (value: string) => void
+  onViewToneChange: (value: MobileTone) => void
   propertyName: string
   propertyValue: string
   propertyValueKind: MobilePropertyValueKind
@@ -146,15 +149,18 @@ type MobileWorkspaceActionSheetProps = {
   typeSectionLabel: string
   typeSort: string
   typeTemplate: string
+  typeIcon: string
   typeTone: MobileTone
   typeVisible: boolean
   viewDisplayProperties: string[]
   viewFilters: MobileViewFilterGroup
+  viewIcon: string
   viewName: string
   viewPropertyOptions: string[]
   viewPropertyQuery: string
   viewSortPropertyOptions: string[]
   viewSort: string
+  viewTone: MobileTone
   onTypeDisplayPropertiesChange: (value: string[]) => void
   onTypeNameChange: (value: string) => void
   onTypePropertyQueryChange: (value: string) => void
@@ -169,6 +175,7 @@ type MobileWorkspaceActionSheetProps = {
   onTypeSectionLabelChange: (value: string) => void
   onTypeSortChange: (value: string) => void
   onTypeTemplateChange: (value: string) => void
+  onTypeIconChange: (value: MobileSidebarIcon) => void
   onTypeToneChange: (value: MobileTone) => void
   onTypeVisibleChange: (value: boolean) => void
 }
@@ -452,6 +459,13 @@ function singleTextFieldConfig(props: MobileWorkspaceActionSheetProps) {
 function viewFilterBuilder(props: MobileWorkspaceActionSheetProps) {
   return (
     <>
+      <MobileMetadataPicker
+        selectedIcon={props.viewIcon}
+        selectedTone={props.viewTone}
+        testIDPrefix="workspace-view"
+        onIconSelect={props.onViewIconChange}
+        onToneSelect={props.onViewToneChange}
+      />
       <MobileSortPicker
         customPropertyOptions={props.viewSortPropertyOptions}
         selectedSort={props.viewSort}
@@ -536,6 +550,7 @@ function TypeSectionContent(props: MobileWorkspaceActionSheetProps) {
         sort={props.typeSort}
         sortPropertyOptions={props.typeSortPropertyOptions}
         template={props.typeTemplate}
+        typeIcon={props.typeIcon}
         tone={props.typeTone}
         typeName={props.typeName}
         visible={props.typeVisible}
@@ -552,6 +567,7 @@ function TypeSectionContent(props: MobileWorkspaceActionSheetProps) {
         onSectionLabelChange={props.onTypeSectionLabelChange}
         onSortChange={props.onTypeSortChange}
         onTemplateChange={props.onTypeTemplateChange}
+        onTypeIconChange={props.onTypeIconChange}
         onToneChange={props.onTypeToneChange}
         onVisibleChange={props.onTypeVisibleChange}
       />

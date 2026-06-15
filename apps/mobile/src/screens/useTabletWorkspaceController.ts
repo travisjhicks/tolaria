@@ -9,6 +9,7 @@ import type {
   MobileNote,
   MobilePropertyValue,
   MobileSavedView,
+  MobileSidebarIcon,
   MobileTone,
   MobileTypeDefinitions,
   MobileViewFilterGroup,
@@ -48,6 +49,10 @@ import {
   parseMobilePropertyValue,
   type MobilePropertyValueKind,
 } from '../workspace/mobilePropertyValues'
+import {
+  mobileSidebarIconFromValue,
+  mobileToneFromValue,
+} from '../workspace/mobileWorkspaceMetadata'
 import { useTabletWorkspaceNavigation } from './tabletWorkspaceNavigation'
 import type { TabletReadOnlyForm } from './tabletWorkspaceTypes'
 import type { TabletSidebarSelection } from './tabletWorkspaceNavigation'
@@ -87,13 +92,16 @@ const emptyReadOnlyForm: TabletReadOnlyForm = {
   typeSectionLabel: '',
   typeSort: '',
   typeTemplate: '',
+  typeIcon: 'file',
   typeTone: 'gray',
   typeVisible: true,
   viewDisplayProperties: [],
   viewFilters: { all: [] },
+  viewIcon: 'view',
   viewName: '',
   viewPropertyQuery: '',
   viewSort: 'modified:desc',
+  viewTone: 'gray',
 }
 
 type ApplyWorkspaceEdit = (edit: MobileWorkspaceEdit) => void
@@ -345,7 +353,10 @@ function actionSheetWorkspaceActions({
     onOpenCreateView: () => openCreateView({
       filters: viewFiltersForSelection(navigation.sidebarSelection, navigation.notes, selectedNote, workspaceSnapshot.views ?? []),
       noteListTitle,
+      selectedNote,
+      selection: navigation.sidebarSelection,
       setOpenAction,
+      typeDefinitions: workspaceSnapshot.typeDefinitions,
       updateReadOnlyForm,
     }),
     onOpenMoreActions: () => setOpenAction('moreActions'),
@@ -381,7 +392,6 @@ function createWorkspaceActions({
   closeAction,
   navigation,
   readOnlyForm,
-  selectedNote,
   setOpenAction,
   updateReadOnlyForm,
   workspaceSnapshot,
@@ -402,11 +412,10 @@ function createWorkspaceActions({
       applyEdit,
       closeAction,
       filters: readOnlyForm.viewFilters,
+      icon: readOnlyForm.viewIcon,
       name: readOnlyForm.viewName,
-      selectedNote,
-      selection: navigation.sidebarSelection,
       sort: readOnlyForm.viewSort,
-      typeDefinitions: workspaceSnapshot.typeDefinitions,
+      tone: readOnlyForm.viewTone,
     }),
     onCreateType: () => applyNonEmptyStringEdit({
       applyEdit,
@@ -439,16 +448,20 @@ function savedViewWorkspaceActions({
       closeAction,
       displayProperties: readOnlyForm.viewDisplayProperties,
       filters: readOnlyForm.viewFilters,
+      icon: readOnlyForm.viewIcon,
       name: readOnlyForm.viewName,
       sort: readOnlyForm.viewSort,
+      tone: readOnlyForm.viewTone,
       viewId: readOnlyForm.editingViewId,
       views: workspaceSnapshot.views ?? [],
     }),
     onViewDisplayPropertiesChange: (value: string[]) => updateReadOnlyForm('viewDisplayProperties', value),
     onViewFiltersChange: (value: MobileViewFilterGroup) => updateReadOnlyForm('viewFilters', value),
+    onViewIconChange: (value: MobileSidebarIcon) => updateReadOnlyForm('viewIcon', value),
     onViewNameChange: (value: string) => updateReadOnlyForm('viewName', value),
     onViewPropertyQueryChange: (value: string) => updateReadOnlyForm('viewPropertyQuery', value),
     onViewSortChange: (value: string) => updateReadOnlyForm('viewSort', value),
+    onViewToneChange: (value: MobileTone) => updateReadOnlyForm('viewTone', value),
     viewPropertyOptions: mobileListPropertySuggestions(
       editableViewPropertyNotes(readOnlyForm, workspaceSnapshot),
       readOnlyForm.viewPropertyQuery,
@@ -495,6 +508,7 @@ function typeSectionWorkspaceActions({
     onTypeSectionLabelChange: (value: string) => updateReadOnlyForm('typeSectionLabel', value),
     onTypeSortChange: (value: string) => updateReadOnlyForm('typeSort', value),
     onTypeTemplateChange: (value: string) => updateReadOnlyForm('typeTemplate', value),
+    onTypeIconChange: (value: MobileSidebarIcon) => updateReadOnlyForm('typeIcon', value),
     onTypeToneChange: (value: MobileTone) => updateReadOnlyForm('typeTone', value),
     onTypeVisibleChange: (value: boolean) => updateReadOnlyForm('typeVisible', value),
     typePropertyOptions: mobileListPropertySuggestions(
@@ -740,17 +754,28 @@ function openWorkspaceAction({
 function openCreateView({
   filters,
   noteListTitle,
+  selectedNote,
+  selection,
   setOpenAction,
+  typeDefinitions,
   updateReadOnlyForm,
 }: {
   filters: MobileViewFilterGroup
   noteListTitle: string
+  selectedNote: MobileNote | null
+  selection: TabletSidebarSelection
   setOpenAction: SetOpenAction
+  typeDefinitions?: MobileTypeDefinitions
   updateReadOnlyForm: ReadOnlyFormUpdater
 }) {
   updateReadOnlyForm('viewFilters', cloneFilterGroup(filters))
+  updateReadOnlyForm('viewIcon', 'view')
   updateReadOnlyForm('viewName', defaultViewName(noteListTitle))
   updateReadOnlyForm('viewSort', 'modified:desc')
+  updateReadOnlyForm('viewTone', mobileToneFromValue(
+    viewColorForSelection(selection, selectedNote, typeDefinitions),
+    'gray',
+  ))
   setOpenAction('createView')
 }
 
@@ -772,9 +797,11 @@ function openViewActions({
   updateReadOnlyForm('editingViewId', selection.viewId ?? selection.id)
   updateReadOnlyForm('viewDisplayProperties', viewDisplayPropertiesForEdit(view, snapshot))
   updateReadOnlyForm('viewFilters', cloneFilterGroup(view.definition.filters))
+  updateReadOnlyForm('viewIcon', mobileSidebarIconFromValue(view.definition.icon, 'view'))
   updateReadOnlyForm('viewName', selection.label)
   updateReadOnlyForm('viewPropertyQuery', '')
   updateReadOnlyForm('viewSort', view.definition.sort ?? 'modified:desc')
+  updateReadOnlyForm('viewTone', mobileToneFromValue(view.definition.color, 'gray'))
   setOpenAction('editView')
 }
 
@@ -827,6 +854,7 @@ function typeDefinitionFields({
     { key: 'typeSectionLabel', value: definition?.label ?? label },
     { key: 'typeSort', value: definition?.sort ?? '' },
     { key: 'typeTemplate', value: definition?.template ?? '' },
+    { key: 'typeIcon', value: mobileSidebarIconFromValue(definition?.icon, 'file') },
     { key: 'typeTone', value: definition?.tone ?? 'gray' },
     { key: 'typeVisible', value: definition?.visible !== false },
   ]
@@ -875,29 +903,27 @@ function createView({
   applyEdit,
   closeAction,
   filters,
+  icon,
   name,
-  selectedNote,
-  selection,
   sort,
-  typeDefinitions,
+  tone,
 }: {
   applyEdit: (edit: MobileWorkspaceEdit) => void
   closeAction: () => void
   filters: MobileViewFilterGroup
+  icon: string
   name: string
-  selectedNote: MobileNote | null
-  selection: TabletSidebarSelection
   sort: string
-  typeDefinitions?: MobileTypeDefinitions
+  tone: MobileTone
 }) {
   const trimmedName = name.trim()
   if (!trimmedName) return
 
   applyEdit({
     definition: {
-      color: viewColorForSelection(selection, selectedNote, typeDefinitions),
+      color: tone,
       filters,
-      icon: null,
+      icon: normalizedIcon(icon, 'view'),
       name: trimmedName,
       sort: normalizedSort(sort),
     },
@@ -911,8 +937,10 @@ function updateView({
   closeAction,
   displayProperties,
   filters,
+  icon,
   name,
   sort,
+  tone,
   viewId,
   views,
 }: {
@@ -920,8 +948,10 @@ function updateView({
   closeAction: () => void
   displayProperties: string[]
   filters: MobileViewFilterGroup
+  icon: string
   name: string
   sort: string
+  tone: MobileTone
   viewId: string
   views: NonNullable<MobileWorkspaceSnapshot['views']>
 }) {
@@ -933,9 +963,11 @@ function updateView({
     definition: {
       ...view.definition,
       filters,
+      icon: normalizedIcon(icon, 'view'),
       listPropertiesDisplay: normalizedListPropertiesDisplay(displayProperties),
       name: trimmedName,
       sort: normalizedSort(sort),
+      color: tone,
     },
     type: 'updateView',
     viewId,
@@ -958,6 +990,7 @@ function updateTypeDefinition({
   applyEdit({
     patch: {
       label: form.typeSectionLabel,
+      icon: normalizedIcon(form.typeIcon, 'file'),
       listPropertiesDisplay: normalizedListPropertiesDisplay(form.typeDisplayProperties),
       ...typeDefinitionSchemaPatch(form.typeSchemaProperties, form.typeSchemaRelationships),
       sort: form.typeSort,
@@ -1020,6 +1053,10 @@ function normalizedListPropertiesDisplay(displayProperties: string[]) {
 
 function normalizedSort(sort: string) {
   return sort.trim() || 'modified:desc'
+}
+
+function normalizedIcon(icon: string, fallback: MobileSidebarIcon) {
+  return mobileSidebarIconFromValue(icon, fallback)
 }
 
 function workspaceNotes(snapshot: MobileWorkspaceSnapshot) {

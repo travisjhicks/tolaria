@@ -7,6 +7,7 @@ import type {
   MobileEditorBlock,
   MobileNote,
   MobilePropertyValue,
+  MobileSidebarIcon,
   MobileTone,
   MobileViewFilterGroup,
   MobileWorkspaceSnapshot,
@@ -51,13 +52,16 @@ export type TabletReadOnlyForm = {
   typeSectionLabel: ReadOnlyFormValue
   typeSort: ReadOnlyFormValue
   typeTemplate: ReadOnlyFormValue
+  typeIcon: ReadOnlyFormValue
   typeTone: MobileTone
   typeVisible: boolean
   viewDisplayProperties: string[]
   viewFilters: MobileViewFilterGroup
+  viewIcon: ReadOnlyFormValue
   viewName: ReadOnlyFormValue
   viewPropertyQuery: ReadOnlyFormValue
   viewSort: ReadOnlyFormValue
+  viewTone: MobileTone
 }
 
 export type TabletWorkspaceChromeProps = {
@@ -138,13 +142,16 @@ export type TabletWorkspaceChromeProps = {
   onTypeSectionLabelChange: (value: ReadOnlyFormValue) => void
   onTypeSortChange: (value: ReadOnlyFormValue) => void
   onTypeTemplateChange: (value: ReadOnlyFormValue) => void
+  onTypeIconChange: (value: MobileSidebarIcon) => void
   onTypeToneChange: (value: MobileTone) => void
   onTypeVisibleChange: (value: boolean) => void
+  onViewIconChange: (value: MobileSidebarIcon) => void
   onViewFiltersChange: (value: MobileViewFilterGroup) => void
   onViewDisplayPropertiesChange: (value: string[]) => void
   onViewNameChange: (value: ReadOnlyFormValue) => void
   onViewPropertyQueryChange: (value: ReadOnlyFormValue) => void
   onViewSortChange: (value: ReadOnlyFormValue) => void
+  onViewToneChange: (value: MobileTone) => void
   onSaveView: () => void
   onPropertyNameChange: (value: ReadOnlyFormValue) => void
   onPropertyValueChange: (value: ReadOnlyFormValue) => void

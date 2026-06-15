@@ -5,14 +5,14 @@ import { mobileText } from '../../i18n/mobileText'
 import { MobileButton } from '../../ui/MobileButton'
 import { MobileTextInput } from '../../ui/MobileTextInput'
 import { mobileColors, mobileSpace, mobileType } from '../../ui/tokens'
-import type { MobileNote, MobileTone } from '../../workspace/mobileWorkspaceModel'
+import type { MobileNote, MobileSidebarIcon, MobileTone } from '../../workspace/mobileWorkspaceModel'
 import {
   mobileTypeSchemaPropertyValueText,
   mobileTypeSchemaRelationshipValueText,
   type MobileTypeSchemaProperty,
   type MobileTypeSchemaRelationship,
 } from '../../workspace/mobileTypeDefinitionSchema'
-import { noteTypeColor, noteTypeSoftColor } from './mobileWorkspaceTone'
+import { MobileMetadataPicker } from './MobileMetadataPicker'
 import { MobileSortPicker } from './MobileSortPicker'
 import { MobileViewDisplayPropertiesPicker } from './MobileViewDisplayPropertiesPicker'
 import { MobileWorkspaceSuggestionList } from './MobileWorkspaceSuggestionList'
@@ -33,6 +33,7 @@ type MobileTypeSectionEditorProps = {
   sort: string
   sortPropertyOptions: string[]
   template: string
+  typeIcon: string
   tone: MobileTone
   typeName: string
   visible: boolean
@@ -49,11 +50,10 @@ type MobileTypeSectionEditorProps = {
   onSectionLabelChange: (value: string) => void
   onSortChange: (value: string) => void
   onTemplateChange: (value: string) => void
+  onTypeIconChange: (value: MobileSidebarIcon) => void
   onToneChange: (value: MobileTone) => void
   onVisibleChange: (value: boolean) => void
 }
-
-const toneOptions: MobileTone[] = ['gray', 'green', 'purple', 'orange', 'blue', 'yellow', 'red']
 
 export function MobileTypeSectionEditor(props: MobileTypeSectionEditorProps) {
   return (
@@ -68,7 +68,13 @@ export function MobileTypeSectionEditor(props: MobileTypeSectionEditorProps) {
         onChangeText={props.onSectionLabelChange}
       />
       <VisibilityToggle visible={props.visible} onChange={props.onVisibleChange} />
-      <TonePicker selectedTone={props.tone} onSelect={props.onToneChange} />
+      <MobileMetadataPicker
+        selectedIcon={props.typeIcon}
+        selectedTone={props.tone}
+        testIDPrefix="workspace-type"
+        onIconSelect={props.onTypeIconChange}
+        onToneSelect={props.onToneChange}
+      />
       <MobileSortPicker
         customPropertyOptions={props.sortPropertyOptions}
         selectedSort={props.sort}
@@ -232,37 +238,6 @@ function VisibilityToggle({
   )
 }
 
-function TonePicker({
-  onSelect,
-  selectedTone,
-}: {
-  onSelect: (tone: MobileTone) => void
-  selectedTone: MobileTone
-}) {
-  return (
-    <View style={styles.section} testID="workspace-type-tone-picker">
-      <Text style={styles.label}>{mobileText('customize.color')}</Text>
-      <View style={styles.swatches}>
-        {toneOptions.map((tone) => (
-          <Pressable
-            accessibilityLabel={tone}
-            accessibilityRole="button"
-            key={tone}
-            style={[
-              styles.swatch,
-              { backgroundColor: noteTypeSoftColor(tone), borderColor: selectedTone === tone ? noteTypeColor(tone) : 'transparent' },
-            ]}
-            testID={`workspace-type-tone-${tone}`}
-            onPress={() => onSelect(tone)}
-          >
-            <View style={[styles.swatchDot, { backgroundColor: noteTypeColor(tone) }]} />
-          </Pressable>
-        ))}
-      </View>
-    </View>
-  )
-}
-
 const styles = StyleSheet.create({
   editor: {
     gap: mobileSpace.md,
@@ -314,24 +289,6 @@ const styles = StyleSheet.create({
     fontSize: mobileType.caption,
     lineHeight: 18,
     paddingTop: mobileSpace.sm,
-  },
-  swatch: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    borderWidth: 2,
-  },
-  swatchDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-  },
-  swatches: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: mobileSpace.sm,
   },
   toggleRow: {
     minHeight: 34,

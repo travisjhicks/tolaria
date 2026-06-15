@@ -1,4 +1,5 @@
 import { evaluateMobileSavedView } from './mobileSavedViews'
+import { mobileSidebarIconFromValue, mobileToneFromValue } from './mobileWorkspaceMetadata'
 import { buildMobileFolderTree } from './mobileWorkspaceFolders'
 import type {
   MobileNote,
@@ -86,7 +87,7 @@ function viewsSection(views: MobileSavedView[], notes: MobileNote[]): MobileSide
     id: 'views',
     items: views.map((view) => ({
       count: countText(evaluateMobileSavedView(view, notes).length),
-      icon: 'view',
+      icon: mobileSidebarIconFromValue(view.definition.icon, 'view'),
       id: view.id,
       label: view.definition.name,
       tone: viewTone(view),
@@ -112,7 +113,7 @@ function typesSection(
 
       return {
         count: countText(value.count),
-        icon: typeIcons[normalizedType] ?? 'file',
+        icon: mobileSidebarIconFromValue(definition?.icon, typeIcons[normalizedType] ?? 'file'),
         id: previousTypeItemId(previousItems, type) ?? `type-${slugifySidebarId(type)}`,
         label: typeSectionLabel(type, definition),
         tone: value.tone,
@@ -183,18 +184,7 @@ function isVisibleTypeDefinition(definition?: MobileTypeDefinition) {
 }
 
 function viewTone(view: MobileSavedView): MobileTone {
-  const color = view.definition.color
-  return isMobileTone(color) ? color : 'gray'
-}
-
-function isMobileTone(value: string | null): value is MobileTone {
-  return value === 'blue'
-    || value === 'gray'
-    || value === 'green'
-    || value === 'orange'
-    || value === 'purple'
-    || value === 'red'
-    || value === 'yellow'
+  return mobileToneFromValue(view.definition.color, 'gray')
 }
 
 function pluralizeType(type: string): string {

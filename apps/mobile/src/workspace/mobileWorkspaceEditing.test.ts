@@ -258,6 +258,7 @@ describe('applyMobileWorkspaceEdit', () => {
   it('updates type definition metadata through the Type markdown document contract', () => {
     const result = applyMobileWorkspaceEditWithWrites(workspaceScenarioForId('default'), {
       patch: {
+        icon: 'folder',
         label: 'Runbooks',
         listPropertiesDisplay: ['status', 'belongs_to'],
         sort: 'property:Priority:desc',
@@ -271,6 +272,7 @@ describe('applyMobileWorkspaceEdit', () => {
 
     expect(procedure).toMatchObject({
       label: 'Runbooks',
+      icon: 'folder',
       listPropertiesDisplay: ['status', 'belongs_to'],
       path: 'procedure.md',
       sort: 'property:Priority:desc',
@@ -278,7 +280,12 @@ describe('applyMobileWorkspaceEdit', () => {
     })
     expect(procedureNote?.typeTone).toBe('green')
     expect(sidebarItems(result.snapshot, 'types')).toEqual(
-      expect.arrayContaining([expect.objectContaining({ label: 'Runbooks', tone: 'green', typeName: 'Procedure' })]),
+      expect.arrayContaining([expect.objectContaining({
+        icon: 'folder',
+        label: 'Runbooks',
+        tone: 'green',
+        typeName: 'Procedure',
+      })]),
     )
     expect(result.writes).toEqual([{
       content: expect.stringContaining('sidebar label: Runbooks'),
@@ -287,6 +294,7 @@ describe('applyMobileWorkspaceEdit', () => {
     }])
     const typeWrite = result.writes.find((write) => write.kind === 'saveNote')
     expect(typeWrite?.content).toContain('color: green')
+    expect(typeWrite?.content).toContain('icon: folder')
     expect(typeWrite?.content).toContain('sort: "property:Priority:desc"')
     expect(typeWrite?.content).toContain('_list_properties_display:\n  - status\n  - belongs_to')
   })
@@ -834,7 +842,7 @@ describe('applyMobileWorkspaceEdit', () => {
       definition: {
         color: 'purple',
         filters: { all: [{ field: 'type', op: 'equals', value: 'Procedure' }] },
-        icon: null,
+        icon: 'star',
         name: 'Procedures',
         sort: 'modified:desc',
       },
@@ -846,6 +854,14 @@ describe('applyMobileWorkspaceEdit', () => {
       kind: 'saveView',
       path: 'views/procedures.yml',
     })
+    expect(result.writes).toContainEqual(expect.objectContaining({
+      content: expect.stringContaining('icon: "star"'),
+      path: 'views/procedures.yml',
+    }))
+    expect(result.writes).toContainEqual(expect.objectContaining({
+      content: expect.stringContaining('color: "purple"'),
+      path: 'views/procedures.yml',
+    }))
     expect(result.writes).toContainEqual(expect.objectContaining({
       content: expect.stringContaining('name: "Active Procedures"'),
       kind: 'saveView',
@@ -860,8 +876,10 @@ describe('applyMobileWorkspaceEdit', () => {
     expect(result.snapshot.sidebarSections.find((section) => section.id === 'views')?.items).toContainEqual(
       expect.objectContaining({
         count: '1',
+        icon: 'star',
         id: 'view-procedures',
         label: 'Procedures',
+        tone: 'purple',
         viewId: 'view-procedures',
       }),
     )
@@ -1020,7 +1038,7 @@ function updateActiveSavedView() {
     definition: {
       color: 'purple',
       filters: { all: [{ field: 'status', op: 'equals', value: 'Active' }] },
-      icon: null,
+      icon: 'folder',
       listPropertiesDisplay: ['belongs_to', 'status'],
       name: 'Active Workflows',
       sort: 'property:Priority:asc',
@@ -1041,6 +1059,8 @@ function expectUpdatedSavedViewWrite(
     path: 'views/active-procedures.yml',
   })
   expect(savedViewWrite?.content).toContain('name: "Active Workflows"')
+  expect(savedViewWrite?.content).toContain('icon: "folder"')
+  expect(savedViewWrite?.content).toContain('color: "purple"')
   expect(savedViewWrite?.content).toContain('value: "Active"')
   expect(savedViewWrite?.content).toContain('sort: "property:Priority:asc"')
   expect(savedViewWrite?.content).toContain('listPropertiesDisplay:\n  - "belongs_to"\n  - "status"')
@@ -1050,13 +1070,17 @@ function expectUpdatedSavedViewSnapshot(
   result: ReturnType<typeof applyMobileWorkspaceEditWithWrites>,
 ) {
   expect(result.snapshot.views?.[0]?.definition).toMatchObject({
+    color: 'purple',
+    icon: 'folder',
     listPropertiesDisplay: ['belongs_to', 'status'],
     name: 'Active Workflows',
     sort: 'property:Priority:asc',
   })
   expect(result.snapshot.sidebarSections.find((section) => section.id === 'views')?.items?.[0]).toMatchObject({
+    icon: 'folder',
     id: 'view-active-procedures',
     label: 'Active Workflows',
+    tone: 'purple',
   })
 }
 

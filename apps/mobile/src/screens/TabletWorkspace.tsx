@@ -247,13 +247,16 @@ function actionSheetFormValues(readOnlyForm: ActionSheetHostProps['readOnlyForm'
     typeSectionLabel: readOnlyForm.typeSectionLabel,
     typeSort: readOnlyForm.typeSort,
     typeTemplate: readOnlyForm.typeTemplate,
+    typeIcon: readOnlyForm.typeIcon,
     typeTone: readOnlyForm.typeTone,
     typeVisible: readOnlyForm.typeVisible,
     viewDisplayProperties: readOnlyForm.viewDisplayProperties,
     viewFilters: readOnlyForm.viewFilters,
+    viewIcon: readOnlyForm.viewIcon,
     viewName: readOnlyForm.viewName,
     viewPropertyQuery: readOnlyForm.viewPropertyQuery,
     viewSort: readOnlyForm.viewSort,
+    viewTone: readOnlyForm.viewTone,
   }
 }
 
@@ -314,13 +317,16 @@ function actionSheetHandlers(props: ActionSheetHostProps) {
     onTypeSectionLabelChange: props.onTypeSectionLabelChange,
     onTypeSortChange: props.onTypeSortChange,
     onTypeTemplateChange: props.onTypeTemplateChange,
+    onTypeIconChange: props.onTypeIconChange,
     onTypeToneChange: props.onTypeToneChange,
     onTypeVisibleChange: props.onTypeVisibleChange,
+    onViewIconChange: props.onViewIconChange,
     onViewDisplayPropertiesChange: props.onViewDisplayPropertiesChange,
     onViewFiltersChange: props.onViewFiltersChange,
     onViewNameChange: props.onViewNameChange,
     onViewPropertyQueryChange: props.onViewPropertyQueryChange,
     onViewSortChange: props.onViewSortChange,
+    onViewToneChange: props.onViewToneChange,
   }
 }
 
