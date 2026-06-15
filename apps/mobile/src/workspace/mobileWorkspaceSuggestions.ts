@@ -91,9 +91,10 @@ export function mobileFolderSuggestions(
   notes: MobileNote[],
   selectedNote: MobileNote | null,
   query: SuggestionQuery,
+  folderPaths: FolderPath[] = [],
 ): FolderPath[] {
   const currentFolder = folderPathForNote(selectedNote)
-  return visibleSuggestions(notes.map(folderPathForNote).filter(isFolderPath), query)
+  return visibleSuggestions(folderSuggestionCandidates(notes, folderPaths), query)
     .filter((folderPath) => folderPath !== currentFolder)
 }
 
@@ -175,6 +176,13 @@ function folderPathForNote(note: MobileNote | null): FolderPath {
 
 function isFolderPath(value: FolderPath): value is FolderPath {
   return value.trim().length > 0
+}
+
+function folderSuggestionCandidates(notes: MobileNote[], folderPaths: FolderPath[]): FolderPath[] {
+  return [
+    ...folderPaths,
+    ...notes.map(folderPathForNote),
+  ].filter(isFolderPath)
 }
 
 function viewFieldCandidates(notes: MobileNote[]): ViewField[] {

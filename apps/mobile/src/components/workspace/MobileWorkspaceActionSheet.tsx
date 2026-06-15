@@ -791,7 +791,7 @@ function retargetNoteInputConfig(props: MobileWorkspaceActionSheetProps & { reta
     submitDisabled: notePathValidationBlocksSubmit(moveNoteToFolderValidation(props)),
     suggestionTestId: 'workspace-move-folder-suggestions',
     suggestionTestIdPrefix: 'workspace-move-folder-suggestion',
-    suggestions: mobileFolderSuggestions(props.notes, props.selectedNote, props.folderPath),
+    suggestions: mobileFolderSuggestions(props.notes, props.selectedNote, props.folderPath, props.folderPaths),
   }
 }
 

@@ -87,6 +87,23 @@ describe('mobile workspace suggestions', () => {
     expect(mobileFolderSuggestions(notes, selectedNote, 'mobile')).toEqual(['Tolaria/Mobile UI'])
   })
 
+  it('suggests explicit empty folder paths when moving notes', () => {
+    const notes = workspaceScenarioForId('default').notes
+    const selectedNote = {
+      ...notes[0]!,
+      path: 'Writing/Essays/current.md',
+    }
+
+    expect(mobileFolderSuggestions(notes, selectedNote, 'draft', [
+      'Writing/Essays',
+      'Writing/Drafts',
+      'Research/Empty',
+    ])).toEqual(['Writing/Drafts'])
+    expect(mobileFolderSuggestions(notes, selectedNote, 'empty', [
+      'Research/Empty',
+    ])).toEqual(['Research/Empty'])
+  })
+
   it('suggests desktop saved-view fields and values from notes', () => {
     const notes = workspaceScenarioForId('default').notes
 
