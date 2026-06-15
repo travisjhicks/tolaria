@@ -16,14 +16,16 @@ export function MobileUiLab() {
     vaultLabel: currentVaultLabel(searchParams),
     vaultRootUri: currentVaultRootUri(searchParams),
   }
+  const initialEditorEditing = editorMode(searchParams) === 'raw'
   const layoutProbe = layoutProbeEnabled(searchParams)
   const snapshot = readOnlyWorkspaceRepository.readSnapshot(repositoryRequest)
-  const workspaceKey = mobileWorkspaceKey({ layoutProbe, scenarioId, snapshot, source })
+  const workspaceKey = mobileWorkspaceKey({ initialEditorEditing, layoutProbe, scenarioId, snapshot, source })
 
   if (isWideEnoughForTablet) {
     return (
       <TabletWorkspace
         key={workspaceKey}
+        initialEditorEditing={initialEditorEditing}
         layoutProbe={layoutProbe}
         repository={readOnlyWorkspaceRepository}
         repositoryRequest={repositoryRequest}
@@ -52,6 +54,10 @@ function currentSnapshotSource(searchParams: URLSearchParams): NonNullable<ReadO
   return searchParams.get('source') === 'host-vault' ? 'host' : 'fixture'
 }
 
+function editorMode(searchParams: URLSearchParams) {
+  return searchParams.get('editorMode')
+}
+
 function currentVaultRootUri(searchParams: URLSearchParams): string | null {
   return searchParams.get('vaultUri') || envValue('EXPO_PUBLIC_TOLARIA_NATIVE_VAULT_URI')
 }
@@ -65,11 +71,13 @@ function layoutProbeEnabled(searchParams: URLSearchParams) {
 }
 
 function mobileWorkspaceKey({
+  initialEditorEditing,
   layoutProbe,
   scenarioId,
   snapshot,
   source,
 }: {
+  initialEditorEditing: boolean
   layoutProbe: boolean
   scenarioId: string | null
   snapshot: ReturnType<typeof readOnlyWorkspaceRepository.readSnapshot>
@@ -80,6 +88,7 @@ function mobileWorkspaceKey({
   return [
     source,
     scenarioIdOrDefault(scenarioId),
+    initialEditorEditing ? 'raw-editor' : 'read-editor',
     layoutProbeMode(layoutProbe),
     sourceInfo ? sourceInfo.kind : 'fixture',
     sourceInfo ? sourceInfo.label : 'Tolaria Vault',

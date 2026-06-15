@@ -19,11 +19,13 @@ import type { TabletPanel, TabletWorkspaceChromeProps } from './tabletWorkspaceT
 import { useTabletWorkspaceController } from './useTabletWorkspaceController'
 
 export function TabletWorkspace({
+  initialEditorEditing = false,
   layoutProbe = false,
   repository = fixtureReadOnlyWorkspaceRepository,
   repositoryRequest,
   snapshot,
 }: {
+  initialEditorEditing?: boolean
   layoutProbe?: boolean
   repository?: ReadOnlyWorkspaceRepository
   repositoryRequest?: ReadOnlyWorkspaceRequest
@@ -37,6 +39,7 @@ export function TabletWorkspace({
       <TabletWorkspaceChrome
         compactTablet={compactTablet}
         defaultPropertiesVisible={defaultPropertiesVisible}
+        initialEditorEditing={initialEditorEditing}
         layoutProbe={layoutProbe}
         {...controller}
       />
@@ -65,6 +68,7 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
     defaultPropertiesVisible,
     editorBlocks,
     editorBullets,
+    initialEditorEditing,
     layoutProbe,
     noteListProperties,
     noteListSubtitle,
@@ -145,6 +149,7 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
         blocks={editorBlocks}
         bullets={editorBullets}
         compact={compactTablet}
+        initialEditing={initialEditorEditing}
         note={selectedNote}
         notes={suggestionNotes}
         onNavigateWikilink={handleNavigateWikilink}

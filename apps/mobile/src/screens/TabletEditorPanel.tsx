@@ -7,6 +7,7 @@ import {
 } from 'phosphor-react-native'
 import { Pressable, ScrollView, StyleSheet, type NativeSyntheticEvent, type TextInputSelectionChangeEventData, type TextStyle, View } from 'react-native'
 import { useCallback, useMemo, useState } from 'react'
+import { MobileMarkdownFormattingToolbar } from '../components/workspace/MobileMarkdownFormattingToolbar'
 import { Text } from '../components/ui/text'
 import { mobileText } from '../i18n/mobileText'
 import { MobileChip } from '../ui/MobileChip'
@@ -25,12 +26,17 @@ import {
   replaceActiveMobilePersonMentionQuery,
   replaceActiveMobileWikilinkQuery,
 } from '../workspace/mobileWikilinkAutocomplete'
+import {
+  applyMobileMarkdownFormat,
+  type MobileMarkdownFormatAction,
+} from '../workspace/mobileMarkdownFormatting'
 import type { MobileEditorBlock, MobileEditorInline, MobileNote } from '../workspace/mobileWorkspaceModel'
 
 type TabletEditorPanelProps = {
   blocks: MobileEditorBlock[]
   bullets: string[]
   compact: boolean
+  initialEditing?: boolean
   note: MobileNote | null
   notes: MobileNote[]
   onNavigateWikilink: (target: string) => void
@@ -71,6 +77,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
     blocks,
     bullets,
     compact,
+    initialEditing = false,
     note,
     notes,
     onNavigateWikilink,
@@ -79,7 +86,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
     onUpdateContent,
     onUpdateTitle,
   } = props
-  const [editing, setEditing] = useState(false)
+  const [editing, setEditing] = useState(initialEditing)
 
   if (!note) {
     return <EmptyEditorPanel />
@@ -208,6 +215,7 @@ function MarkdownEditor({
         value={note.title}
         onChangeText={(title) => onUpdateTitle(note.id, title)}
       />
+      <MobileMarkdownFormattingToolbar onFormat={autocomplete.applyFormat} />
       <MobileTextInput
         label={mobileText('editor.raw.label')}
         multiline
@@ -263,8 +271,16 @@ function useMarkdownInlineAutocomplete({
   const handleMarkdownChange = useCallback((nextContent: string) => {
     onUpdateContent(noteId, nextContent)
     const nextSelection = textEndSelection(nextContent)
-    if (hasActiveInlineAutocomplete(nextContent, nextSelection.start)) setSelection(nextSelection)
+    const activeAutocomplete = hasActiveInlineAutocomplete(nextContent, nextSelection.start)
+    setSelection(nextSelection)
+    setControlledSelection(activeAutocomplete ? nextSelection : undefined)
   }, [noteId, onUpdateContent])
+  const applyFormat = useCallback((action: MobileMarkdownFormatAction) => {
+    const result = applyMobileMarkdownFormat(content, selection, action)
+    onUpdateContent(noteId, result.text)
+    setSelection(result.selection)
+    setControlledSelection(result.selection)
+  }, [content, noteId, onUpdateContent, selection])
   const insertSuggestion = useCallback((suggestion: MobileNote) => {
     const replacement = markdownInlineAutocompleteReplacement(content, selection.start, state.kind, suggestion)
     if (!replacement) return
@@ -276,6 +292,7 @@ function useMarkdownInlineAutocomplete({
   }, [content, noteId, onUpdateContent, selection.start, state.kind])
 
   return {
+    applyFormat,
     controlledSelection,
     handleMarkdownChange,
     handleSelectionChange,
@@ -321,10 +338,8 @@ function markdownInlineAutocompleteReplacement(
 }
 
 function hasActiveInlineAutocomplete(text: string, cursor: number): boolean {
-  return Boolean(
-    activeMobileWikilinkQuery(text, cursor)
-    ?? activeMobilePersonMentionQuery(text, cursor),
-  )
+  if (activeMobileWikilinkQuery(text, cursor)) return true
+  return activeMobilePersonMentionQuery(text, cursor) !== null
 }
 
 function textEndSelection(text: string): TextSelectionRange {
@@ -471,20 +486,37 @@ function InlineText({
       {content.map((segment, index) => (
         <Text
           key={`${segment.text}-${index}`}
-          style={[
-            segment.bold ? inlineStyles.bold : null,
-            segment.italic ? inlineStyles.italic : null,
-            segment.code ? inlineStyles.code : null,
-            segment.wikilinkTarget ? inlineStyles.wikilink : null,
-          ]}
-          testID={segment.wikilinkTarget ? `editor-wikilink-${testIdSegment(segment.wikilinkTarget)}` : undefined}
-          onPress={segment.wikilinkTarget ? () => onNavigateWikilink(segment.wikilinkTarget ?? '') : undefined}
+          style={inlineSegmentStyles(segment)}
+          testID={inlineSegmentTestId(segment)}
+          onPress={inlineSegmentPressHandler(segment, onNavigateWikilink)}
         >
           {segment.text}
         </Text>
       ))}
     </Text>
   )
+}
+
+function inlineSegmentStyles(segment: MobileEditorInline): TextStyle[] {
+  const styles: TextStyle[] = []
+  if (segment.bold) styles.push(inlineStyles.bold)
+  if (segment.italic) styles.push(inlineStyles.italic)
+  if (segment.code) styles.push(inlineStyles.code)
+  if (segment.wikilinkTarget) styles.push(inlineStyles.wikilink)
+  return styles
+}
+
+function inlineSegmentTestId(segment: MobileEditorInline): string | undefined {
+  return segment.wikilinkTarget ? `editor-wikilink-${testIdSegment(segment.wikilinkTarget)}` : undefined
+}
+
+function inlineSegmentPressHandler(
+  segment: MobileEditorInline,
+  onNavigateWikilink: (target: string) => void,
+) {
+  const target = segment.wikilinkTarget
+  if (!target) return undefined
+  return () => onNavigateWikilink(target)
 }
 
 function EditorTable({

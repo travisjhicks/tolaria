@@ -615,6 +615,16 @@ files:
     editor.toolbar.openProperties: 948b90b60b8ce827f179e8c5b85b112e
     editor.formatting.highlight: 0b90582f4589d84be89f5b847d4d1ed1
     editor.formatting.highlightTooltip: c27173fea9ec1718030c5fa8440b2c78
+    editor.formatting.toolbar: 767042e4dbdd6d8f737786f122d66d4f
+    editor.formatting.bold: 114c3050111d8b8ddd830b99ccebd246
+    editor.formatting.italic: 1d874710ccdcd46b95397049d2e7500c
+    editor.formatting.code: ca0dbad92a874b2f69b549293387925e
+    editor.formatting.wikilink: e0ee5416c95077b05ea46d40dee513a7
+    editor.formatting.heading2: ea59935a58010a876f94374fb2f41d51
+    editor.formatting.heading3: 652864eb81a28bd7164f1605ab52a26a
+    editor.formatting.bulletList: 7e0df159e037db49a0ce97098f05b5ac
+    editor.formatting.quote: c48e929b2b1eabba2ba036884433345e
+    editor.formatting.table: 51c45b795d5d18a3e4e0c37e8b20a141
     editor.whiteboard.enterFullscreen: 606bf766125ecff4b33ca98122222c72
     editor.whiteboard.exitFullscreen: afd0a0414d79d047f00319921e4d4944
     editor.exportPdf.unavailable: 2fce9834984172b64b66767485d815e9

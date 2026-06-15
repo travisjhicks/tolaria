@@ -29,7 +29,8 @@ The machine-readable coverage source lives in `src/ui/mobileParityInventory.ts`.
 | --- | --- | --- |
 | `MobileWorkspaceSidebar` | `SidebarGroupHeader.tsx`, `SidebarParts.tsx`, folder tree components | Owns tablet sidebar rendering: top nav, groups, count pills, and folder tree. |
 | `MobileNoteListPanel` | `NoteItem.tsx`, note-list header | Owns tablet note-list chrome and row composition. |
-| `TabletEditorPanel` | `EditorTheme.css`, `theme.json` | Owns read-only tablet editor rendering for H1, paragraphs, headings, bullets, quotes, inline styles, and tables. |
+| `MobileMarkdownFormattingToolbar` | BlockNote formatting commands, `BreadcrumbBar` icon buttons | Owns compact raw-editor formatting actions for bold, italic, code, wikilinks, headings, bullets, quotes, and tables while reusing desktop toolbar action sizing. |
+| `TabletEditorPanel` | `EditorTheme.css`, `theme.json`, BlockNote formatting commands | Owns read-only tablet editor rendering for H1, paragraphs, headings, bullets, quotes, inline styles, and tables. Its mobile edit mode now includes compact Markdown formatting commands for bold, italic, code, wikilinks, H2/H3, bullets, quotes, and tables, while persisting through the same markdown body boundary as desktop. |
 | `MobilePropertiesPanel` | `propertyPanelLayout.ts`, `RelationshipsPanel.tsx` | Owns properties and relationship display/removal. |
 | `MobileWorkspaceActionSheet` | Desktop command dialogs, note-list search, inspector forms | Owns search/create/property/relationship/more action flows against the editable snapshot. Search uses `mobileQuickOpen` for deterministic empty/no-result filtering and clamped keyboard selection. Relationship create-and-open emits one reducer edit that creates the target beside the source note and links to the exact created path. |
 | `MobileWorkspaceMoveActions` | Sidebar saved-view and type-section context actions | Owns compact reorder/delete controls used by saved-view and Type-section action sheets. Labels and disabled states stay tied to sidebar action parity, while persistence stays in the editable snapshot reducer. |
@@ -70,11 +71,13 @@ The same Playwright suite also runs a source-drift check against desktop `src/in
 
 Quick-open/search is covered as behavior, not just presentation: empty queries expose active notes, no-result queries show the sheet empty state, the search input receives focus, Enter selects the active result, and ArrowUp/ArrowDown are clamped to desktop quick-open semantics.
 
-Editor autocomplete is covered as behavior too: `[[` suggestions match active notes by title, aliases, filename, type, tags, and path, while `@` suggestions are constrained to `Person` notes and insert the same canonical wikilink target into markdown.
+Editor autocomplete is covered as behavior too: `[[` suggestions match active notes by title, aliases, filename, type, tags, and path, while `@` suggestions are constrained to `Person` notes and insert the same canonical wikilink target into markdown. The mobile formatting toolbar feeds the same editor update pipeline: the wikilink action opens the existing `[[` autocomplete path, and table insertion renders back through the read-mode markdown table renderer.
 
 Property editing is covered through real typed writes: scalar text, tag lists, number values, and boolean Yes/No values all pass through the same frontmatter write boundary as desktop-style property edits.
 
 React Native Web screenshots are a fast preflight only. Layout-sensitive mobile UI work must also pass the native iOS simulator metric check and produce a simulator screenshot before it is accepted, because spacing, safe-area, and text layout can diverge between web and the actual Expo app.
+
+Native editor screenshots can open `exp://.../--/?layoutProbe=1&editorMode=raw` to mount the same tablet editor directly in raw-edit mode. This is a QA entry point only; it avoids depending on simulator accessibility taps when the goal is to inspect native rendering of edit-only controls.
 
 ## Phone Screens
 

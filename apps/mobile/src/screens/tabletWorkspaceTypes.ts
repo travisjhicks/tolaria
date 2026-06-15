@@ -76,6 +76,7 @@ export type TabletWorkspaceChromeProps = {
   defaultPropertiesVisible: boolean
   editorBlocks: MobileEditorBlock[]
   editorBullets: string[]
+  initialEditorEditing?: boolean
   layoutProbe?: boolean
   noteListProperties: string[]
   noteListSubtitle: NoteCountText

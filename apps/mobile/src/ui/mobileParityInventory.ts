@@ -169,9 +169,16 @@ export const mobileParityInventory = [
     surface: 'Type section editor',
   },
   {
-    assertions: ['editor computed styles'],
+    assertions: ['markdown formatting command user-flow checks'],
+    contracts: ['desktopToolbarActionParity'],
+    desktopSource: 'BlockNote formatting commands and BreadcrumbBar icon button sizing',
+    mobileFile: 'src/components/workspace/MobileMarkdownFormattingToolbar.tsx',
+    surface: 'Markdown formatting toolbar',
+  },
+  {
+    assertions: ['editor computed styles', 'markdown formatting command user-flow checks'],
     contracts: ['desktopEditorParity', 'desktopPanelParity', 'desktopToolbarParity'],
-    desktopSource: 'EditorTheme.css, theme.json, BreadcrumbBar',
+    desktopSource: 'EditorTheme.css, theme.json, BreadcrumbBar, and BlockNote formatting commands',
     mobileFile: 'src/screens/TabletEditorPanel.tsx',
     surface: 'Tablet editor panel',
   },
