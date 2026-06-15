@@ -41,6 +41,47 @@ describe('applyMobileWorkspaceEdit', () => {
     })
   })
 
+  it('creates typed notes with Type template body content', () => {
+    const result = applyMobileWorkspaceEditWithWrites(workspaceScenarioForId('default'), {
+      defaults: {
+        status: 'Active',
+        template: '## Objective\n\nLaunch mobile parity.\n',
+        type: 'Project',
+      },
+      title: 'Mobile Template Contract',
+      type: 'createNote',
+    })
+
+    const note = result.snapshot.notes[0]
+    expect(note).toMatchObject({
+      rawContent: [
+        '---',
+        'type: Project',
+        'Status: Active',
+        '---',
+        '# Mobile Template Contract',
+        '',
+        '## Objective',
+        '',
+        'Launch mobile parity.',
+        '',
+      ].join('\n'),
+      title: 'Mobile Template Contract',
+      type: 'Project',
+    })
+    expect(note?.editorBlocks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: 'heading', level: 2, text: 'Objective' }),
+        expect.objectContaining({ kind: 'paragraph' }),
+      ]),
+    )
+    expect(result.writes).toEqual([{
+      content: note?.rawContent,
+      kind: 'createNote',
+      path: 'mobile-template-contract.md',
+    }])
+  })
+
   it('updates note content and re-derives title, snippet, links, and editor blocks', () => {
     const snapshot = applyMobileWorkspaceEdit(workspaceScenarioForId('default'), {
       content: '# Revised Mobile Essay\n\nA body with [[open-source-project]].\n\n## Details\n\n- One\n',

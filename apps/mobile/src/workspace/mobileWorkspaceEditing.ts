@@ -348,7 +348,11 @@ function createNoteRawContent(
   title: NoteTitle,
   defaults: MobileCreateNoteDefaults,
 ): MarkdownContent {
-  return serializeDocument(createNoteFrontmatter(defaults), `# ${title}\n\n`)
+  return serializeDocument(createNoteFrontmatter(defaults), createNoteBody(title, defaults.template))
+}
+
+function createNoteBody(title: NoteTitle, template?: MarkdownContent): MarkdownContent {
+  return template ? `# ${title}\n\n${template}` : `# ${title}\n\n`
 }
 
 function createNoteFrontmatter(defaults: MobileCreateNoteDefaults): LocalVaultFrontmatter {

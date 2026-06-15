@@ -17,11 +17,11 @@ type MutableCreateDefaults = MobileCreateNoteDefaults & {
   tags: string[]
 }
 type DefaultWriter = (defaults: MutableCreateDefaults, values: unknown[]) => void
-type ScalarDefaultKey = keyof Pick<MobileCreateNoteDefaults, 'archived' | 'favorite' | 'folderPath' | 'organized' | 'status' | 'type'>
+type ScalarDefaultKey = keyof Pick<MobileCreateNoteDefaults, 'archived' | 'favorite' | 'folderPath' | 'organized' | 'status' | 'template' | 'type'>
 
 const ignoredDefaultFields = new Set(['created', 'date', 'links', 'modified', 'title'])
 const relationshipDefaultFields = new Set(['belongs_to', 'related_to', 'has'])
-const scalarDefaultKeys: ScalarDefaultKey[] = ['type', 'status', 'folderPath', 'archived', 'favorite', 'organized']
+const scalarDefaultKeys: ScalarDefaultKey[] = ['type', 'status', 'folderPath', 'archived', 'favorite', 'organized', 'template']
 const builtInDefaultWriters: Record<string, DefaultWriter> = {
   archived: (defaults, values) => applyBooleanDefault(defaults, 'archived', values[0]),
   favorite: (defaults, values) => applyBooleanDefault(defaults, 'favorite', values[0]),
@@ -71,6 +71,7 @@ function applyTypeDefinitionDefaults(
 ) {
   if (!definition) return
 
+  if (definition.template) defaults.template = definition.template
   Object.assign(defaults.properties, valuedProperties(definition.properties ?? {}))
   Object.assign(defaults.relationships, valuedRelationships(definition.relationships ?? {}))
 }

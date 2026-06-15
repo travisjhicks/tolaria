@@ -36,10 +36,12 @@ describe('tablet workspace create-note defaults', () => {
           belongs_to: ['[[Client Work]]'],
           related_to: [],
         },
+        template: '## Objective\n\n',
       },
     })).toEqual({
       properties: { Priority: 'High' },
       relationships: { belongs_to: ['[[Client Work]]'] },
+      template: '## Objective\n\n',
       type: 'Project',
     })
   })

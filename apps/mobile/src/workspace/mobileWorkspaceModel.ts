@@ -157,6 +157,7 @@ export type MobileCreateNoteDefaults = {
   relationships?: Record<string, string[]>
   status?: string
   tags?: string[]
+  template?: string
   type?: string
 }
 
