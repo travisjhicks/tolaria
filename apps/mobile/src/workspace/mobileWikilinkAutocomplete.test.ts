@@ -41,9 +41,32 @@ describe('mobile wikilink autocomplete', () => {
     ], 'important')
 
     expect(suggestions.map((suggestion) => suggestion.title)).toEqual(['Project Alpha'])
-    expect(mobileWikilinkAutocompleteSuggestions(suggestions, 'a')).toEqual([])
+    expect(mobileWikilinkAutocompleteSuggestions(suggestions, 'a')).toHaveLength(1)
     expect(mobileWikilinkAutocompleteSuggestions(suggestions, 'str')).toHaveLength(1)
     expect(mobileWikilinkAutocompleteSuggestions(suggestions, 'project-alpha')).toHaveLength(1)
+  })
+
+  it('shows desktop-style top suggestions for an empty wikilink query', () => {
+    const suggestions = mobileWikilinkAutocompleteSuggestions([
+      note({ path: 'zeta.md', title: 'Zeta' }),
+      note({ path: 'alpha.md', title: 'Alpha' }),
+      note({ archived: true, path: 'archived-alpha.md', title: 'Archived Alpha' }),
+    ], '')
+
+    expect(suggestions.map((suggestion) => suggestion.title)).toEqual(['Alpha', 'Zeta'])
+  })
+
+  it('deduplicates path collisions and disambiguates duplicate titles by parent folder', () => {
+    const suggestions = mobileWikilinkAutocompleteSuggestions([
+      note({ path: 'work/standup.md', title: 'Standup' }),
+      note({ path: 'work/standup.md', title: 'Standup Duplicate' }),
+      note({ path: 'personal/standup.md', title: 'Standup' }),
+    ], 'stand')
+
+    expect(suggestions.map((suggestion) => suggestion.title)).toEqual([
+      'Standup (work)',
+      'Standup (personal)',
+    ])
   })
 
   it('uses the canonical vault-relative path stem as the inserted target', () => {

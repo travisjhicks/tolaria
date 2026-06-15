@@ -96,6 +96,14 @@ async function toggleFavorite(page: PageLike) {
 }
 
 async function retargetSelectedRelease(page: PageLike) {
+  await changeSelectedReleaseType(page)
+  await editSelectedReleaseStatus(page)
+  await editSelectedReleaseTags(page)
+  await moveAndRenameSelectedRelease(page)
+  await assertSelectedReleaseDeepLink(page)
+}
+
+async function changeSelectedReleaseType(page: PageLike) {
   await page.getByTestId('property-row-type-edit').click()
   await expect(page.getByTestId('workspace-change-type-input')).toBeVisible()
   await expect(page.getByTestId('workspace-change-type-input')).toHaveValue('Release')
@@ -104,7 +112,9 @@ async function retargetSelectedRelease(page: PageLike) {
   await page.getByTestId('workspace-action-sheet-changeNoteType').getByRole('button', { name: 'Save' }).click()
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
   await expect(page.getByTestId('property-row-type')).toContainText('Procedure')
+}
 
+async function editSelectedReleaseStatus(page: PageLike) {
   await page.getByTestId('property-row-status-edit').click()
   await expect(page.getByTestId('workspace-action-sheet-editProperty')).toBeVisible()
   await expect(page.getByTestId('workspace-property-name-input')).toHaveValue('Status')
@@ -112,7 +122,9 @@ async function retargetSelectedRelease(page: PageLike) {
   await page.getByTestId('workspace-property-value-input').fill('Active')
   await page.getByTestId('workspace-action-sheet-editProperty').getByRole('button', { name: 'Save' }).click()
   await expect(page.getByTestId('property-row-status')).toContainText('Active')
+}
 
+async function editSelectedReleaseTags(page: PageLike) {
   await page.getByTestId('property-tags-edit').click()
   await expect(page.getByTestId('workspace-property-name-input')).toHaveValue('tags')
   await expect(page.getByTestId('workspace-property-value-input')).toHaveValue('Tolaria MVP')
@@ -121,7 +133,9 @@ async function retargetSelectedRelease(page: PageLike) {
   await expect(page.getByTestId('workspace-property-value-input')).toHaveValue('Tolaria MVP, Design')
   await page.getByTestId('workspace-action-sheet-editProperty').getByRole('button', { name: 'Save' }).click()
   await expect(page.getByTestId('property-tags-wrap')).toContainText('Design')
+}
 
+async function moveAndRenameSelectedRelease(page: PageLike) {
   await page.getByTestId('editor-more-action').click()
   await expect(page.getByTestId('workspace-action-move-note-folder')).toBeVisible()
   await page.getByTestId('workspace-action-move-note-folder').click()
@@ -136,7 +150,9 @@ async function retargetSelectedRelease(page: PageLike) {
   await page.getByTestId('workspace-rename-file-input').fill('release-cleanup')
   await page.getByTestId('workspace-action-sheet-renameNoteFile').getByRole('button', { name: 'Save' }).click()
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+}
 
+async function assertSelectedReleaseDeepLink(page: PageLike) {
   await page.getByTestId('editor-more-action').click()
   await page.getByTestId('workspace-action-copy-deep-link').click()
   await expect(page.evaluate((key) => {
@@ -334,6 +350,8 @@ async function addRelationshipFromSuggestion(page: PageLike) {
 async function editMarkdownWithWikilink(page: PageLike) {
   await page.getByTestId('editor-edit-action').click()
   await expect(page.getByTestId('editor-title-input')).toBeVisible()
+  await page.getByTestId('editor-markdown-input').fill('# Mobile QA Draft Revised\n\nDraft body referencing [[')
+  await expect(page.getByTestId('editor-wikilink-suggestions')).toBeVisible()
   await page.getByTestId('editor-markdown-input').fill('# Mobile QA Draft Revised\n\nDraft body referencing [[open')
   await expect(page.getByTestId('editor-wikilink-suggestion-open-source-project')).toBeVisible()
   await page.getByTestId('editor-wikilink-suggestion-open-source-project').click()
