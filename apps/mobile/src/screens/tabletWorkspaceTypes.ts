@@ -39,6 +39,7 @@ export type TabletReadOnlyForm = {
   propertyValue: ReadOnlyFormValue
   propertyValueKind: MobilePropertyValueKind
   relationshipName: ReadOnlyFormValue
+  relationshipNoteRef: ReadOnlyFormValue
   relationshipNoteTitle: ReadOnlyFormValue
   typeDisplayProperties: string[]
   typeName: ReadOnlyFormValue
@@ -158,6 +159,7 @@ export type TabletWorkspaceChromeProps = {
   onPropertyValueChange: (value: ReadOnlyFormValue) => void
   onPropertyValueKindChange: (value: MobilePropertyValueKind) => void
   onRelationshipNameChange: (value: ReadOnlyFormValue) => void
+  onRelationshipNoteSelect: (title: ReadOnlyFormValue, ref: ReadOnlyFormValue) => void
   onRelationshipNoteTitleChange: (value: ReadOnlyFormValue) => void
   onSearchQueryChange: (value: SearchQuery) => void
   onSelectFolder: (selection: MobileSidebarFolderSelection) => void

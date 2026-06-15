@@ -30,6 +30,7 @@ import {
   validateMobileRenameNoteFilePath,
   type MobileNotePathValidationStatus,
 } from '../../workspace/mobileNotePaths'
+import { mobileWikilinkTargetForNote } from '../../workspace/mobileWikilinks'
 import {
   mobilePropertyKeySuggestions,
   mobilePropertyValueSuggestions,
@@ -110,6 +111,7 @@ type MobileWorkspaceActionSheetProps = {
   onPropertyValueChange: (value: string) => void
   onPropertyValueKindChange: (value: MobilePropertyValueKind) => void
   onRelationshipNameChange: (value: string) => void
+  onRelationshipNoteSelect: (title: string, ref: string) => void
   onRelationshipNoteTitleChange: (value: string) => void
   onSaveProperty: () => void
   onSaveRelationship: () => void
@@ -671,6 +673,7 @@ function AddRelationshipContent({
   onClose,
   onCreateRelationshipTarget,
   onRelationshipNameChange,
+  onRelationshipNoteSelect,
   onRelationshipNoteTitleChange,
   onSaveRelationship,
   relationshipName,
@@ -713,7 +716,7 @@ function AddRelationshipContent({
               key={note.id}
               style={({ pressed }) => [styles.suggestionRow, pressed ? styles.suggestionRowPressed : null]}
               testID={`workspace-relationship-note-suggestion-${note.id}`}
-              onPress={() => onRelationshipNoteTitleChange(note.title)}
+              onPress={() => onRelationshipNoteSelect(note.title, `[[${mobileWikilinkTargetForNote(note)}]]`)}
             >
               <MobileTypeIcon size={16} tone={note.typeTone} type={note.type} />
               <Text numberOfLines={1} style={styles.suggestionTitle}>{note.title}</Text>

@@ -77,7 +77,7 @@ export type MobileWorkspaceEdit =
   | { noteId: NoteId; rawContent: MarkdownContent; type: 'hydrateNoteContent' }
   | { key: FrontmatterKey; noteId: NoteId; value: MobilePropertyValue; type: 'updateProperty' }
   | { key: FrontmatterKey; noteId: NoteId; type: 'deleteProperty' }
-  | { key: FrontmatterKey; noteId: NoteId; targetTitle: NoteTitle; type: 'addRelationship' }
+  | { key: FrontmatterKey; noteId: NoteId; targetRef?: WikilinkRef; targetTitle: NoteTitle; type: 'addRelationship' }
   | { defaults?: MobileCreateNoteDefaults; key: FrontmatterKey; sourceNoteId: NoteId; targetTitle: NoteTitle; type: 'createRelationshipTarget' }
   | { key: FrontmatterKey; noteId: NoteId; ref: WikilinkRef; type: 'removeRelationship' }
   | { noteId: NoteId; type: 'changeNoteType'; value: NoteTitle }
@@ -142,12 +142,25 @@ type RelationshipTargetRefContext = {
   targetRef: WikilinkRef
   typeDefinitions?: MobileTypeDefinitions
 }
+type AddRelationshipInput = {
+  key: FrontmatterKey
+  note: EditableNoteInput
+  notes: MobileNote[]
+  targetRef?: WikilinkRef
+  targetTitle: NoteTitle
+}
 type MobileNoteEditHandler = (context: MobileNoteEditContext, edit: MobileNoteEdit) => MobileNote
 
 const mobileNoteEditHandlers: Record<MobileNoteEdit['type'], MobileNoteEditHandler> = {
   addRelationship: ({ editableNote, notes }, edit) => {
     if (edit.type !== 'addRelationship') return editableNote
-    return addRelationship(editableNote, notes, edit.key, edit.targetTitle)
+    return addRelationship({
+      key: edit.key,
+      note: editableNote,
+      notes,
+      targetRef: edit.targetRef,
+      targetTitle: edit.targetTitle,
+    })
   },
   changeNoteType: ({ editableNote, typeDefinitions }, edit) => {
     if (edit.type !== 'changeNoteType') return editableNote
@@ -385,17 +398,18 @@ function applyMobileNoteEdit(
   return mobileNoteEditHandlers[edit.type]({ editableNote, note, notes, typeDefinitions }, edit)
 }
 
-function addRelationship(
-  note: EditableNoteInput,
-  notes: MobileNote[],
-  key: FrontmatterKey,
-  targetTitle: NoteTitle,
-): MobileNote {
+function addRelationship({
+  key,
+  note,
+  notes,
+  targetRef,
+  targetTitle,
+}: AddRelationshipInput): MobileNote {
   const trimmedKey = normalizeRelationshipKey(key)
   const trimmedTitle = targetTitle.trim()
   if (!trimmedKey || !trimmedTitle) return note
 
-  const ref = relationshipRefForTitle(trimmedTitle, notes)
+  const ref = normalizedRelationshipRef(targetRef) ?? relationshipRefForTitle(trimmedTitle, notes)
   return addRelationshipRef(note, trimmedKey, ref)
 }
 
@@ -1119,6 +1133,13 @@ function relationshipRefForTitle(title: NoteTitle, notes: MobileNote[]): Wikilin
   const targetNote = resolveRelationshipTarget(notes, title)
   const target = targetNote ? wikilinkTargetForNote(targetNote) : slugifyTitle(title)
   return `[[${target}]]`
+}
+
+function normalizedRelationshipRef(ref: WikilinkRef | undefined): WikilinkRef | null {
+  const trimmed = ref?.trim()
+  if (!trimmed) return null
+  if (/^\[\[[^\]]+\]\]$/.test(trimmed)) return trimmed
+  return `[[${trimmed}]]`
 }
 
 function wikilinkTargetForNote(note: MobileNote): WikilinkTarget {

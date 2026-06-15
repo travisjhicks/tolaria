@@ -79,6 +79,7 @@ const emptyReadOnlyForm: TabletReadOnlyForm = {
   propertyValue: '',
   propertyValueKind: 'string',
   relationshipName: '',
+  relationshipNoteRef: '',
   relationshipNoteTitle: '',
   typeDisplayProperties: [],
   typeName: '',
@@ -614,7 +615,14 @@ function relationshipWorkspaceActions({
       selectedNote,
     }),
     onRelationshipNameChange: (value: string) => updateReadOnlyForm('relationshipName', value),
-    onRelationshipNoteTitleChange: (value: string) => updateReadOnlyForm('relationshipNoteTitle', value),
+    onRelationshipNoteSelect: (title: string, ref: string) => {
+      updateReadOnlyForm('relationshipNoteTitle', title)
+      updateReadOnlyForm('relationshipNoteRef', ref)
+    },
+    onRelationshipNoteTitleChange: (value: string) => {
+      updateReadOnlyForm('relationshipNoteTitle', value)
+      updateReadOnlyForm('relationshipNoteRef', '')
+    },
     onRemoveRelationship: (noteId: string, key: string, ref: string) => applyEdit({ key, noteId, ref, type: 'removeRelationship' }),
     onSaveRelationship: () => saveSelectedEdit((noteId) => relationshipEdit(readOnlyForm, noteId)),
   }
@@ -717,6 +725,7 @@ function addPropertyFields(key?: string): ReadOnlyFormField[] {
 function addRelationshipFields(key?: string): ReadOnlyFormField[] {
   return [
     { key: 'relationshipName', value: key ?? '' },
+    { key: 'relationshipNoteRef', value: '' },
     { key: 'relationshipNoteTitle', value: '' },
   ]
 }
@@ -1191,6 +1200,7 @@ function relationshipEdit(form: TabletReadOnlyForm, noteId: string): MobileWorks
   return {
     key: form.relationshipName,
     noteId,
+    targetRef: form.relationshipNoteRef,
     targetTitle: form.relationshipNoteTitle,
     type: 'addRelationship',
   }
