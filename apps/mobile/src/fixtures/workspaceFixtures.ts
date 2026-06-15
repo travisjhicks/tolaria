@@ -39,6 +39,7 @@ export type WorkspaceScenarioId =
   | 'empty-inbox'
   | 'folder-tree'
   | 'long-title'
+  | 'markdown-heavy'
   | 'property-heavy'
 
 export const fixtureEditorBullets = [
@@ -64,17 +65,19 @@ export const fixtureEditorBlocks: FixtureEditorBlock[] = [
   {
     kind: 'bullets',
     items: [
-      [
-        { text: 'Start from desktop semantics, then adapt only for touch and navigation.' },
-      ],
-      [
-        { text: 'Use ' },
-        { code: true, text: 'muted' },
-        { text: ' text for previews, section labels, dates, and lower-priority chrome.' },
-      ],
-      [
-        { italic: true, text: 'Relationship values stay typed, colored, and full-width.' },
-      ],
+      {
+        content: [{ text: 'Start from desktop semantics, then adapt only for touch and navigation.' }],
+      },
+      {
+        content: [
+          { text: 'Use ' },
+          { code: true, text: 'muted' },
+          { text: ' text for previews, section labels, dates, and lower-priority chrome.' },
+        ],
+      },
+      {
+        content: [{ italic: true, text: 'Relationship values stay typed, colored, and full-width.' }],
+      },
     ],
   },
   {
@@ -104,8 +107,8 @@ const longTitleEditorBlocks: FixtureEditorBlock[] = [
   {
     kind: 'bullets',
     items: [
-      [{ text: 'Truncate in narrow chrome.' }],
-      [{ text: 'Wrap only inside the editor content area.' }],
+      { content: [{ text: 'Truncate in narrow chrome.' }] },
+      { content: [{ text: 'Wrap only inside the editor content area.' }] },
     ],
   },
 ]
@@ -129,6 +132,69 @@ const propertyHeavyEditorBlocks: FixtureEditorBlock[] = [
       ['Tags', 'wrap under the label'],
       ['Belongs to', 'typed full-width rows'],
       ['Has', 'multiple values without a global heading'],
+    ],
+  },
+]
+
+const markdownHeavyEditorBlocks: FixtureEditorBlock[] = [
+  {
+    kind: 'paragraph',
+    content: [
+      { text: 'This fixture exercises ' },
+      { bold: true, text: 'desktop markdown parity' },
+      { text: ' across native React Native rendering.' },
+    ],
+  },
+  {
+    kind: 'heading',
+    level: 4,
+    text: 'Detailed renderer coverage',
+  },
+  {
+    kind: 'orderedList',
+    items: [
+      {
+        content: [
+          { text: 'Render a regular ' },
+          { linkHref: 'https://example.com', text: 'link' },
+          { text: ' and preserve spacing.' },
+        ],
+        marker: '1.',
+      },
+      {
+        content: [{ text: 'Show nested ordered list indentation.' }],
+        depth: 1,
+        marker: '1.',
+      },
+    ],
+  },
+  {
+    kind: 'tasks',
+    items: [
+      {
+        checked: true,
+        content: [{ text: 'Completed native renderer pass with ' }, { strike: true, text: 'stale copy' }],
+      },
+      {
+        checked: false,
+        content: [{ text: 'Verify simulator spacing after web QA.' }],
+      },
+    ],
+  },
+  {
+    code: 'const renderer = "native";',
+    kind: 'codeBlock',
+    language: 'typescript',
+  },
+  {
+    kind: 'divider',
+  },
+  {
+    kind: 'paragraph',
+    content: [
+      { text: 'Navigate back to ' },
+      { text: 'Workflow Orchestration Essay', wikilinkTarget: 'workflow-orchestration' },
+      { text: ' from a wikilink.' },
     ],
   },
 ]
@@ -309,6 +375,31 @@ const propertyHeavyNote: FixtureNote = {
         { title: 'Fixture Harness', type: 'Procedure', typeTone: 'purple' },
         { title: 'Expo Web Export', type: 'Procedure', typeTone: 'purple' },
         { title: 'Playwright Screenshots', type: 'Release', typeTone: 'orange' },
+      ],
+    },
+  ],
+  workspace: 'TV',
+}
+
+const markdownHeavyNote: FixtureNote = {
+  id: 'markdown-heavy-renderer',
+  path: 'Tolaria/Mobile UI/Markdown Renderer Parity.md',
+  title: 'Markdown Renderer Parity',
+  snippet: 'Renderer fixture for H4, ordered lists, tasks, code fences, links, and dividers.',
+  type: 'Essay',
+  typeTone: 'green',
+  tags: ['Mobile', 'Markdown', 'Parity'],
+  status: 'Active',
+  date: 'June 15, 2026',
+  modified: '1m ago',
+  created: 'Jun 15',
+  favorite: false,
+  links: 8,
+  relationships: [
+    {
+      kind: 'relatedTo',
+      values: [
+        { title: 'Workflow Orchestration Essay', type: 'Essay', typeTone: 'green' },
       ],
     },
   ],
@@ -518,6 +609,21 @@ export const workspaceScenarios: Record<WorkspaceScenarioId, WorkspaceScenario> 
     selectedNoteId: longTitleNote.id,
     sidebarSections: defaultSidebarSections,
     sync: { kind: 'synced', minutesAgo: 1 },
+    typeDefinitions: fixtureTypeDefinitions,
+    views: fixtureViews,
+  },
+  'markdown-heavy': {
+    editorBlocks: markdownHeavyEditorBlocks,
+    editorBullets: [
+      'Renderer fixture for H4, ordered lists, tasks, code fences, links, and dividers.',
+      'The scenario is isolated from the default screenshot baseline.',
+    ],
+    id: 'markdown-heavy',
+    noteListSubtitle: '8 open notes',
+    notes: [markdownHeavyNote, ...fixtureNotes],
+    selectedNoteId: markdownHeavyNote.id,
+    sidebarSections: defaultSidebarSections,
+    sync: { kind: 'synced', minutesAgo: 0 },
     typeDefinitions: fixtureTypeDefinitions,
     views: fixtureViews,
   },

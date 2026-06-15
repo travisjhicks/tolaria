@@ -176,7 +176,14 @@ export const mobileParityInventory = [
     surface: 'Markdown formatting toolbar',
   },
   {
-    assertions: ['editor computed styles', 'markdown formatting command user-flow checks'],
+    assertions: ['editor computed styles', 'markdown block parser regression checks'],
+    contracts: ['desktopEditorParity'],
+    desktopSource: 'EditorTheme.css, theme.json, BlockNote markdown block rendering',
+    mobileFile: 'src/components/workspace/MobileEditorBlocks.tsx',
+    surface: 'Read-only editor markdown blocks',
+  },
+  {
+    assertions: ['editor chrome computed styles', 'markdown formatting command user-flow checks'],
     contracts: ['desktopEditorParity', 'desktopPanelParity', 'desktopToolbarParity'],
     desktopSource: 'EditorTheme.css, theme.json, BreadcrumbBar, and BlockNote formatting commands',
     mobileFile: 'src/screens/TabletEditorPanel.tsx',

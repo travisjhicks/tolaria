@@ -115,15 +115,36 @@ export type MobileEditorInline = {
   bold?: boolean
   code?: boolean
   italic?: boolean
+  linkHref?: string
+  strike?: boolean
   text: string
   wikilinkTarget?: string
 }
 
+export type MobileEditorHeadingLevel = 1 | 2 | 3 | 4 | 5 | 6
+
+export type MobileEditorListItem = {
+  content: MobileEditorInline[]
+  depth?: number
+}
+
+export type MobileEditorOrderedListItem = MobileEditorListItem & {
+  marker: string
+}
+
+export type MobileEditorTaskItem = MobileEditorListItem & {
+  checked: boolean
+}
+
 export type MobileEditorBlock =
   | { content: MobileEditorInline[]; kind: 'paragraph' }
-  | { kind: 'heading'; level: 2 | 3; text: string }
-  | { items: MobileEditorInline[][]; kind: 'bullets' }
+  | { kind: 'heading'; level: MobileEditorHeadingLevel; text: string }
+  | { items: MobileEditorListItem[]; kind: 'bullets' }
+  | { items: MobileEditorOrderedListItem[]; kind: 'orderedList' }
+  | { items: MobileEditorTaskItem[]; kind: 'tasks' }
   | { content: MobileEditorInline[]; kind: 'quote' }
+  | { code: string; kind: 'codeBlock'; language?: string | null }
+  | { kind: 'divider' }
   | { headers: string[]; kind: 'table'; rows: string[][] }
 
 export type MobileViewFilterOp = 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'any_of' | 'none_of' | 'is_empty' | 'is_not_empty' | 'before' | 'after'

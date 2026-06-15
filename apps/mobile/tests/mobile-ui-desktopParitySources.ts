@@ -11,6 +11,10 @@ type ThemeJson = {
     marginVertical: number
     paddingLeft: number
   }
+  checkboxes: {
+    gap: number
+    size: number
+  }
   editor: {
     fontSize: number
     lineHeight: number
@@ -23,11 +27,25 @@ type ThemeJson = {
     h1: HeadingTheme
     h2: HeadingTheme
     h3: HeadingTheme
+    h4: HeadingTheme
+  }
+  horizontalRule: {
+    marginVertical: number
+    thickness: number
+  }
+  inlineStyles: {
+    code: {
+      fontSize: number
+      paddingHorizontal: number
+      paddingVertical: number
+    }
   }
   lists: {
     bulletGap: number
     bulletSize: number
     indentSize: number
+    itemSpacing: number
+    paddingLeft: number
   }
   table: {
     cellPaddingHorizontal: number
@@ -109,9 +127,22 @@ function assertDesktopEditorThemeParity(theme: ThemeJson) {
   expect(desktopEditorParity.h3LineHeight).toBe(roundedLineHeight(theme.headings.h3.fontSize, theme.headings.h3.lineHeight))
   expect(desktopEditorParity.h3MarginBottom).toBe(theme.headings.h3.marginBottom)
   expect(desktopEditorParity.h3MarginTop).toBe(theme.headings.h3.marginTop)
+  expect(desktopEditorParity.h4FontSize).toBe(theme.headings.h4.fontSize)
+  expect(desktopEditorParity.h4LineHeight).toBe(roundedLineHeight(theme.headings.h4.fontSize, theme.headings.h4.lineHeight))
+  expect(desktopEditorParity.h4MarginBottom).toBe(theme.headings.h4.marginBottom)
+  expect(desktopEditorParity.h4MarginTop).toBe(theme.headings.h4.marginTop)
+  expect(desktopEditorParity.horizontalRuleMarginVertical).toBe(theme.horizontalRule.marginVertical)
+  expect(desktopEditorParity.horizontalRuleThickness).toBe(theme.horizontalRule.thickness)
+  expect(desktopEditorParity.inlineCodeFontSize).toBe(theme.inlineStyles.code.fontSize)
+  expect(desktopEditorParity.inlineCodePaddingHorizontal).toBe(theme.inlineStyles.code.paddingHorizontal)
+  expect(desktopEditorParity.inlineCodePaddingVertical).toBe(theme.inlineStyles.code.paddingVertical)
+  expect(desktopEditorParity.listCheckboxGap).toBe(theme.checkboxes.gap)
+  expect(desktopEditorParity.listCheckboxSize).toBe(theme.checkboxes.size)
   expect(desktopEditorParity.listBulletGap).toBe(theme.lists.bulletGap)
   expect(desktopEditorParity.listBulletSize).toBe(theme.lists.bulletSize)
   expect(desktopEditorParity.listIndentSize).toBe(theme.lists.indentSize)
+  expect(desktopEditorParity.listItemSpacing).toBe(theme.lists.itemSpacing)
+  expect(desktopEditorParity.listPaddingLeft).toBe(theme.lists.paddingLeft)
   expect(desktopEditorParity.quoteMarginVertical).toBe(theme.blockquote.marginVertical)
   expect(desktopEditorParity.quotePaddingLeft).toBe(theme.blockquote.paddingLeft)
   expect(desktopEditorParity.tableCellPaddingHorizontal).toBe(theme.table.cellPaddingHorizontal)

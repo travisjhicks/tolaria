@@ -38,7 +38,7 @@ export function MobileUiLab() {
 }
 
 function currentScenarioId(searchParams: URLSearchParams) {
-  return searchParams.get('scenario')
+  return searchParams.get('scenario') || envValue('EXPO_PUBLIC_TOLARIA_SCENARIO')
 }
 
 function currentPhoneState(searchParams: URLSearchParams): PhoneWorkspaceState {

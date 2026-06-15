@@ -1,4 +1,11 @@
-import type { MobileEditorBlock, MobileEditorInline } from './mobileWorkspaceModel'
+import type {
+  MobileEditorBlock,
+  MobileEditorHeadingLevel,
+  MobileEditorInline,
+  MobileEditorListItem,
+  MobileEditorOrderedListItem,
+  MobileEditorTaskItem,
+} from './mobileWorkspaceModel'
 import { parseMobileWikilink } from './mobileWikilinks'
 
 type MarkdownBody = string
@@ -7,9 +14,24 @@ type MarkdownText = string
 type NoteFilename = string
 type NoteTitle = string
 type SnippetText = string
+type EditorBlockRead = {
+  block: MobileEditorBlock
+  nextIndex: number
+}
+type EditorBlockReader = (lines: MarkdownLine[], startIndex: number) => EditorBlockRead | null
 
 const MAX_SNIPPET_LENGTH = 160
 const MAX_EDITOR_BLOCKS = 10
+const editorBlockReaders: EditorBlockReader[] = [
+  readCodeBlock,
+  readDividerBlock,
+  readTable,
+  readHeadingBlock,
+  readTasks,
+  readOrderedList,
+  readBulletList,
+  readQuote,
+]
 
 export function deriveLocalVaultTitle({
   body,
@@ -36,53 +58,36 @@ export function localVaultEditorBlocks(body: MarkdownBody): MobileEditorBlock[] 
   let index = 0
 
   while (index < lines.length && blocks.length < MAX_EDITOR_BLOCKS) {
-    const line = lines[index].trim()
-
-    if (!line) {
+    if (!lines[index].trim()) {
       index += 1
       continue
     }
 
-    const table = readTable(lines, index)
-    if (table) {
-      blocks.push(table.block)
-      index = table.nextIndex
-      continue
-    }
-
-    const heading = headingBlock(line)
-    if (heading) {
-      blocks.push(heading)
-      index += 1
-      continue
-    }
-
-    const bullets = readBullets(lines, index)
-    if (bullets) {
-      blocks.push(bullets.block)
-      index = bullets.nextIndex
-      continue
-    }
-
-    const quote = quoteBlock(line)
-    if (quote) {
-      blocks.push(quote)
-      index += 1
-      continue
-    }
-
-    const paragraph = readParagraph(lines, index)
-    blocks.push({ content: parseInlineText(paragraph.text), kind: 'paragraph' })
-    index = paragraph.nextIndex
+    const parsed = readEditorBlock(lines, index)
+    blocks.push(parsed.block)
+    index = parsed.nextIndex
   }
 
   return blocks
 }
 
+function readEditorBlock(lines: MarkdownLine[], startIndex: number): EditorBlockRead {
+  for (const reader of editorBlockReaders) {
+    const result = reader(lines, startIndex)
+    if (result) return result
+  }
+
+  const paragraph = readParagraph(lines, startIndex)
+  return {
+    block: { content: parseInlineText(paragraph.text), kind: 'paragraph' },
+    nextIndex: paragraph.nextIndex,
+  }
+}
+
 export function localVaultEditorBullets(blocks: MobileEditorBlock[]): string[] {
   return blocks.flatMap((block) => {
     if (block.kind !== 'bullets') return []
-    return block.items.map((item) => item.map((segment) => segment.text).join(''))
+    return block.items.map((item) => item.content.map((segment) => segment.text).join(''))
   })
 }
 
@@ -135,13 +140,24 @@ function stripMarkdown(text: MarkdownText): MarkdownText {
     .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, '$2')
     .replace(/\[\[([^\]]+)\]\]/g, '$1')
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\*\*\*([^*]+)\*\*\*/g, '$1')
+    .replace(/~~([^~]+)~~/g, '$1')
     .replace(/^[\s>*-]+/g, '')
-    .replace(/^\d+\.\s+/g, '')
-    .replace(/[*_`>#]/g, '')
+    .replace(/^\[[ xX]\]\s+/g, '')
+    .replace(/^\d+[.)]\s+/g, '')
+    .replace(/[*_`>#~]/g, '')
     .replace(/\s+/g, ' ')
     .trim()
 
   return addSoftBreaks(stripped)
+}
+
+function stripInlineMarkdown(text: MarkdownText): MarkdownText {
+  const leading = text.match(/^\s*/)?.[0] ?? ''
+  const trailing = text.match(/\s*$/)?.[0] ?? ''
+  const stripped = stripMarkdown(text)
+  if (!stripped) return ''
+  return `${leading}${stripped}${trailing}`
 }
 
 function addSoftBreaks(text: MarkdownText): MarkdownText {
@@ -149,36 +165,119 @@ function addSoftBreaks(text: MarkdownText): MarkdownText {
 }
 
 function headingBlock(line: MarkdownLine): MobileEditorBlock | null {
-  const match = line.match(/^(#{2,3})\s+(.+)$/)
+  const match = line.match(/^(#{1,6})\s+(.+)$/)
   if (!match) return null
 
   return {
     kind: 'heading',
-    level: match[1].length === 2 ? 2 : 3,
+    level: headingLevel(match[1]),
     text: stripMarkdown(match[2]),
   }
 }
 
-function quoteBlock(line: MarkdownLine): MobileEditorBlock | null {
-  if (!line.startsWith('>')) return null
-  return { content: parseInlineText(stripMarkdown(line)), kind: 'quote' }
+function readHeadingBlock(lines: MarkdownLine[], startIndex: number): EditorBlockRead | null {
+  const heading = headingBlock(lines[startIndex].trim())
+  return heading ? { block: heading, nextIndex: startIndex + 1 } : null
 }
 
-function readBullets(
+function readDividerBlock(lines: MarkdownLine[], startIndex: number): EditorBlockRead | null {
+  return isHorizontalRule(lines[startIndex]) ? { block: { kind: 'divider' }, nextIndex: startIndex + 1 } : null
+}
+
+function headingLevel(marker: MarkdownText): MobileEditorHeadingLevel {
+  const level = marker.length
+  if (level <= 1) return 1
+  if (level === 2) return 2
+  if (level === 3) return 3
+  if (level === 4) return 4
+  if (level === 5) return 5
+  return 6
+}
+
+function readQuote(
   lines: MarkdownLine[],
   startIndex: number,
-): { block: Extract<MobileEditorBlock, { kind: 'bullets' }>; nextIndex: number } | null {
-  const items: MobileEditorInline[][] = []
+): { block: Extract<MobileEditorBlock, { kind: 'quote' }>; nextIndex: number } | null {
+  const quoteLines: string[] = []
   let index = startIndex
 
   while (index < lines.length) {
-    const match = lines[index].trim().match(/^[-*]\s+(.+)$/)
+    const match = lines[index].trim().match(/^>\s?(.*)$/)
     if (!match) break
-    items.push(parseInlineText(match[1]))
+    quoteLines.push(match[1])
+    index += 1
+  }
+
+  return quoteLines.length > 0
+    ? { block: { content: parseInlineText(quoteLines.join(' ')), kind: 'quote' }, nextIndex: index }
+    : null
+}
+
+function readTasks(
+  lines: MarkdownLine[],
+  startIndex: number,
+): { block: Extract<MobileEditorBlock, { kind: 'tasks' }>; nextIndex: number } | null {
+  const items: MobileEditorTaskItem[] = []
+  let index = startIndex
+
+  while (index < lines.length) {
+    const match = lines[index].match(/^(\s*)[-*]\s+\[([ xX])]\s+(.+)$/)
+    if (!match) break
+    items.push({
+      checked: match[2].toLowerCase() === 'x',
+      content: parseInlineText(match[3]),
+      depth: listDepth(match[1]),
+    })
+    index += 1
+  }
+
+  return items.length > 0 ? { block: { items, kind: 'tasks' }, nextIndex: index } : null
+}
+
+function readOrderedList(
+  lines: MarkdownLine[],
+  startIndex: number,
+): { block: Extract<MobileEditorBlock, { kind: 'orderedList' }>; nextIndex: number } | null {
+  const items: MobileEditorOrderedListItem[] = []
+  let index = startIndex
+
+  while (index < lines.length) {
+    const match = lines[index].match(/^(\s*)(\d+[.)])\s+(.+)$/)
+    if (!match) break
+    items.push({
+      content: parseInlineText(match[3]),
+      depth: listDepth(match[1]),
+      marker: match[2],
+    })
+    index += 1
+  }
+
+  return items.length > 0 ? { block: { items, kind: 'orderedList' }, nextIndex: index } : null
+}
+
+function readBulletList(
+  lines: MarkdownLine[],
+  startIndex: number,
+): { block: Extract<MobileEditorBlock, { kind: 'bullets' }>; nextIndex: number } | null {
+  const items: MobileEditorListItem[] = []
+  let index = startIndex
+
+  while (index < lines.length) {
+    const match = lines[index].match(/^(\s*)[-*]\s+(?!\[[ xX]\]\s)(.+)$/)
+    if (!match) break
+    items.push({
+      content: parseInlineText(match[2]),
+      depth: listDepth(match[1]),
+    })
     index += 1
   }
 
   return items.length > 0 ? { block: { items, kind: 'bullets' }, nextIndex: index } : null
+}
+
+function listDepth(indent: MarkdownText): number {
+  const expanded = indent.replace(/\t/g, '  ')
+  return Math.min(Math.floor(expanded.length / 2), 3)
 }
 
 function readParagraph(lines: MarkdownLine[], startIndex: number): { nextIndex: number; text: MarkdownText } {
@@ -187,7 +286,7 @@ function readParagraph(lines: MarkdownLine[], startIndex: number): { nextIndex: 
 
   while (index < lines.length && parts.length < 3) {
     const line = lines[index].trim()
-    if (!line || isBlockStart(line)) break
+    if (!line || isParagraphBoundary(lines, index)) break
     parts.push(line)
     index += 1
   }
@@ -198,11 +297,47 @@ function readParagraph(lines: MarkdownLine[], startIndex: number): { nextIndex: 
   }
 }
 
+function isParagraphBoundary(lines: MarkdownLine[], index: number): boolean {
+  const line = lines[index].trim()
+  return isBlockStart(line) || readTable(lines, index) !== null
+}
+
 function isBlockStart(line: MarkdownLine): boolean {
-  return line.startsWith('#')
+  return line.startsWith('```')
+    || line.startsWith('#')
     || line.startsWith('>')
+    || isHorizontalRule(line)
     || /^[-*]\s+/.test(line)
-    || isPotentialTableRow(line)
+    || /^\d+[.)]\s+/.test(line)
+}
+
+function readCodeBlock(
+  lines: MarkdownLine[],
+  startIndex: number,
+): { block: Extract<MobileEditorBlock, { kind: 'codeBlock' }>; nextIndex: number } | null {
+  const fence = lines[startIndex].trim().match(/^```([A-Za-z0-9_-]+)?\s*$/)
+  if (!fence) return null
+
+  const codeLines: string[] = []
+  let index = startIndex + 1
+
+  while (index < lines.length && !lines[index].trim().startsWith('```')) {
+    codeLines.push(lines[index])
+    index += 1
+  }
+
+  return {
+    block: {
+      code: codeLines.join('\n'),
+      kind: 'codeBlock',
+      language: fence[1] ?? null,
+    },
+    nextIndex: index < lines.length ? index + 1 : index,
+  }
+}
+
+function isHorizontalRule(line: MarkdownLine): boolean {
+  return /^[-*_]{3,}$/.test(line.trim())
 }
 
 function readTable(
@@ -254,25 +389,28 @@ function rawTableCells(line: MarkdownLine): MarkdownText[] {
 
 function parseInlineText(text: MarkdownText): MobileEditorInline[] {
   const segments: MobileEditorInline[] = []
-  const pattern = /(`([^`]+)`)|(\*\*([^*]+)\*\*)|(\*([^*]+)\*)|(\[\[[^\]]+\]\])/g
+  const pattern = /(`([^`]+)`)|(\*\*\*([^*]+)\*\*\*)|(\*\*([^*]+)\*\*)|(\*([^*]+)\*)|(~~([^~]+)~~)|(\[([^\]]+)\]\(([^)]+)\))|(\[\[[^\]]+\]\])/g
   let cursor = 0
 
   for (const match of text.matchAll(pattern)) {
-    if (match.index > cursor) segments.push({ text: stripMarkdown(text.slice(cursor, match.index)) })
+    if (match.index > cursor) segments.push({ text: stripInlineMarkdown(text.slice(cursor, match.index)) })
     segments.push(inlineMatch(match))
     cursor = match.index + match[0].length
   }
 
-  if (cursor < text.length) segments.push({ text: stripMarkdown(text.slice(cursor)) })
+  if (cursor < text.length) segments.push({ text: stripInlineMarkdown(text.slice(cursor)) })
 
   return segments.filter((segment) => segment.text.length > 0)
 }
 
 function inlineMatch(match: RegExpMatchArray): MobileEditorInline {
   if (match[2]) return { code: true, text: match[2] }
-  if (match[4]) return { bold: true, text: stripMarkdown(match[4]) }
-  if (match[7]) return wikilinkInline(match[7])
-  return { italic: true, text: stripMarkdown(match[6] ?? '') }
+  if (match[4]) return { bold: true, italic: true, text: stripMarkdown(match[4]) }
+  if (match[6]) return { bold: true, text: stripMarkdown(match[6]) }
+  if (match[8]) return { italic: true, text: stripMarkdown(match[8]) }
+  if (match[10]) return { strike: true, text: stripMarkdown(match[10]) }
+  if (match[12]) return { linkHref: match[13], text: stripMarkdown(match[12]) }
+  return wikilinkInline(match[14] ?? '')
 }
 
 function wikilinkInline(value: MarkdownText): MobileEditorInline {

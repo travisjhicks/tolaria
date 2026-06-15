@@ -9,7 +9,7 @@ The machine-readable coverage source lives in `src/ui/mobileParityInventory.ts`.
 | Mobile file | Desktop source | Parity target |
 | --- | --- | --- |
 | `src/ui/tokens.ts` | `src/index.css`, `src/theme.json` | Mirror light theme colors: sidebar `#F7F6F3`, text `#37352F`, secondary/muted text `#787774`, faint text `#B4B4B4`, borders `#E9E9E7` and `#D9D9D6`, selected `#E8F4FE`, accent blue `#155DFF`, and desktop type accent keys. |
-| `src/ui/tokens.ts` | `src/theme.json` | Mirror editor scale: body 15/1.5, H1 32/700/1.2 with a bottom separator, H2 27/600, H3 20/600, table 14, blockquote secondary italic with blue left border. |
+| `src/ui/tokens.ts` | `src/theme.json` | Mirror editor scale: body 15/1.5, H1 32/700/1.2 with a bottom separator, H2 27/600, H3/H4 20/600, table 14, inline code 14 with 4/2 padding, task checkbox 18, horizontal rule 24px vertical margin, and blockquote secondary italic with blue left border. |
 
 ## Shared Wrappers
 
@@ -30,7 +30,8 @@ The machine-readable coverage source lives in `src/ui/mobileParityInventory.ts`.
 | `MobileWorkspaceSidebar` | `SidebarGroupHeader.tsx`, `SidebarParts.tsx`, folder tree components | Owns tablet sidebar rendering: top nav, groups, count pills, and folder tree. |
 | `MobileNoteListPanel` | `NoteItem.tsx`, note-list header | Owns tablet note-list chrome and row composition. |
 | `MobileMarkdownFormattingToolbar` | BlockNote formatting commands, `BreadcrumbBar` icon buttons | Owns compact raw-editor formatting actions for bold, italic, code, wikilinks, headings, bullets, quotes, and tables while reusing desktop toolbar action sizing. |
-| `TabletEditorPanel` | `EditorTheme.css`, `theme.json`, BlockNote formatting commands | Owns read-only tablet editor rendering for H1, paragraphs, headings, bullets, quotes, inline styles, and tables. Its mobile edit mode now includes compact Markdown formatting commands for bold, italic, code, wikilinks, H2/H3, bullets, quotes, and tables, while persisting through the same markdown body boundary as desktop. |
+| `MobileEditorBlocks` | `EditorTheme.css`, `theme.json`, BlockNote markdown rendering | Owns read-only tablet markdown block rendering for paragraphs, H1-H6, bullets, ordered lists, task lists, quotes, fenced code, horizontal rules, links, wikilinks, inline code, strikethrough, and tables. |
+| `TabletEditorPanel` | `EditorTheme.css`, `theme.json`, BlockNote formatting commands | Owns editor chrome, title rendering, and raw-edit mode. Its mobile edit mode includes compact Markdown formatting commands for bold, italic, code, wikilinks, H2/H3, bullets, quotes, and tables, while persisting through the same markdown body boundary as desktop. |
 | `MobilePropertiesPanel` | `propertyPanelLayout.ts`, `RelationshipsPanel.tsx` | Owns properties and relationship display/removal. |
 | `MobileWorkspaceActionSheet` | Desktop command dialogs, note-list search, inspector forms | Owns search/create/property/relationship/more action flows against the editable snapshot. Search uses `mobileQuickOpen` for deterministic empty/no-result filtering and clamped keyboard selection. Relationship create-and-open emits one reducer edit that creates the target beside the source note and links to the exact created path. |
 | `MobileWorkspaceMoveActions` | Sidebar saved-view and type-section context actions | Owns compact reorder/delete controls used by saved-view and Type-section action sheets. Labels and disabled states stay tied to sidebar action parity, while persistence stays in the editable snapshot reducer. |
@@ -49,7 +50,7 @@ The tablet shell consumes `MobileWorkspaceSnapshot` from `src/workspace/mobileWo
 | Sidebar groups | `SidebarGroupHeader.tsx` | 10px muted group labels, 0.5px letter spacing, compact rounded count pills. |
 | Sidebar items and folder tree | `SidebarParts.tsx`, sidebar folder rows | 13px medium labels, muted inactive icons/text, selected rows use Tolaria selected blue surface. |
 | Note list | `NoteItem.tsx`, `PropertyChips.tsx` | No invented metadata lines, no word counts, no floating create button. Titles/snippets/dates follow desktop hierarchy. |
-| Editor | `EditorTheme.css`, `theme.json` | H1 title has 32px desktop scale and bottom separator. Markdown fixture should exercise paragraphs, bold, italic, inline code, bullets, blockquotes, and tables. |
+| Editor | `EditorTheme.css`, `theme.json` | H1 title has 32px desktop scale and bottom separator. Markdown fixture should exercise paragraphs, bold, italic, strikethrough, links, wikilinks, inline code, H2-H4, bullets, ordered lists, task lists, blockquotes, code fences, horizontal rules, and tables. |
 | Properties | `propertyPanelLayout.ts`, `RelationshipsPanel.tsx` | Dense 12px rows. Tags wrap under their label. Relationships are individual property sections; no global Relationships heading. Relationship values are full-width rows with type icon and type-colored text. |
 | Sync footer | `StatusBar.tsx`, status-bar badges | Bottom bar stays subtle: 30px sidebar-colored surface, hairline top border, 12px muted detail text, compact status actions. |
 
@@ -63,7 +64,7 @@ The tablet landscape parity test now checks these computed-style contracts:
 | Sidebar | section padding, border color, muted group title color, count pill size/radius, active row color |
 | Note list | full-width selected row, no wrapper margins/radius, desktop row padding, type-colored selected background and border |
 | Properties | 28px rows, 12px muted labels, wrapping tags, full-width relationship row radius/padding/font/color, compact action rows |
-| Editor | H1 size/weight/line height, title separator, paragraph size/line height, H2 size/weight, quote border/padding/italic text |
+| Editor | H1 size/weight/line height, title separator, paragraph size/line height, H2 size/weight, quote border/padding/italic text, parser regression coverage for H4, ordered lists, task lists, code fences, dividers, links, wikilinks, and strikethrough |
 | Toolbar actions | 24px transparent action boxes, 4px radius, no card-like background |
 | Sync footer | 30px height, sidebar background, 8px horizontal padding, 12px muted status text |
 
@@ -71,7 +72,7 @@ The same Playwright suite also runs a source-drift check against desktop `src/in
 
 Quick-open/search is covered as behavior, not just presentation: empty queries expose active notes, no-result queries show the sheet empty state, the search input receives focus, Enter selects the active result, and ArrowUp/ArrowDown are clamped to desktop quick-open semantics.
 
-Editor autocomplete is covered as behavior too: `[[` suggestions match active notes by title, aliases, filename, type, tags, and path, while `@` suggestions are constrained to `Person` notes and insert the same canonical wikilink target into markdown. The mobile formatting toolbar feeds the same editor update pipeline: the wikilink action opens the existing `[[` autocomplete path, and table insertion renders back through the read-mode markdown table renderer.
+Editor autocomplete is covered as behavior too: `[[` suggestions match active notes by title, aliases, filename, type, tags, and path, while `@` suggestions are constrained to `Person` notes and insert the same canonical wikilink target into markdown. The mobile formatting toolbar feeds the same editor update pipeline: the wikilink action opens the existing `[[` autocomplete path, and table insertion renders back through the read-mode markdown table renderer. Parser regression tests now preserve desktop markdown blocks for H4, ordered lists, task lists, code fences, horizontal rules, links, wikilinks, inline code, strikethrough, and bold/italic spacing.
 
 Property editing is covered through real typed writes: scalar text, tag lists, number values, and boolean Yes/No values all pass through the same frontmatter write boundary as desktop-style property edits.
 

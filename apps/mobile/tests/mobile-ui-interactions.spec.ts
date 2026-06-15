@@ -525,10 +525,35 @@ async function editMarkdownWithWikilink(page: PageLike) {
   await expect(page.getByTestId('editor-markdown-input')).toHaveValue('# Mobile QA Draft Revised\n\nDraft body referencing [[Tolaria/Mobile UI/How I Run an Open Source Project]]')
   await page.getByTestId('editor-format-table').click()
   await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/Column/)
+  const formattedMarkdown = await page.getByTestId('editor-markdown-input').inputValue()
+  await page.getByTestId('editor-markdown-input').fill([
+    formattedMarkdown,
+    '',
+    '#### Deep detail',
+    '',
+    '1. First ordered step with [source](https://example.com) and ~~stale copy~~',
+    '  1. Nested ordered step',
+    '',
+    '- [x] Complete the mobile renderer',
+    '- [ ] Check native spacing',
+    '',
+    '```typescript',
+    'const renderer = "native";',
+    '```',
+    '',
+    '---',
+  ].join('\n'))
   await page.getByTestId('editor-edit-action').click()
   await expect(page.getByTestId('editor-title')).toHaveText('Mobile QA Draft Revised')
   await expect(page.getByTestId('editor-wikilink-tolaria-mobile-ui-how-i-run-an-open-source-project')).toBeVisible()
   await expect(page.getByTestId('editor-table')).toBeVisible()
+  await expect(page.getByTestId('editor-heading-4')).toContainText('Deep detail')
+  await expect(page.getByTestId('editor-ordered-row')).toHaveCount(2)
+  await expect(page.getByTestId('editor-task-row')).toHaveCount(2)
+  await expect(page.getByTestId('editor-code-block')).toContainText('renderer')
+  await expect(page.getByTestId('editor-divider')).toBeVisible()
+  await expect(page.getByTestId('editor-link-https-example-com')).toContainText('source')
+  await expect(page.getByTestId('editor-strikethrough')).toContainText('stale copy')
   await page.getByTestId('editor-wikilink-tolaria-mobile-ui-how-i-run-an-open-source-project').click()
   await expect(page.getByTestId('editor-title')).toHaveText('How I Run an Open Source Project')
   await page.getByTestId('note-row-mobile-qa-draft.md').click()
