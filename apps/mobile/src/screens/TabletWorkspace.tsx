@@ -200,13 +200,16 @@ function WorkspaceActionSheetHost(props: TabletWorkspaceChromeProps & { suggesti
     onSelectNote,
     onSetArchived,
     onSetOrganized,
+    onViewDisplayPropertiesChange,
     onViewFiltersChange,
     onViewNameChange,
+    onViewPropertyQueryChange,
     openAction,
     readOnlyForm,
     searchQuery,
     selectedNote,
     suggestionNotes,
+    viewPropertyOptions,
   } = props
   if (!openAction) return null
 
@@ -226,6 +229,7 @@ function WorkspaceActionSheetHost(props: TabletWorkspaceChromeProps & { suggesti
       relationshipNoteTitle={readOnlyForm.relationshipNoteTitle}
       searchQuery={searchQuery}
       selectedNote={selectedNote}
+      viewDisplayProperties={readOnlyForm.viewDisplayProperties}
       viewFilters={readOnlyForm.viewFilters}
       onChangeNoteType={onChangeNoteType}
       onChangeNoteTypeInputChange={onChangeNoteTypeInputChange}
@@ -257,9 +261,13 @@ function WorkspaceActionSheetHost(props: TabletWorkspaceChromeProps & { suggesti
       onSelectNote={onSelectNote}
       onSetArchived={onSetArchived}
       onSetOrganized={onSetOrganized}
+      onViewDisplayPropertiesChange={onViewDisplayPropertiesChange}
       onViewFiltersChange={onViewFiltersChange}
       onViewNameChange={onViewNameChange}
+      onViewPropertyQueryChange={onViewPropertyQueryChange}
       viewName={readOnlyForm.viewName}
+      viewPropertyOptions={viewPropertyOptions}
+      viewPropertyQuery={readOnlyForm.viewPropertyQuery}
     />
   )
 }

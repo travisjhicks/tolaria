@@ -49,6 +49,14 @@ test.describe('mobile UI lab interactions', () => {
     await moveCreatedSavedView(page)
   })
 
+  test('customizes saved view note-list columns', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'tablet-landscape', 'Saved-view column editing is exercised in the full-width tablet layout.')
+
+    await page.goto('/')
+    await createSavedViewFromSidebar(page)
+    await customizeCreatedSavedViewColumns(page)
+  })
+
   test('keeps large local-vault read-only interactions within tablet budgets', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'tablet-landscape', 'Large-vault performance checks run once on the primary tablet layout.')
 
@@ -186,6 +194,19 @@ async function moveCreatedSavedView(page: PageLike) {
   await expect(await rowY(mobileView)).toBeGreaterThan(await rowY(activeView))
   await page.getByTestId('workspace-action-sheet-toolbar').getByRole('button', { name: 'Cancel' }).click()
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+}
+
+async function customizeCreatedSavedViewColumns(page: PageLike) {
+  await longPress(page, 'sidebar-item-view-mobile-inbox-view')
+  await expect(page.getByTestId('workspace-view-property-picker')).toBeVisible()
+  await page.getByTestId('workspace-view-property-search-input').fill('bel')
+  await page.getByTestId('workspace-view-property-option-belongs-to').click()
+  await page.getByTestId('workspace-action-sheet-editView').getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+
+  const workflowRow = page.getByTestId('note-row-workflow-orchestration')
+  await expect(workflowRow.getByText('LLM Workflow')).toBeVisible()
+  await expect(workflowRow.getByText('Tolaria MVP')).toBeVisible()
 }
 
 async function longPress(page: PageLike, testId: string) {

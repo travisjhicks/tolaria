@@ -1,4 +1,4 @@
-import type { MobileNote, MobileRelationship } from './mobileWorkspaceModel'
+import type { MobileNote, MobileRelationship, MobileTypeDefinitions } from './mobileWorkspaceModel'
 
 type PropertyKey = string
 type PropertyValueText = string
@@ -90,6 +90,32 @@ export function mobileViewValueSuggestions(
   return visibleSuggestions(viewValueCandidates(notes, normalizedKey), query)
 }
 
+export function mobileListPropertySuggestions(
+  notes: MobileNote[],
+  query: SuggestionQuery,
+): PropertyKey[] {
+  return sortedVisibleSuggestions(listPropertyCandidates(notes), query)
+}
+
+export function mobileDefaultListPropertyDisplay(
+  notes: MobileNote[],
+  typeDefinitions: MobileTypeDefinitions | undefined,
+): PropertyKey[] {
+  const ordered: PropertyKey[] = []
+  const seen = new Set<NormalizedSuggestionKey>()
+
+  for (const note of notes) {
+    for (const key of typeDefinitions?.[note.type]?.listPropertiesDisplay ?? []) {
+      const normalized = canonicalSuggestionKey(key)
+      if (!normalized || seen.has(normalized)) continue
+      seen.add(normalized)
+      ordered.push(key)
+    }
+  }
+
+  return ordered
+}
+
 export function normalizeRelationshipKey(key: RelationshipKey): RelationshipKey {
   const trimmed = key.trim()
   const canonical = canonicalSuggestionKey(trimmed)
@@ -135,6 +161,15 @@ function viewFieldCandidates(notes: MobileNote[]): ViewField[] {
   ]
 }
 
+function listPropertyCandidates(notes: MobileNote[]): PropertyKey[] {
+  return [
+    ...notes.flatMap((note) => note.status ? ['status'] : []),
+    ...notes.flatMap((note) => note.tags.length > 0 ? ['tags'] : []),
+    ...notes.flatMap((note) => propertiesForNote(note).map((property) => property.key)),
+    ...notes.flatMap((note) => note.relationships.map(relationshipFrontmatterKey)),
+  ]
+}
+
 function viewValueCandidates(
   notes: MobileNote[],
   normalizedKey: NormalizedSuggestionKey,
@@ -149,6 +184,13 @@ function visibleSuggestions(
   return uniqueSuggestedKeys(values)
     .filter((value) => matchesSuggestionQuery(value, query))
     .slice(0, 8)
+}
+
+function sortedVisibleSuggestions(
+  values: readonly SuggestionText[],
+  query: SuggestionQuery,
+): SuggestionText[] {
+  return visibleSuggestions([...uniqueSuggestedKeys(values)].sort((left, right) => left.localeCompare(right)), query)
 }
 
 function viewValuesForSuggestion(

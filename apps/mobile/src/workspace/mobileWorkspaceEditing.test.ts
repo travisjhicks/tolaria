@@ -620,6 +620,7 @@ describe('applyMobileWorkspaceEdit', () => {
         color: 'purple',
         filters: { all: [{ field: 'status', op: 'equals', value: 'Active' }] },
         icon: null,
+        listPropertiesDisplay: ['belongs_to', 'status'],
         name: 'Active Workflows',
         sort: 'modified:desc',
       },
@@ -636,6 +637,9 @@ describe('applyMobileWorkspaceEdit', () => {
       content: expect.stringContaining('value: "Active"'),
       kind: 'saveView',
     }))
+    const savedViewWrite = result.writes.find((write) => write.kind === 'saveView')
+    expect(savedViewWrite?.content).toContain('listPropertiesDisplay:\n  - "belongs_to"\n  - "status"')
+    expect(result.snapshot.views?.[0]?.definition.listPropertiesDisplay).toEqual(['belongs_to', 'status'])
     expect(result.snapshot.views?.[0]?.definition.name).toBe('Active Workflows')
     expect(result.snapshot.sidebarSections.find((section) => section.id === 'views')?.items?.[0]).toMatchObject({
       id: 'view-active-procedures',

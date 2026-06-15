@@ -19,6 +19,7 @@ import {
   mobileTypeSuggestions,
 } from '../../workspace/mobileWorkspaceSuggestions'
 import { MobileTypeIcon } from './MobileWorkspaceIcons'
+import { MobileViewDisplayPropertiesPicker } from './MobileViewDisplayPropertiesPicker'
 import { MobileViewFilterBuilder } from './MobileViewFilterBuilder'
 import { MobileWorkspaceSuggestionList } from './MobileWorkspaceSuggestionList'
 import { chipTone, statusTone, tagTone } from './mobileWorkspaceTone'
@@ -75,16 +76,21 @@ type MobileWorkspaceActionSheetProps = {
   onSelectNote: (noteId: string) => void
   onSetArchived: (archived: boolean) => void
   onSetOrganized: (organized: boolean) => void
+  onViewDisplayPropertiesChange: (value: string[]) => void
   onViewFiltersChange: (value: MobileViewFilterGroup) => void
   onViewNameChange: (value: string) => void
+  onViewPropertyQueryChange: (value: string) => void
   propertyName: string
   propertyValue: string
   relationshipName: string
   relationshipNoteTitle: string
   searchQuery: string
   selectedNote: MobileNote | null
+  viewDisplayProperties: string[]
   viewFilters: MobileViewFilterGroup
   viewName: string
+  viewPropertyOptions: string[]
+  viewPropertyQuery: string
 }
 
 type SingleTextFieldConfig = {
@@ -115,115 +121,17 @@ type SuggestionInputActionConfig = {
 }
 type RetargetNoteAction = 'changeType' | 'moveFolder'
 
-export function MobileWorkspaceActionSheet({
-  action,
-  canMoveViewDown,
-  canMoveViewUp,
-  createTitle,
-  filenameStem,
-  folderPath,
-  notes,
-  noteType,
-  onChangeNoteType,
-  onChangeNoteTypeInputChange,
-  onClose,
-  onCreateNote,
-  onCreateRelationshipTarget,
-  onCreateTitleChange,
-  onCopyDeepLink,
-  onCreateView,
-  onDeleteNote,
-  onDeleteView,
-  onFilenameStemChange,
-  onFolderPathChange,
-  onMoveNoteToFolder,
-  onMoveViewDown,
-  onMoveViewUp,
-  onOpenChangeNoteType,
-  onOpenMoveNoteToFolder,
-  onOpenRenameNoteFile,
-  onPropertyNameChange,
-  onPropertyValueChange,
-  onRelationshipNameChange,
-  onRelationshipNoteTitleChange,
-  onSaveProperty,
-  onSaveRelationship,
-  onRenameNoteFile,
-  onSaveView,
-  onSearchQueryChange,
-  onSelectNote,
-  onSetArchived,
-  onSetOrganized,
-  onViewFiltersChange,
-  onViewNameChange,
-  propertyName,
-  propertyValue,
-  relationshipName,
-  relationshipNoteTitle,
-  searchQuery,
-  selectedNote,
-  viewFilters,
-  viewName,
-}: MobileWorkspaceActionSheetProps) {
+export function MobileWorkspaceActionSheet(props: MobileWorkspaceActionSheetProps) {
   return (
     <View style={styles.overlay} testID="workspace-action-sheet">
-      <Pressable accessibilityLabel={mobileText('common.cancel')} style={styles.backdrop} testID="workspace-action-sheet-backdrop" onPress={onClose} />
-      <MobilePanel style={styles.sheet} testID={`workspace-action-sheet-${action}`}>
+      <Pressable accessibilityLabel={mobileText('common.cancel')} style={styles.backdrop} testID="workspace-action-sheet-backdrop" onPress={props.onClose} />
+      <MobilePanel style={styles.sheet} testID={`workspace-action-sheet-${props.action}`}>
         <MobileToolbar testID="workspace-action-sheet-toolbar">
-          <MobileToolbarTitle title={actionTitle(action, propertyName)} />
+          <MobileToolbarTitle title={actionTitle(props.action, props.propertyName)} />
           <MobileToolbarSpacer />
-          <MobileButton label={mobileText('common.cancel')} variant="ghost" onPress={onClose} />
+          <MobileButton label={mobileText('common.cancel')} variant="ghost" onPress={props.onClose} />
         </MobileToolbar>
-        <ActionContent
-          action={action}
-          canMoveViewDown={canMoveViewDown}
-          canMoveViewUp={canMoveViewUp}
-          createTitle={createTitle}
-          filenameStem={filenameStem}
-          folderPath={folderPath}
-          notes={notes}
-          noteType={noteType}
-          onChangeNoteType={onChangeNoteType}
-          onChangeNoteTypeInputChange={onChangeNoteTypeInputChange}
-          onClose={onClose}
-          onCreateNote={onCreateNote}
-          onCreateRelationshipTarget={onCreateRelationshipTarget}
-          onCreateTitleChange={onCreateTitleChange}
-          onCopyDeepLink={onCopyDeepLink}
-          onCreateView={onCreateView}
-          onDeleteNote={onDeleteNote}
-          onDeleteView={onDeleteView}
-          onFilenameStemChange={onFilenameStemChange}
-          onFolderPathChange={onFolderPathChange}
-          onMoveNoteToFolder={onMoveNoteToFolder}
-          onMoveViewDown={onMoveViewDown}
-          onMoveViewUp={onMoveViewUp}
-          onOpenChangeNoteType={onOpenChangeNoteType}
-          onOpenMoveNoteToFolder={onOpenMoveNoteToFolder}
-          onOpenRenameNoteFile={onOpenRenameNoteFile}
-          onPropertyNameChange={onPropertyNameChange}
-          onPropertyValueChange={onPropertyValueChange}
-          onRelationshipNameChange={onRelationshipNameChange}
-          onRelationshipNoteTitleChange={onRelationshipNoteTitleChange}
-          onSaveProperty={onSaveProperty}
-          onSaveRelationship={onSaveRelationship}
-          onRenameNoteFile={onRenameNoteFile}
-          onSaveView={onSaveView}
-          onSearchQueryChange={onSearchQueryChange}
-          onSelectNote={onSelectNote}
-          onSetArchived={onSetArchived}
-          onSetOrganized={onSetOrganized}
-          onViewFiltersChange={onViewFiltersChange}
-          onViewNameChange={onViewNameChange}
-          propertyName={propertyName}
-          propertyValue={propertyValue}
-          relationshipName={relationshipName}
-          relationshipNoteTitle={relationshipNoteTitle}
-          searchQuery={searchQuery}
-          selectedNote={selectedNote}
-          viewFilters={viewFilters}
-          viewName={viewName}
-        />
+        <ActionContent {...props} />
       </MobilePanel>
     </View>
   )
@@ -348,7 +256,7 @@ function SingleTextFieldContent({ config }: { config: SingleTextFieldConfig }) {
 function singleTextFieldConfig(props: MobileWorkspaceActionSheetProps) {
   if (props.action === 'editView') {
     return {
-      extraContent: viewFilterBuilder(props),
+      extraContent: editViewContent(props),
       inputLabel: mobileText('viewDialog.nameLabel'),
       inputPlaceholder: mobileText('viewDialog.namePlaceholder'),
       inputTestId: 'workspace-edit-view-name-input',
@@ -406,6 +314,33 @@ function viewFilterBuilder(props: MobileWorkspaceActionSheetProps) {
       group={props.viewFilters}
       notes={props.notes}
       onChange={props.onViewFiltersChange}
+    />
+  )
+}
+
+function editViewContent(props: MobileWorkspaceActionSheetProps) {
+  return (
+    <>
+      {viewFilterBuilder(props)}
+      <ViewDisplayPropertiesPicker {...props} />
+    </>
+  )
+}
+
+function ViewDisplayPropertiesPicker({
+  onViewDisplayPropertiesChange,
+  onViewPropertyQueryChange,
+  viewDisplayProperties,
+  viewPropertyOptions,
+  viewPropertyQuery,
+}: MobileWorkspaceActionSheetProps) {
+  return (
+    <MobileViewDisplayPropertiesPicker
+      options={viewPropertyOptions}
+      query={viewPropertyQuery}
+      selectedProperties={viewDisplayProperties}
+      onQueryChange={onViewPropertyQueryChange}
+      onSelectedPropertiesChange={onViewDisplayPropertiesChange}
     />
   )
 }

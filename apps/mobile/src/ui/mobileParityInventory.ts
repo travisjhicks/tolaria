@@ -127,6 +127,13 @@ export const mobileParityInventory = [
     surface: 'Saved-view filter builder',
   },
   {
+    assertions: ['saved-view column edit user-flow checks'],
+    contracts: ['desktopPropertyParity'],
+    desktopSource: 'ListPropertiesPopover and NoteListHeader column customization',
+    mobileFile: 'src/components/workspace/MobileViewDisplayPropertiesPicker.tsx',
+    surface: 'Saved-view note-list column picker',
+  },
+  {
     assertions: ['editor computed styles'],
     contracts: ['desktopEditorParity', 'desktopPanelParity', 'desktopToolbarParity'],
     desktopSource: 'EditorTheme.css, theme.json, BreadcrumbBar',

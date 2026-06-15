@@ -3,6 +3,8 @@ import { workspaceScenarioForId } from '../fixtures/workspaceFixtures'
 import { applyMobileWorkspaceEdit } from './mobileWorkspaceEditing'
 import {
   mobileFolderSuggestions,
+  mobileDefaultListPropertyDisplay,
+  mobileListPropertySuggestions,
   mobilePropertyKeySuggestions,
   mobilePropertyValueSuggestions,
   mobileRelationshipKeySuggestions,
@@ -63,5 +65,19 @@ describe('mobile workspace suggestions', () => {
     expect(mobileViewFieldSuggestions(notes, 'bel')).toContain('belongs_to')
     expect(mobileViewValueSuggestions(notes, 'type', 'ess')).toEqual(['Essay'])
     expect(mobileViewValueSuggestions(notes, 'belongs_to', 'mvp')).toContain('Tolaria MVP')
+  })
+
+  it('suggests desktop note-list display properties and derives type defaults', () => {
+    const scenario = workspaceScenarioForId('default')
+    const notes = scenario.notes
+
+    expect(mobileListPropertySuggestions(notes, '')).toEqual(
+      expect.arrayContaining(['belongs_to', 'Mentions', 'status', 'tags']),
+    )
+    expect(mobileListPropertySuggestions(notes, 'bel')).toEqual(['belongs_to'])
+    expect(mobileDefaultListPropertyDisplay(notes, {
+      Essay: { listPropertiesDisplay: ['status', 'belongs_to'] },
+      Procedure: { listPropertiesDisplay: ['tags', 'status'] },
+    })).toEqual(['status', 'belongs_to', 'tags'])
   })
 })
