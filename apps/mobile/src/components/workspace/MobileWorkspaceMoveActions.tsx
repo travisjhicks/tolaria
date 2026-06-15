@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Pressable, StyleSheet, View } from 'react-native'
 import { Text } from '../ui/text'
 import { mobileText } from '../../i18n/mobileText'
@@ -14,29 +15,65 @@ type SavedViewActionsProps = MoveActionsProps & {
   onDelete: () => void
 }
 
-export function MobileTypeSectionActions(props: MoveActionsProps) {
-  return (
-    <MoveActions
-      {...props}
-      downLabel={mobileText('sidebar.action.moveSectionDown')}
-      downTestID="workspace-move-type-down-action"
-      upLabel={mobileText('sidebar.action.moveSectionUp')}
-      upTestID="workspace-move-type-up-action"
-    />
-  )
+type TypeSectionActionsProps = MoveActionsProps & {
+  canDelete: boolean
+  onDelete: () => void
 }
 
-export function MobileSavedViewActions({ onDelete, ...props }: SavedViewActionsProps) {
+type MoveActionLabels = {
+  downLabel: string
+  downTestID: string
+  upLabel: string
+  upTestID: string
+}
+
+const typeSectionMoveLabels = {
+  downLabel: mobileText('sidebar.action.moveSectionDown'),
+  downTestID: 'workspace-move-type-down-action',
+  upLabel: mobileText('sidebar.action.moveSectionUp'),
+  upTestID: 'workspace-move-type-up-action',
+}
+
+const savedViewMoveLabels = {
+  downLabel: mobileText('sidebar.action.moveViewDown'),
+  downTestID: 'workspace-move-view-down-action',
+  upLabel: mobileText('sidebar.action.moveViewUp'),
+  upTestID: 'workspace-move-view-up-action',
+}
+
+export const MobileTypeSectionActions = moveActionComponent<TypeSectionActionsProps>(
+  typeSectionMoveLabels,
+  ({ canDelete, onDelete }) => canDelete ? <DeleteTypeButton onPress={onDelete} /> : null,
+)
+
+export const MobileSavedViewActions = moveActionComponent<SavedViewActionsProps>(
+  savedViewMoveLabels,
+  ({ onDelete }) => <DeleteViewButton onPress={onDelete} />,
+)
+
+function moveActionComponent<Props extends MoveActionsProps>(
+  labels: MoveActionLabels,
+  trailingAction: (props: Props) => ReactNode,
+) {
+  return function ConfiguredMoveActions(props: Props) {
+    return <SectionActions {...props} {...labels} trailingAction={trailingAction(props)} />
+  }
+}
+
+function SectionActions({
+  trailingAction,
+  ...props
+}: MoveActionsProps & {
+  downLabel: string
+  downTestID: string
+  trailingAction?: ReactNode
+  upLabel: string
+  upTestID: string
+}) {
   return (
     <View style={styles.actions}>
-      <MoveActions
-        {...props}
-        downLabel={mobileText('sidebar.action.moveViewDown')}
-        downTestID="workspace-move-view-down-action"
-        upLabel={mobileText('sidebar.action.moveViewUp')}
-        upTestID="workspace-move-view-up-action"
-      />
-      <DeleteViewButton onPress={onDelete} />
+      <MoveActions {...props} />
+      {trailingAction}
     </View>
   )
 }
@@ -96,14 +133,42 @@ function MoveButton({
 
 function DeleteViewButton({ onPress }: { onPress: () => void }) {
   return (
-    <Pressable
-      accessibilityLabel={mobileText('sidebar.action.deleteView')}
-      accessibilityRole="button"
-      style={({ pressed }) => [styles.button, pressed ? styles.pressedButton : null]}
+    <DeleteButton
+      label={mobileText('sidebar.action.deleteView')}
       testID="workspace-delete-view-action"
       onPress={onPress}
+    />
+  )
+}
+
+function DeleteTypeButton({ onPress }: { onPress: () => void }) {
+  return (
+    <DeleteButton
+      label={mobileText('sidebar.action.deleteType')}
+      testID="workspace-delete-type-action"
+      onPress={onPress}
+    />
+  )
+}
+
+function DeleteButton({
+  label,
+  onPress,
+  testID,
+}: {
+  label: string
+  onPress: () => void
+  testID: string
+}) {
+  return (
+    <Pressable
+      accessibilityLabel={label}
+      accessibilityRole="button"
+      style={({ pressed }) => [styles.button, pressed ? styles.pressedButton : null]}
+      testID={testID}
+      onPress={onPress}
     >
-      <Text style={styles.deleteText}>{mobileText('sidebar.action.deleteView')}</Text>
+      <Text style={styles.deleteText}>{label}</Text>
     </Pressable>
   )
 }

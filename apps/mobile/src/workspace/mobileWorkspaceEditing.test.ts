@@ -943,6 +943,51 @@ describe('applyMobileWorkspaceEdit', () => {
       'Release',
     ])
   })
+
+  it('creates Type documents and exposes empty Type sections', () => {
+    const result = applyMobileWorkspaceEditWithWrites(workspaceScenarioForId('default'), {
+      type: 'createTypeDefinition',
+      typeName: 'Decision',
+    })
+
+    expect(result.snapshot.typeDefinitions?.Decision).toMatchObject({
+      path: 'decision.md',
+      rawContent: expect.stringContaining('# Decision'),
+    })
+    expect(result.snapshot.sidebarSections.find((section) => section.id === 'types')?.items).toEqual(
+      expect.arrayContaining([expect.objectContaining({
+        count: '0',
+        label: 'Decisions',
+        typeName: 'Decision',
+      })]),
+    )
+    expect(result.writes).toEqual([{
+      content: expect.stringContaining('type: Type'),
+      kind: 'createNote',
+      path: 'decision.md',
+    }])
+  })
+
+  it('deletes Type documents without deleting notes of that type', () => {
+    const result = applyMobileWorkspaceEditWithWrites(workspaceScenarioForId('default'), {
+      type: 'deleteTypeDefinition',
+      typeName: 'Procedure',
+    })
+
+    expect(result.snapshot.typeDefinitions?.Procedure).toBeUndefined()
+    expect(result.snapshot.notes.some((note) => note.type === 'Procedure')).toBe(true)
+    expect(result.snapshot.sidebarSections.find((section) => section.id === 'types')?.items).toEqual(
+      expect.arrayContaining([expect.objectContaining({
+        count: '1',
+        label: 'Procedures',
+        typeName: 'Procedure',
+      })]),
+    )
+    expect(result.writes).toEqual([{
+      kind: 'deleteNote',
+      path: 'procedure.md',
+    }])
+  })
 })
 
 describe('mobile wikilink editing helpers', () => {

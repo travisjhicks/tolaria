@@ -66,6 +66,7 @@ export type TabletWorkspaceChromeProps = {
   canMoveTypeUp: boolean
   canMoveViewDown: boolean
   canMoveViewUp: boolean
+  canDeleteType: boolean
   compactTablet: boolean
   defaultPropertiesVisible: boolean
   editorBlocks: MobileEditorBlock[]
@@ -85,8 +86,10 @@ export type TabletWorkspaceChromeProps = {
   onCreateNote: () => void
   onCreateRelationshipTarget: () => void
   onCreateTitleChange: (value: ReadOnlyFormValue) => void
+  onCreateType: () => void
   onCreateView: () => void
   onDeleteFolder: () => void
+  onDeleteType: () => void
   onDeleteView: () => void
   onDeleteNote: () => void
   onDeleteProperty: (noteId: NoteId, key: string) => void
@@ -103,6 +106,7 @@ export type TabletWorkspaceChromeProps = {
   onOpenCreateChildFolder: () => void
   onOpenCreateFolder: () => void
   onOpenCreateNote: () => void
+  onOpenCreateType: () => void
   onOpenCreateView: () => void
   onOpenFolderActions: (selection: MobileSidebarFolderSelection) => void
   onOpenMoveNoteToFolder: () => void
@@ -120,6 +124,7 @@ export type TabletWorkspaceChromeProps = {
   onUpdateNoteContent: (noteId: NoteId, content: string) => void
   onUpdateNoteTitle: (noteId: NoteId, title: string) => void
   onTypeDisplayPropertiesChange: (value: string[]) => void
+  onTypeNameChange: (value: ReadOnlyFormValue) => void
   onTypeSchemaPropertyAdd: () => void
   onTypeSchemaPropertyNameChange: (value: ReadOnlyFormValue) => void
   onTypeSchemaPropertyRemove: (index: number) => void

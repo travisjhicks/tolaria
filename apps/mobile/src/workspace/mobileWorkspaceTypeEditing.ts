@@ -1,0 +1,175 @@
+import {
+  mobileTypeDefinitionContent,
+  mobileTypeDefinitionPath,
+  typeDefinitionsWithPatch,
+  type MobileTypeDefinitionPatch,
+} from './mobileTypeDefinitions'
+import type { MobileViewMoveDirection } from './mobileSavedViews'
+import type { MobileNote, MobileSidebarItem, MobileTypeDefinitions, MobileWorkspaceSnapshot } from './mobileWorkspaceModel'
+import type { MobileWorkspaceEdit, MobileWorkspaceEditResult } from './mobileWorkspaceEditing'
+
+type NoteTitle = string
+type MobileTypeEdit = Extract<MobileWorkspaceEdit, {
+  type: 'createTypeDefinition' | 'deleteTypeDefinition' | 'moveTypeSection' | 'updateTypeDefinition'
+}>
+type RebuildMobileWorkspaceSnapshot = (
+  snapshot: MobileWorkspaceSnapshot,
+  notes: MobileNote[],
+  allNotes?: MobileNote[],
+) => MobileWorkspaceSnapshot
+
+export function applyMobileTypeEdit(
+  snapshot: MobileWorkspaceSnapshot,
+  edit: MobileTypeEdit,
+  rebuildSnapshot: RebuildMobileWorkspaceSnapshot,
+): MobileWorkspaceEditResult {
+  if (edit.type === 'createTypeDefinition') return createMobileTypeDefinition(snapshot, edit.typeName, rebuildSnapshot)
+  if (edit.type === 'deleteTypeDefinition') return deleteMobileTypeDefinition(snapshot, edit.typeName, rebuildSnapshot)
+  if (edit.type === 'moveTypeSection') return moveMobileTypeSection(snapshot, edit.typeName, edit.direction, rebuildSnapshot)
+  return updateMobileTypeDefinition(snapshot, edit.typeName, edit.patch, rebuildSnapshot)
+}
+
+function createMobileTypeDefinition(
+  snapshot: MobileWorkspaceSnapshot,
+  typeName: NoteTitle,
+  rebuildSnapshot: RebuildMobileWorkspaceSnapshot,
+): MobileWorkspaceEditResult {
+  const cleanType = cleanTypeName(typeName)
+  if (!cleanType || snapshot.typeDefinitions?.[cleanType]) return { snapshot, writes: [] }
+
+  const typeDefinitions = typeDefinitionsWithPatch(snapshot.typeDefinitions, cleanType, {})
+  const definition = typeDefinitions[cleanType]
+
+  return {
+    snapshot: snapshotWithTypeDefinitions(snapshot, typeDefinitions, rebuildSnapshot),
+    writes: [{
+      content: definition.rawContent ?? mobileTypeDefinitionContent(cleanType, undefined, {}),
+      kind: 'createNote',
+      path: definition.path ?? mobileTypeDefinitionPath(cleanType, undefined),
+    }],
+  }
+}
+
+function deleteMobileTypeDefinition(
+  snapshot: MobileWorkspaceSnapshot,
+  typeName: NoteTitle,
+  rebuildSnapshot: RebuildMobileWorkspaceSnapshot,
+): MobileWorkspaceEditResult {
+  const cleanType = cleanTypeName(typeName)
+  const existingDefinition = snapshot.typeDefinitions?.[cleanType]
+  if (!cleanType || !existingDefinition) return { snapshot, writes: [] }
+
+  const typeDefinitions = { ...(snapshot.typeDefinitions ?? {}) }
+  Reflect.deleteProperty(typeDefinitions, cleanType)
+
+  return {
+    snapshot: snapshotWithTypeDefinitions(snapshot, typeDefinitions, rebuildSnapshot),
+    writes: [{
+      kind: 'deleteNote',
+      path: mobileTypeDefinitionPath(cleanType, existingDefinition),
+    }],
+  }
+}
+
+function moveMobileTypeSection(
+  snapshot: MobileWorkspaceSnapshot,
+  typeName: NoteTitle,
+  direction: MobileViewMoveDirection,
+  rebuildSnapshot: RebuildMobileWorkspaceSnapshot,
+): MobileWorkspaceEditResult {
+  const orderedItems = reorderedTypeSectionItems(snapshot, typeName, direction)
+  if (!orderedItems) return { snapshot, writes: [] }
+
+  let typeDefinitions = snapshot.typeDefinitions ?? {}
+  const typeNameToMove = cleanTypeName(typeName)
+  const orderUpdates = orderedItems.flatMap((item, order) => {
+    const existingDefinition = snapshot.typeDefinitions?.[item.typeName]
+    if (!existingDefinition && item.typeName !== typeNameToMove) return []
+    return [{ existingDefinition, order, typeName: item.typeName }]
+  })
+  const writes = orderUpdates.map(({ existingDefinition, order, typeName: orderedTypeName }) => {
+    typeDefinitions = typeDefinitionsWithPatch(typeDefinitions, orderedTypeName, { order })
+    return {
+      content: mobileTypeDefinitionContent(orderedTypeName, existingDefinition, { order }),
+      kind: 'saveNote' as const,
+      path: mobileTypeDefinitionPath(orderedTypeName, existingDefinition),
+    }
+  })
+
+  return {
+    snapshot: snapshotWithTypeDefinitions(snapshot, typeDefinitions, rebuildSnapshot),
+    writes,
+  }
+}
+
+function updateMobileTypeDefinition(
+  snapshot: MobileWorkspaceSnapshot,
+  typeName: NoteTitle,
+  patch: MobileTypeDefinitionPatch,
+  rebuildSnapshot: RebuildMobileWorkspaceSnapshot,
+): MobileWorkspaceEditResult {
+  const cleanType = cleanTypeName(typeName)
+  if (!cleanType) return { snapshot, writes: [] }
+
+  const existingDefinition = snapshot.typeDefinitions?.[cleanType]
+  const typeDefinitions = typeDefinitionsWithPatch(snapshot.typeDefinitions, cleanType, patch)
+
+  return {
+    snapshot: snapshotWithTypeDefinitions(snapshot, typeDefinitions, rebuildSnapshot),
+    writes: [{
+      content: mobileTypeDefinitionContent(cleanType, existingDefinition, patch),
+      kind: 'saveNote',
+      path: mobileTypeDefinitionPath(cleanType, existingDefinition),
+    }],
+  }
+}
+
+function snapshotWithTypeDefinitions(
+  snapshot: MobileWorkspaceSnapshot,
+  typeDefinitions: MobileTypeDefinitions,
+  rebuildSnapshot: RebuildMobileWorkspaceSnapshot,
+): MobileWorkspaceSnapshot {
+  const notes = notesWithTypeDefinitionTones(snapshot.notes, typeDefinitions)
+  const allNotes = snapshot.allNotes ? notesWithTypeDefinitionTones(snapshot.allNotes, typeDefinitions) : undefined
+  return rebuildSnapshot({ ...snapshot, typeDefinitions }, notes, allNotes)
+}
+
+function notesWithTypeDefinitionTones(
+  notes: MobileNote[],
+  typeDefinitions: MobileTypeDefinitions,
+): MobileNote[] {
+  return notes.map((note) => ({
+    ...note,
+    typeTone: typeDefinitions[note.type]?.tone ?? note.typeTone,
+  }))
+}
+
+function reorderedTypeSectionItems(
+  snapshot: MobileWorkspaceSnapshot,
+  typeName: NoteTitle,
+  direction: MobileViewMoveDirection,
+) {
+  const items = typeSectionItems(snapshot)
+  const sourceIndex = items.findIndex((item) => item.typeName === typeName)
+  const targetIndex = direction === 'up' ? sourceIndex - 1 : sourceIndex + 1
+  if (sourceIndex === -1 || targetIndex < 0 || targetIndex >= items.length) return null
+
+  const reordered = [...items]
+  const [item] = reordered.splice(sourceIndex, 1)
+  reordered.splice(targetIndex, 0, item)
+  return reordered
+}
+
+function typeSectionItems(snapshot: MobileWorkspaceSnapshot) {
+  return (snapshot.sidebarSections.find((section) => section.id === 'types')?.items ?? [])
+    .filter((item): item is MobileSidebarItem & { typeName: string } => Boolean(item.typeName))
+}
+
+function cleanTypeName(value: string): string {
+  return wikilinkTarget(value).replace(/\.md$/, '')
+}
+
+function wikilinkTarget(value: string): string {
+  const match = value.match(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/)
+  return (match?.[1] ?? value).trim()
+}

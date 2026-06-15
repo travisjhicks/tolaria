@@ -53,6 +53,7 @@ type MobileWorkspaceSidebarProps = {
   activeItemId?: string | null
   layoutProbe?: boolean
   onCreateFolder?: () => void
+  onCreateType?: () => void
   onCreateView?: () => void
   onOpenFolderActions?: (selection: MobileSidebarFolderSelection) => void
   onOpenTypeActions?: (selection: MobileSidebarItemSelection) => void
@@ -83,6 +84,7 @@ export function MobileWorkspaceSidebar(props: MobileWorkspaceSidebarProps) {
     activeItemId,
     layoutProbe: layoutProbeEnabled = false,
     onCreateFolder,
+    onCreateType,
     onCreateView,
     onOpenFolderActions,
     onOpenTypeActions,
@@ -111,6 +113,7 @@ export function MobileWorkspaceSidebar(props: MobileWorkspaceSidebarProps) {
             layoutProbe={layoutProbe.probe}
             section={section}
             onCreateFolder={onCreateFolder}
+            onCreateType={onCreateType}
             onCreateView={onCreateView}
             onOpenFolderActions={onOpenFolderActions}
             onOpenTypeActions={onOpenTypeActions}
@@ -131,6 +134,7 @@ function SidebarSection({
   layoutProbe,
   onCreateView,
   onCreateFolder,
+  onCreateType,
   onOpenFolderActions,
   onOpenTypeActions,
   onOpenViewActions,
@@ -142,6 +146,7 @@ function SidebarSection({
   activeItemId?: string | null
   layoutProbe: MobileLayoutProbe
   onCreateFolder?: () => void
+  onCreateType?: () => void
   onCreateView?: () => void
   onOpenFolderActions?: (selection: MobileSidebarFolderSelection) => void
   onOpenTypeActions?: (selection: MobileSidebarItemSelection) => void
@@ -156,7 +161,13 @@ function SidebarSection({
       style={[styles.section, section.id === 'primary' ? styles.primarySection : styles.groupSection]}
       testID={`sidebar-section-${section.id}`}
     >
-      <SidebarSectionTitle layoutProbe={layoutProbe} section={section} onCreateFolder={onCreateFolder} onCreateView={onCreateView} />
+      <SidebarSectionTitle
+        layoutProbe={layoutProbe}
+        section={section}
+        onCreateFolder={onCreateFolder}
+        onCreateType={onCreateType}
+        onCreateView={onCreateView}
+      />
       <SidebarSectionItems
         activeItemId={activeItemId}
         layoutProbe={layoutProbe}
@@ -181,11 +192,13 @@ function SidebarSection({
 function SidebarSectionTitle({
   layoutProbe,
   onCreateFolder,
+  onCreateType,
   onCreateView,
   section,
 }: {
   layoutProbe: MobileLayoutProbe
   onCreateFolder?: () => void
+  onCreateType?: () => void
   onCreateView?: () => void
   section: MobileSidebarSection
 }) {
@@ -198,13 +211,14 @@ function SidebarSectionTitle({
       layoutProbe={layoutProbe}
       sectionId={section.id}
       createAccessibilityLabel={sectionCreateAccessibilityLabel(section.id)}
-      onCreate={sectionCreateHandler(section.id, onCreateFolder, onCreateView)}
+      onCreate={sectionCreateHandler(section.id, onCreateFolder, onCreateType, onCreateView)}
     />
   )
 }
 
 function sectionCreateAccessibilityLabel(sectionId: SidebarSectionId) {
   if (sectionId === 'folders') return mobileText('sidebar.action.createFolder')
+  if (sectionId === 'types') return mobileText('sidebar.action.createType')
   if (sectionId === 'views') return mobileText('sidebar.action.createView')
   return undefined
 }
@@ -212,9 +226,11 @@ function sectionCreateAccessibilityLabel(sectionId: SidebarSectionId) {
 function sectionCreateHandler(
   sectionId: SidebarSectionId,
   onCreateFolder?: () => void,
+  onCreateType?: () => void,
   onCreateView?: () => void,
 ) {
   if (sectionId === 'folders') return onCreateFolder
+  if (sectionId === 'types') return onCreateType
   if (sectionId === 'views') return onCreateView
   return undefined
 }

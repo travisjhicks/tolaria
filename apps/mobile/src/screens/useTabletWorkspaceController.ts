@@ -340,6 +340,7 @@ function actionSheetWorkspaceActions({
       updateReadOnlyForm,
     }),
     onOpenCreateNote: () => setOpenAction('createNote'),
+    onOpenCreateType: () => openAction('createType', [{ key: 'typeName', value: '' }]),
     onOpenCreateView: () => openCreateView({
       filters: viewFiltersForSelection(navigation.sidebarSelection, navigation.notes, selectedNote, workspaceSnapshot.views ?? []),
       noteListTitle,
@@ -405,6 +406,13 @@ function createWorkspaceActions({
       selection: navigation.sidebarSelection,
       typeDefinitions: workspaceSnapshot.typeDefinitions,
     }),
+    onCreateType: () => applyNonEmptyStringEdit({
+      applyEdit,
+      closeAction,
+      toEdit: (typeName) => ({ type: 'createTypeDefinition', typeName }),
+      value: readOnlyForm.typeName,
+    }),
+    onTypeNameChange: (value: string) => updateReadOnlyForm('typeName', value),
     ...folderWorkspaceActions({ applyEdit, closeAction, readOnlyForm, setOpenAction, updateReadOnlyForm }),
     ...savedViewWorkspaceActions({ applyEdit, closeAction, readOnlyForm, updateReadOnlyForm, workspaceSnapshot }),
     ...typeSectionWorkspaceActions({ applyEdit, closeAction, readOnlyForm, updateReadOnlyForm, workspaceSnapshot }),
@@ -454,8 +462,15 @@ function typeSectionWorkspaceActions({
   const notes = workspaceNotes(workspaceSnapshot)
 
   return {
+    canDeleteType: Boolean(workspaceSnapshot.typeDefinitions?.[readOnlyForm.typeName]),
     canMoveTypeDown: canMoveTypeSection(workspaceSnapshot, readOnlyForm.typeName, 'down'),
     canMoveTypeUp: canMoveTypeSection(workspaceSnapshot, readOnlyForm.typeName, 'up'),
+    onDeleteType: () => applyNonEmptyStringEdit({
+      applyEdit,
+      closeAction,
+      toEdit: (typeName) => ({ type: 'deleteTypeDefinition', typeName }),
+      value: readOnlyForm.typeName,
+    }),
     onMoveTypeDown: () => moveTypeSection({ applyEdit, direction: 'down', typeName: readOnlyForm.typeName }),
     onMoveTypeUp: () => moveTypeSection({ applyEdit, direction: 'up', typeName: readOnlyForm.typeName }),
     onSaveTypeDefinition: () => updateTypeDefinition({ applyEdit, closeAction, form: readOnlyForm }),
@@ -1012,8 +1027,11 @@ function moveView({
   direction: 'down' | 'up'
   viewId: string
 }) {
-  if (!viewId) return
-  applyEdit({ direction, type: 'moveView', viewId })
+  applyNonEmptyStringEdit({
+    applyEdit,
+    toEdit: (trimmedViewId) => ({ direction, type: 'moveView', viewId: trimmedViewId }),
+    value: viewId,
+  })
 }
 
 function moveTypeSection({
@@ -1025,9 +1043,11 @@ function moveTypeSection({
   direction: 'down' | 'up'
   typeName: string
 }) {
-  const trimmedTypeName = typeName.trim()
-  if (!trimmedTypeName) return
-  applyEdit({ direction, type: 'moveTypeSection', typeName: trimmedTypeName })
+  applyNonEmptyStringEdit({
+    applyEdit,
+    toEdit: (trimmedTypeName) => ({ direction, type: 'moveTypeSection', typeName: trimmedTypeName }),
+    value: typeName,
+  })
 }
 
 function canMoveTypeSection(
@@ -1051,9 +1071,30 @@ function deleteView({
   closeAction: () => void
   viewId: string
 }) {
-  if (!viewId) return
-  applyEdit({ type: 'deleteView', viewId })
-  closeAction()
+  applyNonEmptyStringEdit({
+    applyEdit,
+    closeAction,
+    toEdit: (trimmedViewId) => ({ type: 'deleteView', viewId: trimmedViewId }),
+    value: viewId,
+  })
+}
+
+function applyNonEmptyStringEdit({
+  applyEdit,
+  closeAction,
+  toEdit,
+  value,
+}: {
+  applyEdit: (edit: MobileWorkspaceEdit) => void
+  closeAction?: () => void
+  toEdit: (value: string) => MobileWorkspaceEdit
+  value: string
+}) {
+  const trimmedValue = value.trim()
+  if (!trimmedValue) return
+
+  applyEdit(toEdit(trimmedValue))
+  closeAction?.()
 }
 
 function defaultViewName(title: string) {

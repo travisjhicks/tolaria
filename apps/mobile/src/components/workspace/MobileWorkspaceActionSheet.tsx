@@ -52,6 +52,7 @@ export type MobileWorkspaceAction =
   | 'changeNoteType'
   | 'createFolder'
   | 'createNote'
+  | 'createType'
   | 'createView'
   | 'editFolder'
   | 'editProperty'
@@ -68,6 +69,7 @@ type MobileWorkspaceActionSheetProps = {
   canMoveTypeUp: boolean
   canMoveViewDown: boolean
   canMoveViewUp: boolean
+  canDeleteType: boolean
   createTitle: string
   filenameStem: string
   folderPaths?: string[]
@@ -83,9 +85,11 @@ type MobileWorkspaceActionSheetProps = {
   onCreateRelationshipTarget: () => void
   onCreateTitleChange: (value: string) => void
   onCopyDeepLink: () => void
+  onCreateType: () => void
   onCreateView: () => void
   onDeleteFolder: () => void
   onDeleteNote: () => void
+  onDeleteType: () => void
   onDeleteView: () => void
   onFilenameStemChange: (value: string) => void
   onFolderNameChange: (value: string) => void
@@ -147,6 +151,7 @@ type MobileWorkspaceActionSheetProps = {
   viewPropertyOptions: string[]
   viewPropertyQuery: string
   onTypeDisplayPropertiesChange: (value: string[]) => void
+  onTypeNameChange: (value: string) => void
   onTypePropertyQueryChange: (value: string) => void
   onTypeSchemaPropertyAdd: () => void
   onTypeSchemaPropertyNameChange: (value: string) => void
@@ -219,6 +224,7 @@ const actionContentByAction: Record<MobileWorkspaceAction, (props: MobileWorkspa
   changeNoteType: (props) => <RetargetNoteContent {...props} retargetAction="changeType" />,
   createFolder: (props) => <SingleTextFieldContent config={singleTextFieldConfig(props)} />,
   createNote: (props) => <SingleTextFieldContent config={singleTextFieldConfig(props)} />,
+  createType: (props) => <SingleTextFieldContent config={singleTextFieldConfig(props)} />,
   createView: (props) => <SingleTextFieldContent config={singleTextFieldConfig(props)} />,
   editFolder: (props) => <FolderActionsContent {...props} />,
   editProperty: (props) => <AddPropertyContent {...props} />,
@@ -399,6 +405,19 @@ function singleTextFieldConfig(props: MobileWorkspaceActionSheetProps) {
     }
   }
 
+  if (props.action === 'createType') {
+    return {
+      inputLabel: mobileText('sidebar.action.createType'),
+      inputPlaceholder: mobileText('sidebar.action.createType'),
+      inputTestId: 'workspace-create-type-name-input',
+      inputValue: props.typeName,
+      onCancel: props.onClose,
+      onChangeText: props.onTypeNameChange,
+      onSubmit: props.onCreateType,
+      submitLabel: mobileText('common.create'),
+    }
+  }
+
   if (props.action === 'renameNoteFile') {
     return {
       inputLabel: mobileText('editor.filename.rename'),
@@ -480,8 +499,10 @@ function TypeSectionContent(props: MobileWorkspaceActionSheetProps) {
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <MobileTypeSectionActions
+        canDelete={props.canDeleteType}
         canMoveDown={props.canMoveTypeDown}
         canMoveUp={props.canMoveTypeUp}
+        onDelete={props.onDeleteType}
         onMoveDown={props.onMoveTypeDown}
         onMoveUp={props.onMoveTypeUp}
       />
@@ -1051,6 +1072,7 @@ const actionTitleByAction: Record<MobileWorkspaceAction, () => string> = {
   changeNoteType: () => mobileText('command.note.changeType'),
   createFolder: () => mobileText('sidebar.action.createFolder'),
   createNote: () => mobileText('command.note.newNote'),
+  createType: () => mobileText('sidebar.action.createType'),
   createView: () => mobileText('viewDialog.title.create'),
   editFolder: () => mobileText('sidebar.action.renameFolder'),
   editProperty: () => mobileText('inspector.title.properties'),

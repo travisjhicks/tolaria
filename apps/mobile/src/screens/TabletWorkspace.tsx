@@ -77,6 +77,7 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
     onOpenChangeNoteType,
     onOpenCreateFolder,
     onOpenCreateNote,
+    onOpenCreateType,
     onOpenCreateView,
     onOpenFolderActions,
     onOpenMoreActions,
@@ -113,6 +114,7 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
             sections={snapshot.sidebarSections}
             title={snapshot.source?.label}
             onCreateFolder={onOpenCreateFolder}
+            onCreateType={onOpenCreateType}
             onCreateView={onOpenCreateView}
             onOpenFolderActions={onOpenFolderActions}
             onOpenTypeActions={onOpenTypeActions}
@@ -201,6 +203,7 @@ function actionSheetValues(props: ActionSheetHostProps) {
   } = props
 
   return {
+    canDeleteType: props.canDeleteType,
     canMoveViewDown,
     canMoveViewUp,
     canMoveTypeDown: props.canMoveTypeDown,
@@ -259,9 +262,11 @@ function actionSheetHandlers(props: ActionSheetHostProps) {
     onCreateNote: props.onCreateNote,
     onCreateRelationshipTarget: props.onCreateRelationshipTarget,
     onCreateTitleChange: props.onCreateTitleChange,
+    onCreateType: props.onCreateType,
     onCreateView: props.onCreateView,
     onDeleteFolder: props.onDeleteFolder,
     onDeleteNote: props.onDeleteNote,
+    onDeleteType: props.onDeleteType,
     onDeleteView: props.onDeleteView,
     onFilenameStemChange: props.onFilenameStemChange,
     onFolderNameChange: props.onFolderNameChange,
@@ -291,6 +296,7 @@ function actionSheetHandlers(props: ActionSheetHostProps) {
     onSetArchived: props.onSetArchived,
     onSetOrganized: props.onSetOrganized,
     onTypeDisplayPropertiesChange: props.onTypeDisplayPropertiesChange,
+    onTypeNameChange: props.onTypeNameChange,
     onTypePropertyQueryChange: props.onTypePropertyQueryChange,
     onTypeSchemaPropertyAdd: props.onTypeSchemaPropertyAdd,
     onTypeSchemaPropertyNameChange: props.onTypeSchemaPropertyNameChange,

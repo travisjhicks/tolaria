@@ -77,7 +77,7 @@ export function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot, 
         label: selection.name,
       }, sourceSnapshot)
     }, [selectSidebarSelection, snapshot]),
-    selectSidebarItem: useCallback((selection: MobileSidebarItemSelection) => {
+    selectSidebarItem: useCallback((selection: MobileSidebarItemSelection, sourceSnapshot = snapshot) => {
       selectSidebarSelection({
         count: selection.count,
         id: selection.id,
@@ -86,8 +86,8 @@ export function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot, 
         sectionId: selection.sectionId,
         typeName: selection.typeName,
         viewId: selection.viewId,
-      })
-    }, [selectSidebarSelection]),
+      }, sourceSnapshot)
+    }, [selectSidebarSelection, snapshot]),
     selectedNote,
     selectedNoteId: selectedNote?.id ?? selectedNoteId,
     setSelectedNoteId,

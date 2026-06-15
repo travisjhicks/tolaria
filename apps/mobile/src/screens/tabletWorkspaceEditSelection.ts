@@ -17,6 +17,7 @@ import type { TabletSidebarSelection } from './tabletWorkspaceNavigation'
 
 type FolderEdit = Extract<MobileWorkspaceEdit, { type: 'createFolder' | 'deleteFolder' | 'renameFolder' }>
 type PathEdit = Extract<MobileWorkspaceEdit, { type: 'moveNoteToFolder' | 'renameNoteFile' }>
+type TypeEdit = Extract<MobileWorkspaceEdit, { type: 'createTypeDefinition' | 'deleteTypeDefinition' | 'updateTypeDefinition' }>
 type NoteSelectionSetter = (noteId: string | null) => void
 type EditSelectionContext = {
   edit: MobileWorkspaceEdit
@@ -29,6 +30,7 @@ type EditSelectionNavigation = {
   selectDefaultSidebarItem: (sourceSnapshot: MobileWorkspaceSnapshot) => void
   selectFolder: (selection: { id: string; name: string }, sourceSnapshot?: MobileWorkspaceSnapshot) => void
   selectSavedView: (view: MobileSavedView, sourceSnapshot?: MobileWorkspaceSnapshot) => void
+  selectSidebarItem: (selection: { count?: string; id: string; label: string; sectionId: string; typeName?: string; viewId?: string }, sourceSnapshot?: MobileWorkspaceSnapshot) => void
   sidebarSelection: TabletSidebarSelection
 }
 
@@ -47,6 +49,7 @@ export function selectAfterWorkspaceEdit({
 
   if (selectAfterCreatedNote(context)) return
   if (selectAfterViewEdit(context)) return
+  if (selectAfterTypeEdit(context)) return
   if (selectAfterFolderMutation(context)) return
   selectAfterPathMutation(context)
 }
@@ -63,6 +66,13 @@ function selectAfterViewEdit({ edit, navigation, result }: EditSelectionContext)
   else if (edit.type === 'deleteView') selectAfterDeletedView(edit.viewId, result.snapshot, navigation)
   else return false
 
+  return true
+}
+
+function selectAfterTypeEdit({ edit, navigation, result }: EditSelectionContext) {
+  if (!isTypeEdit(edit)) return false
+  if (edit.type === 'deleteTypeDefinition') selectAfterDeletedType(edit, navigation, result.snapshot)
+  else if (shouldSelectTypeAfterEdit(edit, navigation.sidebarSelection)) selectTypeSection(edit.typeName, result.snapshot, navigation)
   return true
 }
 
@@ -83,6 +93,10 @@ function isFolderEdit(edit: MobileWorkspaceEdit): edit is FolderEdit {
 
 function isPathEdit(edit: MobileWorkspaceEdit): edit is PathEdit {
   return edit.type === 'moveNoteToFolder' || edit.type === 'renameNoteFile'
+}
+
+function isTypeEdit(edit: MobileWorkspaceEdit): edit is TypeEdit {
+  return edit.type === 'createTypeDefinition' || edit.type === 'deleteTypeDefinition' || edit.type === 'updateTypeDefinition'
 }
 
 function selectCreatedView(
@@ -117,6 +131,47 @@ function selectAfterDeletedView(
 
 function isSelectedView(selection: TabletSidebarSelection, viewId: string) {
   return selection.kind === 'item' && selection.viewId === viewId
+}
+
+function shouldSelectTypeAfterEdit(edit: TypeEdit, selection: TabletSidebarSelection) {
+  return edit.type === 'createTypeDefinition' || isSelectedType(selection, edit.typeName)
+}
+
+function selectAfterDeletedType(
+  edit: Extract<TypeEdit, { type: 'deleteTypeDefinition' }>,
+  navigation: EditSelectionNavigation,
+  snapshot: MobileWorkspaceSnapshot,
+) {
+  if (isSelectedType(navigation.sidebarSelection, edit.typeName)) navigation.selectDefaultSidebarItem(snapshot)
+}
+
+function selectTypeSection(
+  typeName: string,
+  snapshot: MobileWorkspaceSnapshot,
+  navigation: EditSelectionNavigation,
+) {
+  const item = snapshot.sidebarSections
+    .find((section) => section.id === 'types')
+    ?.items
+    ?.find((candidate) => candidate.typeName === typeName)
+  if (!item) return
+
+  navigation.selectSidebarItem({
+    count: item.count,
+    id: item.id,
+    label: item.label,
+    sectionId: 'types',
+    typeName: item.typeName,
+  }, snapshot)
+}
+
+function isSelectedType(selection: TabletSidebarSelection, typeName: string) {
+  if (selection.kind !== 'item' || selection.sectionId !== 'types') return false
+  return selection.typeName === typeName || normalizedTypeLabel(selection.label) === normalizedTypeLabel(typeName)
+}
+
+function normalizedTypeLabel(value: string) {
+  return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '').replace(/s$/, '')
 }
 
 function selectAfterFolderEdit(
