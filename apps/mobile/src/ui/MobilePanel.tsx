@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
+import { StyleSheet, View, type StyleProp, type ViewProps, type ViewStyle } from 'react-native'
 import { Text } from '../components/ui/text'
 import { desktopPanelParity, desktopToolbarParity } from './desktopParity'
 import { mobileColors } from './tokens'
@@ -10,12 +10,13 @@ export function MobilePanel({
   children,
   style,
   testID,
-}: {
+  ...viewProps
+}: ViewProps & {
   children: ReactNode
   style?: StyleProp<ViewStyle>
   testID?: string
 }) {
-  return <View style={[styles.panel, style]} testID={testID}>{children}</View>
+  return <View {...viewProps} style={[styles.panel, style]} testID={testID}>{children}</View>
 }
 
 export function MobileToolbar({

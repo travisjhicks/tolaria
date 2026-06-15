@@ -2,6 +2,8 @@ import { MagnifyingGlass, Plus } from 'phosphor-react-native'
 import { FlatList, StyleSheet, View } from 'react-native'
 import { Text } from '../ui/text'
 import { mobileCopy, mobileText } from '../../i18n/mobileText'
+import { MobileLayoutProbeReadout } from '../../qa/MobileLayoutProbeReadout'
+import { useMobileLayoutProbe } from '../../qa/mobileLayoutProbe'
 import { MobileChip } from '../../ui/MobileChip'
 import { MobileIconButton } from '../../ui/MobileIconButton'
 import { MobileListRow } from '../../ui/MobileListRow'
@@ -15,6 +17,7 @@ import { chipTone, noteTypeColor, noteTypeSoftColor, statusTone, tagTone } from 
 type MobileNoteListPanelProps = {
   compact: boolean
   displayPropertyKeys?: string[]
+  layoutProbe?: boolean
   notes: MobileNote[]
   onOpenCreateNote: () => void
   onOpenSearch: () => void
@@ -29,6 +32,7 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
   const {
     compact,
     displayPropertyKeys = [],
+    layoutProbe: layoutProbeEnabled = false,
     notes,
     onOpenCreateNote,
     onOpenSearch,
@@ -39,9 +43,10 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
     title = mobileCopy.inbox,
   } = props
   const activeNoteId = selectedNoteId ?? notes[0]?.id ?? null
+  const layoutProbe = useMobileLayoutProbe(layoutProbeEnabled)
 
   return (
-    <MobilePanel style={[styles.panel, compact ? styles.panelCompact : null]} testID="note-list-panel">
+    <MobilePanel {...layoutProbe.probe('noteList.panel')} style={[styles.panel, compact ? styles.panelCompact : null]} testID="note-list-panel">
       <MobileToolbar testID="note-list-toolbar">
         <View style={styles.toolbarTitleBlock}>
           <MobileToolbarTitle testID="note-list-toolbar-title" title={title} />
@@ -60,6 +65,7 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
         <NoteListEmptyState searchQuery={searchQuery} />
       ) : (
         <FlatList
+          {...layoutProbe.probe('noteList.list')}
           contentContainerStyle={styles.listContent}
           data={notes}
           extraData={selectedNoteId}
@@ -68,6 +74,8 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
           renderItem={({ item: note }) => (
             <MobileListRow
               chips={<NoteRowChips displayPropertyKeys={displayPropertyKeys} note={note} />}
+              layoutProbe={layoutProbe.probe}
+              metricId={`noteList.item.${note.id}`}
               selected={note.id === activeNoteId}
               selectedBackgroundColor={noteTypeSoftColor(note.typeTone)}
               selectedBorderColor={noteTypeColor(note.typeTone)}
@@ -83,6 +91,7 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
           windowSize={5}
         />
       )}
+      {layoutProbeEnabled ? <MobileLayoutProbeReadout metrics={layoutProbe.metrics} testID="note-list-layout-metrics" /> : null}
     </MobilePanel>
   )
 }

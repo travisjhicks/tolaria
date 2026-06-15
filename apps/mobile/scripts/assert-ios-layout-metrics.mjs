@@ -2,7 +2,7 @@
 
 import { spawnSync } from 'node:child_process'
 import {
-  assertNativeSidebarLayoutMetrics,
+  assertNativeMobileLayoutMetrics,
   formatNativeLayoutAssertionFailures,
   latestNativeLayoutMetrics,
   parseNativeLayoutMetrics,
@@ -126,13 +126,13 @@ async function main() {
 
   const logs = collectSimulatorLogs(device, last)
   const metrics = latestNativeLayoutMetrics(parseNativeLayoutMetrics(logs))
-  const failures = assertNativeSidebarLayoutMetrics(metrics)
+  const failures = assertNativeMobileLayoutMetrics(metrics)
 
   if (failures.length > 0) {
-    throw new Error(`Native iOS sidebar layout metrics failed:\n${formatNativeLayoutAssertionFailures(failures)}`)
+    throw new Error(`Native iOS layout metrics failed:\n${formatNativeLayoutAssertionFailures(failures)}`)
   }
 
-  console.log(`Native iOS sidebar layout metrics passed (${Object.keys(metrics).length} metrics).`)
+  console.log(`Native iOS layout metrics passed (${Object.keys(metrics).length} metrics).`)
 }
 
 main().catch((error) => {

@@ -1,13 +1,16 @@
 import type { ReactNode } from 'react'
-import { Platform, Pressable, StyleSheet, View } from 'react-native'
+import { Pressable, StyleSheet, View } from 'react-native'
 import { Text } from '../components/ui/text'
+import { probeProps, type MobileLayoutProbe } from '../qa/mobileLayoutProbe'
 import { desktopNoteItemParity } from './desktopParity'
 import { mobileColors, mobileSpace, mobileType } from './tokens'
 
 type MobileListRowProps = {
   chips?: ReactNode
   leading?: ReactNode
+  layoutProbe?: MobileLayoutProbe
   meta?: string
+  metricId?: string
   onPress?: () => void
   selected?: boolean
   selectedBackgroundColor?: string
@@ -18,22 +21,11 @@ type MobileListRowProps = {
   trailing?: ReactNode
 }
 
-const nativeNoteRowPadding = {
-  bottom: desktopNoteItemParity.padding.bottom + 2,
-  left: desktopNoteItemParity.padding.left + 4,
-  right: desktopNoteItemParity.padding.right + 4,
-  top: desktopNoteItemParity.padding.top + 2,
-} as const
-
-const noteRowPadding = Platform.OS === 'web' ? desktopNoteItemParity.padding : nativeNoteRowPadding
-const selectedPaddingLeft = Platform.OS === 'web'
-  ? desktopNoteItemParity.selectedPaddingLeft
-  : nativeNoteRowPadding.left
 const baseContentStyle = {
-  paddingBottom: noteRowPadding.bottom,
-  paddingLeft: noteRowPadding.left,
-  paddingRight: noteRowPadding.right,
-  paddingTop: noteRowPadding.top,
+  paddingBottom: desktopNoteItemParity.padding.bottom,
+  paddingLeft: desktopNoteItemParity.padding.left,
+  paddingRight: desktopNoteItemParity.padding.right,
+  paddingTop: desktopNoteItemParity.padding.top,
 } as const
 
 export function MobileListRow(props: MobileListRowProps) {
@@ -45,21 +37,29 @@ export function MobileListRow(props: MobileListRowProps) {
 
   return (
     <View
+      {...rowProbeProps(props.layoutProbe, props.metricId, 'frame')}
       testID={props.testID}
       style={[styles.frame, selected ? styles.selected : null, frameColors]}
     >
       <Pressable
+        {...rowProbeProps(props.layoutProbe, props.metricId, 'body')}
         accessibilityRole="button"
         onPress={props.onPress}
         style={selected ? styles.baseSelected : styles.base}
       >
-        <View style={styles.header}>
+        <View {...rowProbeProps(props.layoutProbe, props.metricId, 'header')} style={styles.header}>
           {props.leading}
-          <Text numberOfLines={1} style={[styles.title, selected ? styles.titleSelected : null]}>{props.title}</Text>
+          <Text
+            {...rowProbeProps(props.layoutProbe, props.metricId, 'title')}
+            numberOfLines={1}
+            style={[styles.title, selected ? styles.titleSelected : null]}
+          >
+            {props.title}
+          </Text>
           {props.trailing}
         </View>
-        <Text numberOfLines={2} style={styles.subtitle}>{props.subtitle}</Text>
-        <View style={styles.footer}>
+        <Text {...rowProbeProps(props.layoutProbe, props.metricId, 'subtitle')} numberOfLines={2} style={styles.subtitle}>{props.subtitle}</Text>
+        <View {...rowProbeProps(props.layoutProbe, props.metricId, 'footer')} style={styles.footer}>
           {props.chips}
           {props.meta ? <Text style={styles.meta}>{props.meta}</Text> : null}
         </View>
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   base: baseContentStyle,
   baseSelected: {
     ...baseContentStyle,
-    paddingLeft: selectedPaddingLeft,
+    paddingLeft: desktopNoteItemParity.selectedPaddingLeft,
   },
   frame: {
     alignSelf: 'stretch',
@@ -119,3 +119,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 })
+
+function rowProbeProps(layoutProbe: MobileLayoutProbe | undefined, metricId: string | undefined, segment: string) {
+  return metricId ? probeProps(layoutProbe, `${metricId}.${segment}`) : {}
+}

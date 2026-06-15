@@ -121,6 +121,7 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
           <MobileNoteListPanel
             compact={compactTablet}
             displayPropertyKeys={noteListProperties}
+            layoutProbe={layoutProbe}
             notes={notes}
             searchQuery={searchQuery || undefined}
             selectedNoteId={selectedNoteId}

@@ -63,7 +63,7 @@ The tablet landscape parity test now checks these computed-style contracts:
 | Toolbar actions | 24px transparent action boxes, 4px radius, no card-like background |
 | Sync footer | 30px height, sidebar background, 8px horizontal padding, 12px muted status text |
 
-The same Playwright suite also runs a source-drift check against desktop `src/index.css` and `src/theme.json`, plus a tablet-landscape pixel baseline for the primary iPad reference screen. The native iPad simulator metric gate also checks sidebar row insets, row vertical padding, folder indentation, section title height, and count-pill text centering so RN Web cannot hide device-only spacing regressions.
+The same Playwright suite also runs a source-drift check against desktop `src/index.css` and `src/theme.json`, plus a tablet-landscape pixel baseline for the primary iPad reference screen. The native iPad simulator metric gate also checks sidebar row insets, row vertical padding, folder indentation, section title height, count-pill text centering, note-list selected-row width, and note-row content padding so RN Web cannot hide device-only spacing regressions.
 
 React Native Web screenshots are a fast preflight only. Layout-sensitive mobile UI work must also pass the native iOS simulator metric check and produce a simulator screenshot before it is accepted, because spacing, safe-area, and text layout can diverge between web and the actual Expo app.
 

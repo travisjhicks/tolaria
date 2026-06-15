@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
-  assertNativeSidebarLayoutMetrics,
+  assertNativeMobileLayoutMetrics,
   formatNativeLayoutAssertionFailures,
   latestNativeLayoutMetrics,
+  nativeNoteListMetricContract,
   nativeSidebarMetricContract,
   parseNativeLayoutMetrics,
   type NativeLayoutMetric,
 } from './nativeLayoutMetrics'
-import { desktopSidebarParity } from '../ui/desktopParity'
+import { desktopNoteItemParity, desktopPanelParity, desktopSidebarParity } from '../ui/desktopParity'
 
 describe('native layout metrics', () => {
   it('keeps the native metric contract synced with desktop sidebar parity tokens', () => {
@@ -24,6 +25,13 @@ describe('native layout metrics', () => {
       sectionHorizontalPadding: desktopSidebarParity.sectionHorizontalPadding,
       sectionTitleMinHeight: 30,
       topNavPadding: desktopSidebarParity.topNavPadding,
+    })
+    expect(nativeNoteListMetricContract).toEqual({
+      contentGap: desktopNoteItemParity.contentGap,
+      frameX: 0,
+      panelWidth: desktopPanelParity.noteListWidth,
+      padding: desktopNoteItemParity.padding,
+      titleLineHeight: desktopNoteItemParity.titleLineHeight,
     })
   })
 
@@ -76,9 +84,12 @@ describe('native layout metrics', () => {
       folderMetric('sidebar.folder.tolaria-mobile', 37),
       containerMetric({ height: 30, id: 'sidebar.folder.tolaria-releases.container', y: 30 }),
       folderMetric('sidebar.folder.tolaria-releases', 37),
+      noteListPanelMetric(),
+      noteListItemMetric('noteList.item.workflow-orchestration', { selected: true, y: 0 }),
+      noteListItemMetric('noteList.item.open-source-project', { y: 118 }),
     ].flat())
 
-    expect(assertNativeSidebarLayoutMetrics(metrics)).toEqual([])
+    expect(assertNativeMobileLayoutMetrics(metrics)).toEqual([])
   })
 
   it('reports native sidebar rows that lose horizontal or vertical padding', () => {
@@ -113,9 +124,22 @@ describe('native layout metrics', () => {
       folderMetric('sidebar.folder.tolaria-mobile', 37),
       containerMetric({ height: 30, id: 'sidebar.folder.tolaria-releases.container' }),
       folderMetric('sidebar.folder.tolaria-releases', 37),
+      noteListPanelMetric({ width: 284 }),
+      noteListItemMetric('noteList.item.workflow-orchestration', {
+        frameWidth: 284,
+        headerX: 0,
+        headerY: 2,
+        selected: true,
+        titleHeight: 14,
+      }),
+      noteListItemMetric('noteList.item.open-source-project', {
+        frameWidth: 284,
+        headerX: 0,
+        y: 22,
+      }),
     ].flat())
 
-    const failures = assertNativeSidebarLayoutMetrics(metrics)
+    const failures = assertNativeMobileLayoutMetrics(metrics)
     const formatted = formatNativeLayoutAssertionFailures(failures)
 
     expect(formatted).toContain('sidebar.item.inbox: row keeps desktop section inset')
@@ -128,6 +152,11 @@ describe('native layout metrics', () => {
     expect(formatted).toContain('sidebar.section.primary: primary section keeps desktop top padding')
     expect(formatted).toContain('sidebar.folderTree.root: folder tree keeps desktop section inset')
     expect(formatted).toContain('sidebar.folder.writing-drafts: metric starts after the previous metric')
+    expect(formatted).toContain('noteList.panel: note list keeps desktop column width')
+    expect(formatted).toContain('noteList.item.workflow-orchestration.frame: note row surface fills the desktop note-list column')
+    expect(formatted).toContain('noteList.item.workflow-orchestration.header: note row content keeps desktop horizontal padding')
+    expect(formatted).toContain('noteList.item.workflow-orchestration.header: note row content keeps desktop top padding')
+    expect(formatted).toContain('noteList.item.workflow-orchestration.title: note row title keeps desktop line height')
   })
 })
 
@@ -198,6 +227,104 @@ function countPillMetric(
       width: 18,
       x: 2,
       y: textY,
+    },
+  ]
+}
+
+function noteListPanelMetric({
+  width = desktopPanelParity.noteListWidth,
+}: {
+  width?: number
+} = {}): NativeLayoutMetric {
+  return {
+    height: 768,
+    id: 'noteList.panel',
+    platform: 'ios',
+    width,
+    x: 0,
+    y: 0,
+  }
+}
+
+function noteListItemMetric(
+  id: string,
+  {
+    bodyX,
+    frameWidth = desktopPanelParity.noteListWidth,
+    headerX,
+    headerY = desktopNoteItemParity.padding.top,
+    selected = false,
+    titleHeight = desktopNoteItemParity.titleLineHeight,
+    y = 0,
+  }: {
+    bodyX?: number
+    frameWidth?: number
+    headerX?: number
+    headerY?: number
+    selected?: boolean
+    titleHeight?: number
+    y?: number
+  } = {},
+): NativeLayoutMetric[] {
+  const bodyOffsetX = bodyX ?? (selected ? desktopNoteItemParity.borderLeftWidth : 0)
+  const headerOffsetX = headerX ?? (selected
+    ? desktopNoteItemParity.selectedPaddingLeft
+    : desktopNoteItemParity.padding.left)
+  const bodyWidth = frameWidth - bodyOffsetX
+  const headerWidth = bodyWidth - headerOffsetX - desktopNoteItemParity.padding.right
+  const subtitleHeight = desktopNoteItemParity.snippetLineHeight * 2
+  const subtitleY = headerY + desktopNoteItemParity.titleLineHeight + desktopNoteItemParity.contentGap
+  const footerY = subtitleY + subtitleHeight + desktopNoteItemParity.contentGap
+  const rowHeight = footerY + 20 + desktopNoteItemParity.padding.bottom
+
+  return [
+    {
+      height: rowHeight,
+      id: `${id}.frame`,
+      platform: 'ios',
+      width: frameWidth,
+      x: 0,
+      y,
+    },
+    {
+      height: rowHeight,
+      id: `${id}.body`,
+      platform: 'ios',
+      width: bodyWidth,
+      x: bodyOffsetX,
+      y: 0,
+    },
+    {
+      height: desktopNoteItemParity.titleLineHeight,
+      id: `${id}.header`,
+      platform: 'ios',
+      width: headerWidth,
+      x: headerOffsetX,
+      y: headerY,
+    },
+    {
+      height: titleHeight,
+      id: `${id}.title`,
+      platform: 'ios',
+      width: headerWidth - 24,
+      x: 0,
+      y: 0,
+    },
+    {
+      height: subtitleHeight,
+      id: `${id}.subtitle`,
+      platform: 'ios',
+      width: headerWidth,
+      x: headerOffsetX,
+      y: subtitleY,
+    },
+    {
+      height: 20,
+      id: `${id}.footer`,
+      platform: 'ios',
+      width: headerWidth,
+      x: headerOffsetX,
+      y: footerY,
     },
   ]
 }
