@@ -107,11 +107,18 @@ async function retargetSelectedRelease(page: PageLike) {
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
 
   await page.getByTestId('editor-more-action').click()
+  await page.getByTestId('workspace-action-rename-file').click()
+  await expect(page.getByTestId('workspace-rename-file-input')).toHaveValue('v2026-05-02')
+  await page.getByTestId('workspace-rename-file-input').fill('release-cleanup')
+  await page.getByTestId('workspace-action-sheet-renameNoteFile').getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+
+  await page.getByTestId('editor-more-action').click()
   await page.getByTestId('workspace-action-copy-deep-link').click()
   await expect(page.evaluate((key) => {
     const attempts = (window as unknown as Record<string, unknown>)[key]
     return Array.isArray(attempts) ? attempts.at(-1) : null
-  }, mobileClipboardAttemptsGlobalKey)).resolves.toBe('tolaria://tv/Tolaria/Mobile%20UI/v2026-05-02.md')
+  }, mobileClipboardAttemptsGlobalKey)).resolves.toBe('tolaria://tv/Tolaria/Mobile%20UI/release-cleanup.md')
 }
 
 async function createMobileQaDraft(page: PageLike) {

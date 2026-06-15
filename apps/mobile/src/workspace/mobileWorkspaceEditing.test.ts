@@ -203,6 +203,25 @@ describe('applyMobileWorkspaceEdit', () => {
     expectMoveWikilinkWrites(result.writes, updatedRef.rawContent ?? '')
   })
 
+  it('renames note filenames while preserving titles and updating inbound wikilinks', () => {
+    const { movedSource, referringNote, snapshot } = workspaceMoveLinkScenario()
+    const result = applyMobileWorkspaceEditWithWrites(snapshot, {
+      filenameStem: 'manual-name.md',
+      noteId: movedSource.id,
+      type: 'renameNoteFile',
+    })
+    const renamed = noteById(result.snapshot, movedSource.id)
+    const updatedRef = noteById(result.snapshot, referringNote.id)
+
+    expect(renamed).toMatchObject({
+      path: 'Tolaria/Mobile UI/manual-name.md',
+      rawContent: '# Workflow Orchestration Essay\n\nMove me.\n',
+      title: 'Workflow Orchestration Essay',
+    })
+    expectRenamedWikilinks(updatedRef, movedSource.id)
+    expectRenameWikilinkWrites(result.writes, updatedRef.rawContent ?? '')
+  })
+
   it('does not overwrite an existing destination when moving notes between folders', () => {
     const base = workspaceScenarioForId('default')
     const existingDestination = {
@@ -219,6 +238,40 @@ describe('applyMobileWorkspaceEdit', () => {
       folderPath: 'Writing/Essays',
       noteId: 'workflow-orchestration',
       type: 'moveNoteToFolder',
+    })
+
+    expect(result.snapshot.notes[0]?.path).toBe('Tolaria/Mobile UI/Workflow Orchestration Essay.md')
+    expect(result.writes).toEqual([])
+  })
+
+  it('does not overwrite an existing destination when renaming note filenames', () => {
+    const base = workspaceScenarioForId('default')
+    const existingDestination = {
+      ...base.notes[1],
+      id: 'Tolaria/Mobile UI/manual-name.md',
+      path: 'Tolaria/Mobile UI/manual-name.md',
+      title: 'Existing Manual Name',
+    }
+    const result = applyMobileWorkspaceEditWithWrites({
+      ...base,
+      allNotes: [base.notes[0], existingDestination],
+      notes: [base.notes[0], existingDestination],
+    }, {
+      filenameStem: 'manual-name',
+      noteId: 'workflow-orchestration',
+      type: 'renameNoteFile',
+    })
+
+    expect(result.snapshot.notes[0]?.path).toBe('Tolaria/Mobile UI/Workflow Orchestration Essay.md')
+    expect(result.writes).toEqual([])
+  })
+
+  it('rejects desktop-invalid note filename stems', () => {
+    const base = workspaceScenarioForId('default')
+    const result = applyMobileWorkspaceEditWithWrites(base, {
+      filenameStem: 'quarterly:plan',
+      noteId: 'workflow-orchestration',
+      type: 'renameNoteFile',
     })
 
     expect(result.snapshot.notes[0]?.path).toBe('Tolaria/Mobile UI/Workflow Orchestration Essay.md')
@@ -245,6 +298,30 @@ describe('applyMobileWorkspaceEdit', () => {
     expect(result.snapshot.notes[0]).toMatchObject({
       id: 'Writing/Essays/Workflow Orchestration Essay.md',
       path: 'Writing/Essays/Workflow Orchestration Essay.md',
+    })
+  })
+
+  it('retargets path-backed note ids when a local-vault note filename changes', () => {
+    const base = workspaceScenarioForId('default')
+    const pathBackedNote = {
+      ...base.notes[0],
+      id: 'Tolaria/Mobile UI/Workflow Orchestration Essay.md',
+    }
+    const result = applyMobileWorkspaceEditWithWrites({
+      ...base,
+      notes: [pathBackedNote, ...base.notes.slice(1)],
+      selectedNoteId: pathBackedNote.id,
+    }, {
+      filenameStem: 'manual-name',
+      noteId: pathBackedNote.id,
+      type: 'renameNoteFile',
+    })
+
+    expect(result.snapshot.selectedNoteId).toBe('Tolaria/Mobile UI/manual-name.md')
+    expect(result.snapshot.notes[0]).toMatchObject({
+      id: 'Tolaria/Mobile UI/manual-name.md',
+      path: 'Tolaria/Mobile UI/manual-name.md',
+      title: 'Workflow Orchestration Essay',
     })
   })
 
@@ -661,6 +738,35 @@ function expectMoveWikilinkWrites(writes: ReturnType<typeof applyMobileWorkspace
       content: '# Workflow Orchestration Essay\n\nMove me.\n',
       kind: 'saveNote',
       path: 'Writing/Essays/Workflow Orchestration Essay.md',
+    },
+    {
+      content: refContent,
+      kind: 'saveNote',
+      path: 'Refs.md',
+    },
+  ])
+}
+
+function expectRenamedWikilinks(note: MobileNote, renamedNoteId: string) {
+  const content = note.rawContent ?? ''
+  expect(content).toContain('[[Tolaria/Mobile UI/manual-name]]')
+  expect(content).toContain('[[Tolaria/Mobile UI/manual-name|Workflow]]')
+  expect(content).toContain('[[Tolaria/Mobile UI/manual-name|essay]]')
+  expect(content).not.toContain('[[Workflow Orchestration Essay]]')
+  expect(content).not.toContain('[[Tolaria/Mobile UI/Workflow Orchestration Essay')
+  expect(note.relationships.find((relationship) => relationship.key === 'related_to')?.values[0]).toMatchObject({
+    id: renamedNoteId,
+    title: 'Workflow Orchestration Essay',
+  })
+}
+
+function expectRenameWikilinkWrites(writes: ReturnType<typeof applyMobileWorkspaceEditWithWrites>['writes'], refContent: string) {
+  expect(writes).toEqual([
+    { kind: 'deleteNote', path: 'Tolaria/Mobile UI/Workflow Orchestration Essay.md' },
+    {
+      content: '# Workflow Orchestration Essay\n\nMove me.\n',
+      kind: 'saveNote',
+      path: 'Tolaria/Mobile UI/manual-name.md',
     },
     {
       content: refContent,

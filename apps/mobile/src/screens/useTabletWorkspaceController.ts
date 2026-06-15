@@ -29,6 +29,7 @@ import { viewColorForSelection, viewFiltersForSelection } from './tabletWorkspac
 const emptyReadOnlyForm: TabletReadOnlyForm = {
   createTitle: '',
   editingViewId: '',
+  filenameStem: '',
   folderPath: '',
   noteType: '',
   propertyName: '',
@@ -141,8 +142,23 @@ function useControllerApplyEdit({
       selectUpdatedView(edit.viewId, result.snapshot, navigation)
     } else if (edit.type === 'deleteView') {
       selectAfterDeletedView(edit.viewId, result.snapshot, navigation)
+    } else if (edit.type === 'moveNoteToFolder' || edit.type === 'renameNoteFile') {
+      setSelectedNoteId(selectedNoteIdAfterPathEdit(edit, result))
     }
   }, [applyWorkspaceEdit, navigation, setSelectedNoteId])
+}
+
+function selectedNoteIdAfterPathEdit(
+  edit: Extract<MobileWorkspaceEdit, { type: 'moveNoteToFolder' | 'renameNoteFile' }>,
+  result: ReturnType<typeof applyMobileWorkspaceEditWithWrites>,
+) {
+  const notes = result.snapshot.allNotes ?? result.snapshot.notes
+  const directMatch = notes.find((note) => note.id === edit.noteId)
+  if (directMatch) return directMatch.id
+
+  const savedPath = result.writes.find((write) => write.kind === 'saveNote')?.path
+  const pathMatch = savedPath ? notes.find((note) => note.path === savedPath || note.id === savedPath) : null
+  return pathMatch?.id ?? result.snapshot.selectedNoteId ?? null
 }
 
 function useCloseWorkspaceAction({
@@ -315,6 +331,11 @@ function actionSheetWorkspaceActions({
       setOpenAction,
       updateReadOnlyForm,
     }),
+    onOpenRenameNoteFile: () => openRenameNoteFile({
+      filenameStem: filenameStemForNote(selectedNote),
+      setOpenAction,
+      updateReadOnlyForm,
+    }),
     onOpenSearch: () => setOpenAction('search'),
     onOpenViewActions: (selection: MobileSidebarItemSelection) => openViewActions({
       selection,
@@ -432,11 +453,17 @@ function retargetWorkspaceActions({
       value: readOnlyForm.noteType,
     })),
     onChangeNoteTypeInputChange: (value: string) => updateReadOnlyForm('noteType', value),
+    onFilenameStemChange: (value: string) => updateReadOnlyForm('filenameStem', value),
     onFolderPathChange: (value: string) => updateReadOnlyForm('folderPath', value),
     onMoveNoteToFolder: () => saveSelectedEdit((noteId) => ({
       folderPath: readOnlyForm.folderPath,
       noteId,
       type: 'moveNoteToFolder',
+    })),
+    onRenameNoteFile: () => saveSelectedEdit((noteId) => ({
+      filenameStem: readOnlyForm.filenameStem,
+      noteId,
+      type: 'renameNoteFile',
     })),
   }
 }
@@ -504,6 +531,25 @@ function openMoveNoteToFolder({
 }) {
   updateReadOnlyForm('folderPath', '')
   setOpenAction('moveNoteToFolder')
+}
+
+function openRenameNoteFile({
+  filenameStem,
+  setOpenAction,
+  updateReadOnlyForm,
+}: {
+  filenameStem: string
+  setOpenAction: SetOpenAction
+  updateReadOnlyForm: ReadOnlyFormUpdater
+}) {
+  updateReadOnlyForm('filenameStem', filenameStem)
+  setOpenAction('renameNoteFile')
+}
+
+function filenameStemForNote(note: MobileNote | null): string {
+  const path = note?.path ?? note?.id ?? ''
+  const filename = path.split('/').filter(Boolean).at(-1) ?? path
+  return filename.replace(/\.md$/u, '')
 }
 
 function openEditProperty({

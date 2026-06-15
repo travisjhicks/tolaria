@@ -175,10 +175,12 @@ function WorkspaceActionSheetHost(props: TabletWorkspaceChromeProps & { suggesti
     onCreateView,
     onDeleteNote,
     onDeleteView,
+    onFilenameStemChange,
     onFolderPathChange,
     onMoveNoteToFolder,
     onOpenChangeNoteType,
     onOpenMoveNoteToFolder,
+    onOpenRenameNoteFile,
     onPropertyNameChange,
     onPropertyValueChange,
     onRelationshipNameChange,
@@ -186,6 +188,7 @@ function WorkspaceActionSheetHost(props: TabletWorkspaceChromeProps & { suggesti
     onSaveProperty,
     onSaveRelationship,
     onSaveView,
+    onRenameNoteFile,
     onSearchQueryChange,
     onSelectNote,
     onSetArchived,
@@ -204,6 +207,7 @@ function WorkspaceActionSheetHost(props: TabletWorkspaceChromeProps & { suggesti
     <MobileWorkspaceActionSheet
       action={openAction}
       createTitle={readOnlyForm.createTitle}
+      filenameStem={readOnlyForm.filenameStem}
       folderPath={readOnlyForm.folderPath}
       notes={suggestionNotes}
       noteType={readOnlyForm.noteType}
@@ -223,10 +227,12 @@ function WorkspaceActionSheetHost(props: TabletWorkspaceChromeProps & { suggesti
       onCreateView={onCreateView}
       onDeleteView={onDeleteView}
       onDeleteNote={onDeleteNote}
+      onFilenameStemChange={onFilenameStemChange}
       onFolderPathChange={onFolderPathChange}
       onMoveNoteToFolder={onMoveNoteToFolder}
       onOpenChangeNoteType={onOpenChangeNoteType}
       onOpenMoveNoteToFolder={onOpenMoveNoteToFolder}
+      onOpenRenameNoteFile={onOpenRenameNoteFile}
       onPropertyNameChange={onPropertyNameChange}
       onPropertyValueChange={onPropertyValueChange}
       onRelationshipNameChange={onRelationshipNameChange}
@@ -234,6 +240,7 @@ function WorkspaceActionSheetHost(props: TabletWorkspaceChromeProps & { suggesti
       onSaveProperty={onSaveProperty}
       onSaveRelationship={onSaveRelationship}
       onSaveView={onSaveView}
+      onRenameNoteFile={onRenameNoteFile}
       onSearchQueryChange={onSearchQueryChange}
       onSelectNote={onSelectNote}
       onSetArchived={onSetArchived}

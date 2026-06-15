@@ -24,6 +24,7 @@ export type TabletPropertyValueKind = 'boolean' | 'list' | 'number' | 'string'
 export type TabletReadOnlyForm = {
   createTitle: ReadOnlyFormValue
   editingViewId: ReadOnlyFormValue
+  filenameStem: ReadOnlyFormValue
   folderPath: ReadOnlyFormValue
   noteType: ReadOnlyFormValue
   propertyName: ReadOnlyFormValue
@@ -60,6 +61,7 @@ export type TabletWorkspaceChromeProps = {
   onDeleteNote: () => void
   onDeleteProperty: (noteId: NoteId, key: string) => void
   onEditProperty: (noteId: NoteId, key: string, value: MobilePropertyValue) => void
+  onFilenameStemChange: (value: ReadOnlyFormValue) => void
   onFolderPathChange: (value: ReadOnlyFormValue) => void
   onMoveNoteToFolder: () => void
   onOpenChangeNoteType: () => void
@@ -68,10 +70,12 @@ export type TabletWorkspaceChromeProps = {
   onOpenMoveNoteToFolder: () => void
   onOpenViewActions: (selection: MobileSidebarItemSelection) => void
   onOpenMoreActions: () => void
+  onOpenRenameNoteFile: () => void
   onOpenSearch: () => void
   onRemoveRelationship: (noteId: NoteId, key: string, ref: string) => void
   onSaveProperty: () => void
   onSaveRelationship: () => void
+  onRenameNoteFile: () => void
   onUpdateNoteContent: (noteId: NoteId, content: string) => void
   onUpdateNoteTitle: (noteId: NoteId, title: string) => void
   onViewFiltersChange: (value: MobileViewFilterGroup) => void
