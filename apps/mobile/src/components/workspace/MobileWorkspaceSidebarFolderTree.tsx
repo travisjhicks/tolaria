@@ -56,7 +56,7 @@ function FolderTreeRow({
   const metricId = `sidebar.folder.${folder.id}`
 
   return (
-    <View>
+    <View {...probeProps(layoutProbe, `${metricId}.container`)}>
       <Pressable
         {...probeProps(layoutProbe, `${metricId}.row`)}
         accessibilityLabel={folder.name}

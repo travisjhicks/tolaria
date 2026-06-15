@@ -137,6 +137,7 @@ function SidebarSection({
 }) {
   return (
     <View
+      {...probeProps(layoutProbe, `sidebar.section.${section.id}.container`)}
       style={[styles.section, section.id === 'primary' ? styles.primarySection : styles.groupSection]}
       testID={`sidebar-section-${section.id}`}
     >
