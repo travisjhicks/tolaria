@@ -95,6 +95,17 @@ test.describe('mobile UI lab interactions', () => {
     await insertPersonMention(page)
   })
 
+  test('exercises reducer-backed phone workspace flows', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'phone-portrait', 'Phone real-workspace checks run on the phone layout.')
+
+    await page.goto('/')
+    await navigatePhoneSidebarSection(page)
+    await openPhoneEditorAndProperties(page)
+    await editPhoneProperty(page)
+    await editPhoneMarkdownWithWikilink(page)
+    await returnPhoneEditorToList(page)
+  })
+
   test('keeps large local-vault read-only interactions within tablet budgets', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'tablet-landscape', 'Large-vault performance checks run once on the primary tablet layout.')
 
@@ -258,6 +269,66 @@ async function insertPersonMention(page: PageLike) {
   await expect(page.getByTestId('editor-markdown-input')).toHaveValue('# Mention Draft\n\nFollow up with [[maria-rossi]] ')
   await page.getByTestId('editor-edit-action').click()
   await expect(page.getByTestId('editor-wikilink-maria-rossi')).toBeVisible()
+}
+
+async function navigatePhoneSidebarSection(page: PageLike) {
+  await expect(page.getByTestId('phone-note-list-screen')).toBeVisible()
+  await expectToolbarLeadingActionBeforeTitle(page)
+  await page.getByTestId('phone-sidebar-action').click()
+  await expect(page.getByTestId('phone-sidebar-screen')).toBeVisible()
+  await page.getByTestId('sidebar-collapse-action').click()
+  await expect(page.getByTestId('phone-note-list-screen')).toBeVisible()
+  await page.getByTestId('phone-sidebar-action').click()
+  await expect(page.getByTestId('phone-sidebar-screen')).toBeVisible()
+  await page.getByRole('button', { name: 'All Notes' }).click()
+  await expect(page.getByTestId('phone-note-list-screen')).toBeVisible()
+  await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('All Notes')
+}
+
+async function expectToolbarLeadingActionBeforeTitle(page: PageLike) {
+  const actionBox = await page.getByTestId('phone-sidebar-action').boundingBox()
+  const titleBox = await page.getByTestId('note-list-toolbar-title').boundingBox()
+  if (!actionBox || !titleBox) throw new Error('Cannot measure phone note-list toolbar.')
+
+  expect(actionBox.x + actionBox.width).toBeLessThanOrEqual(titleBox.x)
+}
+
+async function openPhoneEditorAndProperties(page: PageLike) {
+  await page.getByTestId('note-row-workflow-orchestration').click()
+  await expect(page.getByTestId('phone-editor-screen')).toBeVisible()
+  await expect(page.getByTestId('editor-title')).toHaveText('Workflow Orchestration Essay')
+  await page.getByTestId('phone-properties-action').click()
+  await expect(page.getByTestId('phone-properties-screen')).toBeVisible()
+  await expect(page.getByTestId('properties-panel')).toBeVisible()
+}
+
+async function editPhoneProperty(page: PageLike) {
+  await page.getByTestId('property-action-add-property').click()
+  await expect(page.getByTestId('workspace-action-sheet-addProperty')).toBeVisible()
+  await page.getByTestId('workspace-property-name-input').fill('Phone QA')
+  await page.getByTestId('workspace-property-value-input').fill('Ready')
+  await page.getByTestId('workspace-action-sheet-addProperty').getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+  await expect(page.getByTestId('property-row-phone-qa')).toContainText('Ready')
+}
+
+async function editPhoneMarkdownWithWikilink(page: PageLike) {
+  await page.getByTestId('phone-back-action').click()
+  await expect(page.getByTestId('phone-editor-screen')).toBeVisible()
+  await page.getByTestId('editor-edit-action').click()
+  await expect(page.getByTestId('editor-markdown-input')).toBeVisible()
+  await page.getByTestId('editor-markdown-input').fill('# Workflow Orchestration Essay\n\nPhone editing links [[Proj')
+  await expect(page.getByTestId('editor-wikilink-suggestions')).toBeVisible()
+  await page.getByTestId('editor-wikilink-suggestion-open-source-project').click()
+  await expect(page.getByTestId('editor-markdown-input')).toHaveValue('# Workflow Orchestration Essay\n\nPhone editing links [[Tolaria/Mobile UI/How I Run an Open Source Project]]')
+  await page.getByTestId('editor-edit-action').click()
+  await expect(page.getByTestId('editor-wikilink-tolaria-mobile-ui-how-i-run-an-open-source-project')).toBeVisible()
+}
+
+async function returnPhoneEditorToList(page: PageLike) {
+  await page.getByTestId('phone-back-action').click()
+  await expect(page.getByTestId('phone-note-list-screen')).toBeVisible()
+  await expect(page.getByTestId('note-row-workflow-orchestration')).toBeVisible()
 }
 
 async function createSavedViewFromSidebar(page: PageLike) {

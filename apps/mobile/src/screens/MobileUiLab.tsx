@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Linking, useWindowDimensions } from 'react-native'
-import { PhoneWorkspaceMock, type PhoneWorkspaceState } from './PhoneWorkspaceMock'
+import { PhoneWorkspace, type PhoneWorkspaceState } from './PhoneWorkspace'
 import { TabletWorkspace } from './TabletWorkspace'
 import { readOnlyWorkspaceRepository, type ReadOnlyWorkspaceRequest } from '../workspace/readOnlyWorkspaceRepository'
 
@@ -34,7 +34,16 @@ export function MobileUiLab() {
     )
   }
 
-  return <PhoneWorkspaceMock key={workspaceKey} initialState={currentPhoneState(searchParams)} snapshot={snapshot} />
+  return (
+    <PhoneWorkspace
+      key={workspaceKey}
+      initialEditorEditing={initialEditorEditing}
+      initialState={currentPhoneState(searchParams)}
+      repository={readOnlyWorkspaceRepository}
+      repositoryRequest={repositoryRequest}
+      snapshot={snapshot}
+    />
+  )
 }
 
 function currentScenarioId(searchParams: URLSearchParams) {
@@ -44,7 +53,7 @@ function currentScenarioId(searchParams: URLSearchParams) {
 function currentPhoneState(searchParams: URLSearchParams): PhoneWorkspaceState {
   const value = searchParams.get('phoneState')
 
-  if (value === 'editor' || value === 'sidebar') return value
+  if (value === 'editor' || value === 'properties' || value === 'sidebar') return value
 
   return 'list'
 }

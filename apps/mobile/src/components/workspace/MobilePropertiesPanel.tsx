@@ -20,6 +20,7 @@ import { chipTone, noteTypeColor, noteTypeSoftColor, statusTone, tagTone } from 
 
 export function MobilePropertiesPanel({
   compact,
+  fullWidth = false,
   note,
   onAddProperty,
   onAddRelationship,
@@ -31,6 +32,7 @@ export function MobilePropertiesPanel({
   typeDefinitions,
 }: {
   compact: boolean
+  fullWidth?: boolean
   note: MobileNote | null
   onAddProperty: (key?: string) => void
   onAddRelationship: (key?: string) => void
@@ -42,7 +44,7 @@ export function MobilePropertiesPanel({
   typeDefinitions?: MobileTypeDefinitions
 }) {
   return (
-    <MobilePanel style={[panelStyles.panel, compact ? panelStyles.panelCompact : null]} testID="properties-panel">
+    <MobilePanel style={[panelStyles.panel, compact ? panelStyles.panelCompact : null, fullWidth ? panelStyles.panelFullWidth : null]} testID="properties-panel">
       <MobileToolbar testID="properties-toolbar">
         <MobileToolbarTitle testID="properties-toolbar-title" title={mobileCopy.properties} variant="inspector" />
       </MobileToolbar>
@@ -445,6 +447,9 @@ const panelStyles = StyleSheet.create({
   },
   panelCompact: {
     width: 280,
+  },
+  panelFullWidth: {
+    width: '100%',
   },
 })
 

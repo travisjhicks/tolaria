@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { MagnifyingGlass, Plus } from 'phosphor-react-native'
 import { FlatList, StyleSheet, View } from 'react-native'
 import { Text } from '../ui/text'
@@ -17,6 +18,8 @@ import { chipTone, noteTypeColor, noteTypeSoftColor, statusTone, tagTone } from 
 type MobileNoteListPanelProps = {
   compact: boolean
   displayPropertyKeys?: string[]
+  fullWidth?: boolean
+  leading?: ReactNode
   layoutProbe?: boolean
   notes: MobileNote[]
   onOpenCreateNote: () => void
@@ -32,6 +35,8 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
   const {
     compact,
     displayPropertyKeys = [],
+    fullWidth = false,
+    leading,
     layoutProbe: layoutProbeEnabled = false,
     notes,
     onOpenCreateNote,
@@ -46,8 +51,9 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
   const layoutProbe = useMobileLayoutProbe(layoutProbeEnabled)
 
   return (
-    <MobilePanel {...layoutProbe.probe('noteList.panel')} style={[styles.panel, compact ? styles.panelCompact : null]} testID="note-list-panel">
+    <MobilePanel {...layoutProbe.probe('noteList.panel')} style={[styles.panel, compact ? styles.panelCompact : null, fullWidth ? styles.panelFullWidth : null]} testID="note-list-panel">
       <MobileToolbar testID="note-list-toolbar">
+        {leading}
         <View style={styles.toolbarTitleBlock}>
           <MobileToolbarTitle testID="note-list-toolbar-title" title={title} />
           <Text style={styles.toolbarSubtitle} testID="note-list-toolbar-subtitle">{subtitle}</Text>
@@ -235,6 +241,9 @@ const styles = StyleSheet.create({
   },
   panelCompact: {
     width: 336,
+  },
+  panelFullWidth: {
+    width: '100%',
   },
   listContent: {
     paddingHorizontal: 0,

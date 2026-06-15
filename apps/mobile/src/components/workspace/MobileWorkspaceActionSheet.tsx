@@ -299,7 +299,7 @@ function SearchContent({
   }
 
   return (
-    <View style={styles.content}>
+    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" style={styles.scrollArea}>
       <MobileTextInput
         autoFocus
         label={mobileText('noteList.searchAction')}
@@ -327,7 +327,7 @@ function SearchContent({
           />
         ))}
       </ScrollView>
-    </View>
+    </ScrollView>
   )
 }
 
@@ -493,7 +493,7 @@ function editViewContent(props: MobileWorkspaceActionSheetProps) {
 
 function FolderActionsContent(props: MobileWorkspaceActionSheetProps) {
   return (
-    <View style={styles.content}>
+    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" style={styles.scrollArea}>
       <MobileTextInput
         autoFocus
         label={mobileText('sidebar.folder.newName')}
@@ -519,7 +519,7 @@ function FolderActionsContent(props: MobileWorkspaceActionSheetProps) {
         <MobileButton label={mobileText('common.cancel')} variant="ghost" onPress={props.onClose} />
         <MobileButton disabled={props.folderName.trim().length === 0} label={mobileText('common.save')} variant="primary" onPress={props.onRenameFolder} />
       </SheetFooter>
-    </View>
+    </ScrollView>
   )
 }
 
@@ -617,7 +617,7 @@ function AddPropertyContent({
   const valueSuggestions = mobilePropertyValueSuggestions(notes, propertyName, propertyValue)
 
   return (
-    <View style={styles.content}>
+    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" style={styles.scrollArea}>
       <MobileTextInput
         autoFocus
         label={mobileText('inspector.properties.propertyName')}
@@ -661,7 +661,7 @@ function AddPropertyContent({
         <MobileButton label={mobileText('common.cancel')} variant="ghost" onPress={onClose} />
         <MobileButton disabled={propertyName.trim().length === 0} label={mobileText('common.save')} variant="primary" onPress={onSaveProperty} />
       </SheetFooter>
-    </View>
+    </ScrollView>
   )
 }
 
@@ -681,7 +681,7 @@ function AddRelationshipContent({
   const showCreateTarget = shouldShowRelationshipCreateTarget(notes, createTargetTitle)
 
   return (
-    <View style={styles.content}>
+    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" style={styles.scrollArea}>
       <MobileTextInput
         autoFocus
         label={mobileText('inspector.relationship.name')}
@@ -728,7 +728,7 @@ function AddRelationshipContent({
         <MobileButton label={mobileText('common.cancel')} variant="ghost" onPress={onClose} />
         <MobileButton disabled={relationshipName.trim().length === 0 || relationshipNoteTitle.trim().length === 0} label={mobileText('inspector.relationship.add')} variant="primary" onPress={onSaveRelationship} />
       </SheetFooter>
-    </View>
+    </ScrollView>
   )
 }
 
@@ -1188,7 +1188,8 @@ const styles = StyleSheet.create({
   },
   sheet: {
     maxHeight: 620,
-    width: 520,
+    maxWidth: 520,
+    width: '92%',
     borderColor: mobileColors.borderStrong,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',

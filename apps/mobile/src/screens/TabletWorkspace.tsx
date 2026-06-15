@@ -181,7 +181,7 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
 
 type ActionSheetHostProps = TabletWorkspaceChromeProps & { suggestionNotes: MobileNote[] }
 
-function WorkspaceActionSheetHost(props: ActionSheetHostProps) {
+export function WorkspaceActionSheetHost(props: ActionSheetHostProps) {
   const { openAction } = props
   if (!openAction) return null
 

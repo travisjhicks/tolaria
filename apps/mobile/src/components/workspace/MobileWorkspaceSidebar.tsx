@@ -52,6 +52,7 @@ type MobileWorkspaceSidebarProps = {
   activeFolderId?: string | null
   activeItemId?: string | null
   layoutProbe?: boolean
+  onCollapse?: () => void
   onCreateFolder?: () => void
   onCreateType?: () => void
   onCreateView?: () => void
@@ -83,6 +84,7 @@ export function MobileWorkspaceSidebar(props: MobileWorkspaceSidebarProps) {
     activeFolderId,
     activeItemId,
     layoutProbe: layoutProbeEnabled = false,
+    onCollapse,
     onCreateFolder,
     onCreateType,
     onCreateView,
@@ -99,7 +101,7 @@ export function MobileWorkspaceSidebar(props: MobileWorkspaceSidebarProps) {
   return (
     <MobilePanel {...layoutProbe.probe('sidebar.panel')} style={styles.panel} testID="workspace-sidebar-panel">
       <MobileToolbar testID="sidebar-toolbar">
-        <MobileIconButton accessibilityLabel={mobileText('sidebar.action.collapse')} testID="sidebar-collapse-action">
+        <MobileIconButton accessibilityLabel={mobileText('sidebar.action.collapse')} testID="sidebar-collapse-action" onPress={onCollapse}>
           <SidebarSimple color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />
         </MobileIconButton>
         <Text numberOfLines={1} style={styles.vaultTitle} testID="sidebar-toolbar-title">{title}</Text>
