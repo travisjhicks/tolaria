@@ -3,7 +3,10 @@ import type {
   MobilePropertyValue,
   MobileTypeDefinition,
 } from './mobileWorkspaceModel'
-import { normalizeRelationshipKey } from './mobileWorkspaceSuggestions'
+import {
+  mobileRelationshipTargetSuggestions,
+  normalizeRelationshipKey,
+} from './mobileWorkspaceSuggestions'
 import {
   mobileNoteForWikilinkTarget,
   mobileWikilinkTargetForNote,
@@ -21,6 +24,20 @@ export type MobileTypeSchemaRelationship = {
   refs: WikilinkRef[]
 }
 
+export type MobileTypeSchemaRelationshipTargetSuggestion = {
+  label: FormValueText
+  meta: FormValueText
+  testId: FormValueText
+  value: WikilinkRef
+}
+
+type AddTypeSchemaRelationshipRefInput = {
+  key: RelationshipKey
+  notes: MobileNote[]
+  relationships: MobileTypeSchemaRelationship[]
+  targetRef?: WikilinkRef
+  targetTitle: FormValueText
+}
 type FormValueText = string
 type CanonicalSchemaKey = string
 type QueryText = string
@@ -79,16 +96,17 @@ export function removeTypeSchemaPropertyAt(
   return properties.filter((_, itemIndex) => itemIndex !== index)
 }
 
-export function addTypeSchemaRelationshipRef(
-  relationships: MobileTypeSchemaRelationship[],
-  key: RelationshipKey,
-  targetTitle: FormValueText,
-  notes: MobileNote[],
-): MobileTypeSchemaRelationship[] {
+export function addTypeSchemaRelationshipRef({
+  key,
+  notes,
+  relationships,
+  targetRef,
+  targetTitle,
+}: AddTypeSchemaRelationshipRefInput): MobileTypeSchemaRelationship[] {
   const relationshipKey = normalizeRelationshipKey(key)
   if (!relationshipKey) return relationships
 
-  const ref = relationshipRefFromInput(targetTitle, notes)
+  const ref = normalizedRelationshipRef(targetRef) ?? relationshipRefFromInput(targetTitle, notes)
   return upsertRelationship(relationships, relationshipKey, ref)
 }
 
@@ -102,14 +120,13 @@ export function removeTypeSchemaRelationshipAt(
 export function typeSchemaRelationshipTargetSuggestions(
   notes: MobileNote[],
   query: QueryText,
-): FormValueText[] {
-  const normalized = query.trim().toLowerCase()
-  if (!normalized) return []
-
-  return notes
-    .filter((note) => !note.archived && note.title.toLowerCase().includes(normalized))
-    .map((note) => note.title)
-    .slice(0, 6)
+): MobileTypeSchemaRelationshipTargetSuggestion[] {
+  return mobileRelationshipTargetSuggestions(notes, query).map((note) => ({
+    label: note.title,
+    meta: note.path ?? note.id,
+    testId: note.id,
+    value: `[[${mobileWikilinkTargetForNote(note)}]]`,
+  }))
 }
 
 export function mobileTypeSchemaPropertyValueText(value: MobilePropertyValue): string {
@@ -238,8 +255,15 @@ function relationshipRefFromInput(input: FormValueText, notes: MobileNote[]): Wi
   if (!trimmedInput) return null
   if (parseMobileWikilink(trimmedInput)) return trimmedInput
 
-  const note = notes.find((candidate) => candidate.title.trim().toLowerCase() === trimmedInput.toLowerCase())
+  const note = mobileNoteForWikilinkTarget(notes, trimmedInput)
   return `[[${note ? mobileWikilinkTargetForNote(note) : trimmedInput}]]`
+}
+
+function normalizedRelationshipRef(ref: WikilinkRef | undefined): WikilinkRef | null {
+  const trimmed = ref?.trim()
+  if (!trimmed) return null
+  if (parseMobileWikilink(trimmed)) return trimmed
+  return `[[${trimmed}]]`
 }
 
 function relationshipRefLabel(ref: WikilinkRef, notes: MobileNote[]): FormValueText {

@@ -2,36 +2,53 @@ import { Pressable, StyleSheet, View } from 'react-native'
 import { Text } from '../ui/text'
 import { mobileColors, mobileSpace, mobileType } from '../../ui/tokens'
 
+export type MobileWorkspaceSuggestionItem = {
+  label: string
+  meta?: string
+  testId?: string
+  value: string
+}
+
 export function MobileWorkspaceSuggestionList({
+  items,
   labels,
   onSelect,
   testID,
   testIDPrefix,
 }: {
-  labels: string[]
-  onSelect: (value: string) => void
+  items?: MobileWorkspaceSuggestionItem[]
+  labels?: string[]
+  onSelect: (value: string, item: MobileWorkspaceSuggestionItem) => void
   testID: string
   testIDPrefix: string
 }) {
-  if (labels.length === 0) return null
+  const suggestions = suggestionItems(labels, items)
+  if (suggestions.length === 0) return null
 
   return (
     <View style={styles.list} testID={testID}>
-      {labels.map((label) => (
+      {suggestions.map((item) => (
         <Pressable
-          accessibilityLabel={humanizeSuggestionLabel(label)}
+          accessibilityLabel={humanizeSuggestionLabel(item.label)}
           accessibilityRole="button"
-          key={label}
+          key={`${item.value}-${item.label}`}
           style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}
-          testID={`${testIDPrefix}-${testIdSegment(label)}`}
-          onPress={() => onSelect(label)}
+          testID={`${testIDPrefix}-${item.testId ?? testIdSegment(item.value)}`}
+          onPress={() => onSelect(item.value, item)}
         >
-          <Text numberOfLines={1} style={styles.title}>{humanizeSuggestionLabel(label)}</Text>
-          <Text numberOfLines={1} style={styles.meta}>{label}</Text>
+          <Text numberOfLines={1} style={styles.title}>{humanizeSuggestionLabel(item.label)}</Text>
+          <Text numberOfLines={1} style={styles.meta}>{item.meta ?? item.value}</Text>
         </Pressable>
       ))}
     </View>
   )
+}
+
+function suggestionItems(
+  labels: string[] | undefined,
+  items: MobileWorkspaceSuggestionItem[] | undefined,
+): MobileWorkspaceSuggestionItem[] {
+  return items ?? labels?.map((label) => ({ label, value: label })) ?? []
 }
 
 function humanizeSuggestionLabel(label: string) {

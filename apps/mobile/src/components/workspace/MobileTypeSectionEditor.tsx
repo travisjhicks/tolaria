@@ -15,14 +15,14 @@ import {
 import { MobileMetadataPicker } from './MobileMetadataPicker'
 import { MobileSortPicker } from './MobileSortPicker'
 import { MobileViewDisplayPropertiesPicker } from './MobileViewDisplayPropertiesPicker'
-import { MobileWorkspaceSuggestionList } from './MobileWorkspaceSuggestionList'
+import { MobileWorkspaceSuggestionList, type MobileWorkspaceSuggestionItem } from './MobileWorkspaceSuggestionList'
 
 type MobileTypeSectionEditorProps = {
   displayProperties: string[]
   notes: MobileNote[]
   propertyOptions: string[]
   propertyQuery: string
-  relationshipTargetOptions: string[]
+  relationshipTargetOptions: MobileWorkspaceSuggestionItem[]
   schemaProperties: MobileTypeSchemaProperty[]
   schemaPropertyName: string
   schemaPropertyValue: string
@@ -46,6 +46,7 @@ type MobileTypeSectionEditorProps = {
   onSchemaRelationshipAdd: () => void
   onSchemaRelationshipNameChange: (value: string) => void
   onSchemaRelationshipRemove: (index: number) => void
+  onSchemaRelationshipTargetSelect: (title: string, ref: string) => void
   onSchemaRelationshipTargetChange: (value: string) => void
   onSectionLabelChange: (value: string) => void
   onSortChange: (value: string) => void
@@ -173,10 +174,10 @@ function TypeSchemaRelationshipsEditor(props: MobileTypeSectionEditorProps) {
           onChangeText={props.onSchemaRelationshipTargetChange}
         />
         <MobileWorkspaceSuggestionList
-          labels={props.relationshipTargetOptions}
+          items={props.relationshipTargetOptions}
           testID="workspace-type-schema-relationship-target-suggestions"
           testIDPrefix="workspace-type-schema-relationship-target-suggestion"
-          onSelect={props.onSchemaRelationshipTargetChange}
+          onSelect={(ref, item) => props.onSchemaRelationshipTargetSelect(item.label, ref)}
         />
         <MobileButton
           disabled={props.schemaRelationshipName.trim().length === 0}

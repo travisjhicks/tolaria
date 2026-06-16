@@ -48,6 +48,7 @@ import { MobileViewDisplayPropertiesPicker } from './MobileViewDisplayProperties
 import { MobileViewFilterBuilder } from './MobileViewFilterBuilder'
 import { MobileSavedViewActions, MobileTypeSectionActions } from './MobileWorkspaceMoveActions'
 import { MobileWorkspaceSuggestionList } from './MobileWorkspaceSuggestionList'
+import type { MobileWorkspaceSuggestionItem } from './MobileWorkspaceSuggestionList'
 import { chipTone, noteTypeColor, noteTypeSoftColor, statusTone, tagTone } from './mobileWorkspaceTone'
 
 export type MobileWorkspaceAction =
@@ -142,7 +143,7 @@ type MobileWorkspaceActionSheetProps = {
   typePropertyOptions: string[]
   typePropertyQuery: string
   typeSortPropertyOptions: string[]
-  typeRelationshipTargetOptions: string[]
+  typeRelationshipTargetOptions: MobileWorkspaceSuggestionItem[]
   typeSchemaProperties: MobileTypeSchemaProperty[]
   typeSchemaPropertyName: string
   typeSchemaPropertyValue: string
@@ -174,6 +175,7 @@ type MobileWorkspaceActionSheetProps = {
   onTypeSchemaRelationshipAdd: () => void
   onTypeSchemaRelationshipNameChange: (value: string) => void
   onTypeSchemaRelationshipRemove: (index: number) => void
+  onTypeSchemaRelationshipTargetSelect: (title: string, ref: string) => void
   onTypeSchemaRelationshipTargetChange: (value: string) => void
   onTypeSectionLabelChange: (value: string) => void
   onTypeSortChange: (value: string) => void
@@ -566,6 +568,7 @@ function TypeSectionContent(props: MobileWorkspaceActionSheetProps) {
         onSchemaRelationshipAdd={props.onTypeSchemaRelationshipAdd}
         onSchemaRelationshipNameChange={props.onTypeSchemaRelationshipNameChange}
         onSchemaRelationshipRemove={props.onTypeSchemaRelationshipRemove}
+        onSchemaRelationshipTargetSelect={props.onTypeSchemaRelationshipTargetSelect}
         onSchemaRelationshipTargetChange={props.onTypeSchemaRelationshipTargetChange}
         onSectionLabelChange={props.onTypeSectionLabelChange}
         onSortChange={props.onTypeSortChange}

@@ -319,6 +319,7 @@ function actionSheetHandlers(props: ActionSheetHostProps) {
     onTypeSchemaRelationshipAdd: props.onTypeSchemaRelationshipAdd,
     onTypeSchemaRelationshipNameChange: props.onTypeSchemaRelationshipNameChange,
     onTypeSchemaRelationshipRemove: props.onTypeSchemaRelationshipRemove,
+    onTypeSchemaRelationshipTargetSelect: props.onTypeSchemaRelationshipTargetSelect,
     onTypeSchemaRelationshipTargetChange: props.onTypeSchemaRelationshipTargetChange,
     onTypeSectionLabelChange: props.onTypeSectionLabelChange,
     onTypeSortChange: props.onTypeSortChange,

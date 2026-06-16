@@ -1,4 +1,5 @@
 import type { MobileWorkspaceAction } from '../components/workspace/MobileWorkspaceActionSheet'
+import type { MobileWorkspaceSuggestionItem } from '../components/workspace/MobileWorkspaceSuggestionList'
 import type {
   MobileSidebarFolderSelection,
   MobileSidebarItemSelection,
@@ -49,6 +50,7 @@ export type TabletReadOnlyForm = {
   typeSchemaPropertyValue: ReadOnlyFormValue
   typeSchemaRelationships: MobileTypeSchemaRelationship[]
   typeSchemaRelationshipName: ReadOnlyFormValue
+  typeSchemaRelationshipTargetRef: ReadOnlyFormValue
   typeSchemaRelationshipTarget: ReadOnlyFormValue
   typeSectionLabel: ReadOnlyFormValue
   typeSort: ReadOnlyFormValue
@@ -139,6 +141,7 @@ export type TabletWorkspaceChromeProps = {
   onTypeSchemaRelationshipAdd: () => void
   onTypeSchemaRelationshipNameChange: (value: ReadOnlyFormValue) => void
   onTypeSchemaRelationshipRemove: (index: number) => void
+  onTypeSchemaRelationshipTargetSelect: (title: ReadOnlyFormValue, ref: ReadOnlyFormValue) => void
   onTypeSchemaRelationshipTargetChange: (value: ReadOnlyFormValue) => void
   onTypePropertyQueryChange: (value: ReadOnlyFormValue) => void
   onTypeSectionLabelChange: (value: ReadOnlyFormValue) => void
@@ -175,7 +178,7 @@ export type TabletWorkspaceChromeProps = {
   selectedNoteId: string | null
   snapshot: MobileWorkspaceSnapshot
   typePropertyOptions: string[]
-  typeRelationshipTargetOptions: string[]
+  typeRelationshipTargetOptions: MobileWorkspaceSuggestionItem[]
   typeSortPropertyOptions: string[]
   viewPropertyOptions: string[]
   viewSortPropertyOptions: string[]

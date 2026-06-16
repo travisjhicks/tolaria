@@ -89,6 +89,7 @@ const emptyReadOnlyForm: TabletReadOnlyForm = {
   typeSchemaPropertyValue: '',
   typeSchemaRelationships: [],
   typeSchemaRelationshipName: '',
+  typeSchemaRelationshipTargetRef: '',
   typeSchemaRelationshipTarget: '',
   typeSectionLabel: '',
   typeSort: '',
@@ -505,7 +506,14 @@ function typeSectionWorkspaceActions({
     onTypeSchemaRelationshipAdd: () => addTypeSchemaRelationshipFormValue({ form: readOnlyForm, notes, updateReadOnlyForm }),
     onTypeSchemaRelationshipNameChange: (value: string) => updateReadOnlyForm('typeSchemaRelationshipName', value),
     onTypeSchemaRelationshipRemove: (index: number) => updateReadOnlyForm('typeSchemaRelationships', removeTypeSchemaRelationshipAt(readOnlyForm.typeSchemaRelationships, index)),
-    onTypeSchemaRelationshipTargetChange: (value: string) => updateReadOnlyForm('typeSchemaRelationshipTarget', value),
+    onTypeSchemaRelationshipTargetSelect: (title: string, ref: string) => {
+      updateReadOnlyForm('typeSchemaRelationshipTarget', title)
+      updateReadOnlyForm('typeSchemaRelationshipTargetRef', ref)
+    },
+    onTypeSchemaRelationshipTargetChange: (value: string) => {
+      updateReadOnlyForm('typeSchemaRelationshipTarget', value)
+      updateReadOnlyForm('typeSchemaRelationshipTargetRef', '')
+    },
     onTypeSectionLabelChange: (value: string) => updateReadOnlyForm('typeSectionLabel', value),
     onTypeSortChange: (value: string) => updateReadOnlyForm('typeSort', value),
     onTypeTemplateChange: (value: string) => updateReadOnlyForm('typeTemplate', value),
@@ -549,13 +557,15 @@ function addTypeSchemaRelationshipFormValue({
   notes: MobileNote[]
   updateReadOnlyForm: ReadOnlyFormUpdater
 }) {
-  updateReadOnlyForm('typeSchemaRelationships', addTypeSchemaRelationshipRef(
-    form.typeSchemaRelationships,
-    form.typeSchemaRelationshipName,
-    form.typeSchemaRelationshipTarget,
+  updateReadOnlyForm('typeSchemaRelationships', addTypeSchemaRelationshipRef({
+    key: form.typeSchemaRelationshipName,
     notes,
-  ))
+    relationships: form.typeSchemaRelationships,
+    targetRef: form.typeSchemaRelationshipTargetRef,
+    targetTitle: form.typeSchemaRelationshipTarget,
+  }))
   updateReadOnlyForm('typeSchemaRelationshipName', '')
+  updateReadOnlyForm('typeSchemaRelationshipTargetRef', '')
   updateReadOnlyForm('typeSchemaRelationshipTarget', '')
 }
 
@@ -859,6 +869,7 @@ function typeDefinitionFields({
     { key: 'typeSchemaPropertyValue', value: '' },
     { key: 'typeSchemaRelationships', value: typeSchemaRelationshipsForForm(definition) },
     { key: 'typeSchemaRelationshipName', value: '' },
+    { key: 'typeSchemaRelationshipTargetRef', value: '' },
     { key: 'typeSchemaRelationshipTarget', value: '' },
     { key: 'typeSectionLabel', value: definition?.label ?? label },
     { key: 'typeSort', value: definition?.sort ?? '' },
