@@ -86,6 +86,7 @@ const builtInSortFields = new Set(['created', 'modified', 'status', 'title', 'ty
 const regexFilterOps = new Set<MobileViewFilterOp>(['contains', 'equals', 'not_contains', 'not_equals'])
 const maxUserRegexLength = 256
 const regexRepeatLimit = 25
+const sortableDatePrefixPattern = /^\d{4}-\d{2}-\d{2}/u
 const unknownStatusSortOrder = 999
 const statusSortOrder = new Map<string, number>([
   ['Active', 0],
@@ -599,7 +600,20 @@ function compareMissingValues(left: string | number | boolean | null, right: str
 function comparePresentFieldValue(left: string | number | boolean | null, right: string | number | boolean | null) {
   if (typeof left === 'number' && typeof right === 'number') return left - right
   if (typeof left === 'boolean' && typeof right === 'boolean') return Number(left) - Number(right)
+
+  const leftTimestamp = sortableDateTimestamp(left)
+  const rightTimestamp = sortableDateTimestamp(right)
+  if (leftTimestamp !== null && rightTimestamp !== null) return leftTimestamp - rightTimestamp
+
   return normalizedText(left).localeCompare(normalizedText(right))
+}
+
+function sortableDateTimestamp(value: unknown): number | null {
+  if (typeof value !== 'string') return null
+  if (!sortableDatePrefixPattern.test(value)) return null
+
+  const timestamp = Date.parse(value)
+  return Number.isNaN(timestamp) ? null : timestamp
 }
 
 function emptyConditionResult(op: MobileViewFilterOp, field: ResolvedMobileField): boolean | null {

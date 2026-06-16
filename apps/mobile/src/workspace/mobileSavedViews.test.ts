@@ -93,22 +93,18 @@ filters:
   })
 
   it('sorts saved views with desktop custom-property sort strings', () => {
-    const rankedView = parseMobileSavedViewFile({
-      relativePath: 'views/ranked.yml',
-      content: `name: Ranked
-sort: "property:Priority:asc"
-filters:
-  all: []
-`,
-    }, 0)
-    const datedView = parseMobileSavedViewFile({
-      relativePath: 'views/dated.yml',
-      content: `name: Dated
-sort: "Due:desc"
-filters:
-  all: []
-`,
-    }, 1)
+    const rankedView = parseMobileSavedViewFile(
+      { content: 'name: Ranked\nsort: "property:Priority:asc"\nfilters:\n  all: []\n', relativePath: 'views/ranked.yml' },
+      0,
+    )
+    const datedView = parseMobileSavedViewFile(
+      { content: 'name: Dated\nsort: "Due:desc"\nfilters:\n  all: []\n', relativePath: 'views/dated.yml' },
+      1,
+    )
+    const offsetDateView = parseMobileSavedViewFile(
+      { content: 'name: Offset Dates\nsort: "property:Due:asc"\nfilters:\n  all: []\n', relativePath: 'views/offset-dates.yml' },
+      2,
+    )
     const notes = [
       note({ id: 'missing' }),
       note({ id: 'low', properties: [{ key: 'Priority', label: 'Priority', value: 3 }, { key: 'Due', label: 'Due', value: '2026-06-10' }] }),
@@ -117,6 +113,10 @@ filters:
 
     expect(evaluateMobileSavedView(rankedView!, notes).map((candidate) => candidate.id)).toEqual(['high', 'low', 'missing'])
     expect(evaluateMobileSavedView(datedView!, notes).map((candidate) => candidate.id)).toEqual(['high', 'low', 'missing'])
+    expect(evaluateMobileSavedView(offsetDateView!, [
+      note({ id: 'late-us-evening', properties: [{ key: 'Due', label: 'Due', value: '2026-06-10T23:00:00-05:00' }] }),
+      note({ id: 'utc-midnight', properties: [{ key: 'Due', label: 'Due', value: '2026-06-11T00:00:00Z' }] }),
+    ]).map((candidate) => candidate.id)).toEqual(['utc-midnight', 'late-us-evening'])
   })
 
   it('sorts saved views with desktop built-in sort semantics', () => {
