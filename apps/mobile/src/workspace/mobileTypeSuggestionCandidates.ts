@@ -1,4 +1,5 @@
 import type { MobileNote, MobilePropertyValue, MobileTypeDefinition, MobileTypeDefinitions } from './mobileWorkspaceModel'
+import { mobileNoteForWikilinkTarget, parseMobileWikilink } from './mobileWikilinks'
 
 type NormalizedSuggestionKey = string
 type PropertyKey = string
@@ -134,7 +135,7 @@ function typeRelationshipValueSuggestionItems(
 
 function relationshipRefSuggestionItem(notes: MobileNote[], ref: string): MobileTypeValueSuggestionItem {
   const target = wikilinkTarget(ref)
-  const note = notes.find((candidate) => noteMatchesWikilinkTarget(candidate, target))
+  const note = mobileNoteForWikilinkTarget(notes, target)
   const label = note?.title ?? wikilinkDisplayLabel(ref)
 
   return {
@@ -152,27 +153,13 @@ function isRelationshipSchemaKey(key: RelationshipKey): boolean {
   return RELATIONSHIP_SCHEMA_KEYS.has(canonicalSuggestionKey(key))
 }
 
-function noteMatchesWikilinkTarget(note: MobileNote, target: string): boolean {
-  const normalizedTarget = normalizedTargetText(target)
-  const pathStem = (note.path ?? note.id).replace(/\.[^.]+$/u, '')
-  return normalizedTargetText(note.title) === normalizedTarget
-    || normalizedTargetText(note.id.replace(/\.[^.]+$/u, '')) === normalizedTarget
-    || normalizedTargetText(pathStem) === normalizedTarget
-    || (note.aliases ?? []).some((alias) => normalizedTargetText(alias) === normalizedTarget)
-}
-
 function wikilinkDisplayLabel(ref: string): string {
   const target = wikilinkTarget(ref)
   return target.split('/').filter(Boolean).at(-1) ?? target
 }
 
 function wikilinkTarget(ref: string): string {
-  const match = ref.match(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/)
-  return (match?.[1] ?? ref).trim()
-}
-
-function normalizedTargetText(value: string): string {
-  return value.trim().toLowerCase().replace(/\.md$/u, '')
+  return parseMobileWikilink(ref)?.target ?? ref.trim()
 }
 
 function canonicalSuggestionKey(key: string): NormalizedSuggestionKey {

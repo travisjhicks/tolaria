@@ -253,6 +253,33 @@ describe('mobile workspace suggestions', () => {
     ])
   })
 
+  it('labels Type-defined relationship values through desktop wikilink target normalization', () => {
+    const notes = workspaceScenarioForId('default').notes.map((note, index) => index === 0
+      ? {
+          ...note,
+          aliases: ['Weekly Review'],
+          id: 'journal/cafe-notes.md',
+          path: 'journal/cafe-notes.md',
+          title: 'Café Notes',
+        }
+      : note)
+    const typeDefinitions = {
+      Essay: {
+        relationships: {
+          depends_on: ['[[Cafe Notes.md]]'],
+        },
+      },
+    }
+
+    expect(mobileViewValueSuggestionItems(notes, 'depends_on', 'cafe', typeDefinitions)).toEqual([
+      expect.objectContaining({
+        label: 'Café Notes',
+        meta: '[[Cafe Notes.md]]',
+        value: '[[Cafe Notes.md]]',
+      }),
+    ])
+  })
+
   it('suggests saved-view relationship values as display titles backed by canonical refs', () => {
     const notes = workspaceScenarioForId('default').notes.map((note) => note.id === 'workflow-orchestration'
       ? {
