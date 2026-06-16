@@ -145,6 +145,7 @@ const htmlBlockReaders = [
   readImageBlock,
   readTable,
   readHorizontalRule,
+  readIndentedHeadingSourceBlock,
   readHeading,
   readQuote,
   readList,
@@ -202,6 +203,11 @@ function readTable(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResul
 
 function readHorizontalRule(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
   return isHorizontalRule(lines[startIndex] ?? '') ? { html: '<hr>', nextIndex: startIndex + 1 } : null
+}
+
+function readIndentedHeadingSourceBlock(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
+  const line = lines[startIndex] ?? ''
+  return /^\s+#{1,6}\s+/u.test(line) ? { html: `<p>${escapeHtml(line)}</p>`, nextIndex: startIndex + 1 } : null
 }
 
 function readHeading(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {

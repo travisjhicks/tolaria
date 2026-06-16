@@ -190,6 +190,13 @@ Updated body.
     expect(html).not.toContain('<img')
   })
 
+  it('keeps indented markdown headings editable as source until nested block editing is supported', () => {
+    const html = mobileMarkdownBodyToTentapHtml('  ### Daniel Yeboah\n\nDone\n')
+
+    expect(html).toBe('<p>  ### Daniel Yeboah</p>\n<p>Done</p>')
+    expect(html).not.toContain('<h3>')
+  })
+
   it('serializes TenTap JSON back to Tolaria markdown', () => {
     const document: TiptapJsonNode = {
       type: 'doc',
