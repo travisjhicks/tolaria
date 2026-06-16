@@ -52,6 +52,22 @@ describe('tablet workspace navigation', () => {
     expect(filterNotesBySearch(notes, 'llm workflow', ['Priority'])).toEqual([])
   })
 
+  it('opens the selected active favorite note instead of every favorite or title match', () => {
+    const snapshot = workspaceSnapshot([
+      note({ favorite: true, id: 'selected', title: 'Journal' }),
+      note({ id: 'same-title', title: 'Journal' }),
+      note({ archived: true, favorite: true, id: 'archived-favorite', title: 'Archived' }),
+      note({ favorite: true, id: 'other-favorite', title: 'Other' }),
+    ])
+
+    expect(notesForSidebarSelection(snapshot, {
+      id: 'favorite-selected',
+      kind: 'item',
+      label: 'Journal',
+      sectionId: 'favorites',
+    }).map((candidate) => candidate.id)).toEqual(['selected'])
+  })
+
   it('selects folders by path and includes descendants without matching duplicate labels', () => {
     const snapshot = workspaceSnapshot([
       note({ id: 'writing-root', path: 'Writing/Root.md', title: 'Root' }),

@@ -33,7 +33,7 @@ type NoteListPropertyResolver = (
 ) => string[]
 
 const sidebarSectionResolvers: Record<string, SidebarNotesResolver> = {
-  favorites: (_snapshot, notes, selection) => notes.filter((note) => note.favorite || note.title === selection.label),
+  favorites: (_snapshot, notes, selection) => notesForFavoriteSelection(notes, selection),
   types: (snapshot, notes, selection) => notesForTypeSelection(snapshot, notes, selection),
   views: (snapshot, _notes, selection) => notesForSavedView(snapshot, selection),
 }
@@ -171,6 +171,18 @@ function notesForSavedView(
   if (!view) return []
 
   return evaluateMobileSavedView(view, workspaceNotes(snapshot))
+}
+
+function notesForFavoriteSelection(notes: MobileNote[], selection: TabletSidebarItemSelection) {
+  const selectedNoteId = favoriteNoteId(selection.id)
+  return notes.filter((note) => !note.archived && note.favorite && (
+    selectedNoteId ? note.id === selectedNoteId : note.title === selection.label
+  ))
+}
+
+function favoriteNoteId(itemId: string) {
+  const prefix = 'favorite-'
+  return itemId.startsWith(prefix) ? itemId.slice(prefix.length) : null
 }
 
 function notesForTypeSelection(
