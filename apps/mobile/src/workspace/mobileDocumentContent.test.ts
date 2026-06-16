@@ -132,6 +132,12 @@ Updated body.
     expect(html).toBe('<p>Intro</p>\n<p>$$<br>\\int_0^1 x\\,dx<br>$$</p>\n<p>Done</p>')
   })
 
+  it('keeps indented display math blocks editable as source until nested block editing is supported', () => {
+    const html = mobileMarkdownBodyToTentapHtml('  $$\n  x^2\n  $$\n\nDone\n')
+
+    expect(html).toBe('<p>  $$<br>  x^2<br>  $$</p>\n<p>Done</p>')
+  })
+
   it('keeps unsupported details blocks editable as escaped markdown source', () => {
     const html = mobileMarkdownBodyToTentapHtml([
       '<details><summary>Manufacturing</summary>',
@@ -168,6 +174,13 @@ Updated body.
     expect(mobileMarkdownBodyToTentapHtml('~~~mermaid\nflowchart LR\nA --> B\n~~~\n')).toBe(
       '<pre><code data-language="mermaid">flowchart LR\nA --&gt; B</code></pre>',
     )
+  })
+
+  it('keeps indented fenced code editable as source until nested block editing is supported', () => {
+    const html = mobileMarkdownBodyToTentapHtml('  ```ts\n  const x = 1\n  ```\n\nDone\n')
+
+    expect(html).toBe('<p>  ```ts<br>  const x = 1<br>  ```</p>\n<p>Done</p>')
+    expect(html).not.toContain('<pre>')
   })
 
   it('hydrates explicit markdown hard breaks as TenTap line breaks', () => {
@@ -336,6 +349,46 @@ Updated body.
     }
 
     expect(tiptapJsonToMobileMarkdown(document)).toBe('$$\n\\int_0^1 x\\,dx\n$$')
+  })
+
+  it('keeps indented display math paragraphs as editable markdown source after native saves', () => {
+    const document: TiptapJsonNode = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            { text: '  $$', type: 'text' },
+            { type: 'hardBreak' },
+            { text: '  x^2', type: 'text' },
+            { type: 'hardBreak' },
+            { text: '  $$', type: 'text' },
+          ],
+        },
+      ],
+    }
+
+    expect(tiptapJsonToMobileMarkdown(document)).toBe('  $$\n  x^2\n  $$')
+  })
+
+  it('keeps indented fenced code paragraphs as editable markdown source after native saves', () => {
+    const document: TiptapJsonNode = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            { text: '  ```ts', type: 'text' },
+            { type: 'hardBreak' },
+            { text: '  const x = 1', type: 'text' },
+            { type: 'hardBreak' },
+            { text: '  ```', type: 'text' },
+          ],
+        },
+      ],
+    }
+
+    expect(tiptapJsonToMobileMarkdown(document)).toBe('  ```ts\n  const x = 1\n  ```')
   })
 
   it('keeps non-math TenTap hard breaks as markdown hard break markers', () => {

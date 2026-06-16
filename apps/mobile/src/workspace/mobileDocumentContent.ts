@@ -1,5 +1,6 @@
 import { parseLocalVaultDocument } from './localVaultFrontmatter'
 import {
+  isMobileDisplayMathStart,
   normalizeMobileDisplayMathMarkdown,
   readMobileDisplayMathBlock,
 } from './mobileDisplayMath'
@@ -137,8 +138,25 @@ function readCodeBlock(lines: MarkdownLines, startIndex: number): ReadHtmlBlockR
   }
 }
 
+function readIndentedCodeFenceSourceBlock(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
+  const opening = hasLeadingWhitespace(lines[startIndex] ?? '')
+    ? readMobileMarkdownCodeFence(lines[startIndex] ?? '')
+    : null
+  if (!opening) return null
+
+  let index = startIndex + 1
+  while (index < lines.length && !isMobileMarkdownCodeFenceClose(lines[index] ?? '', opening)) {
+    index += 1
+  }
+
+  const nextIndex = index < lines.length ? index + 1 : index
+  return sourceLinesParagraphBlock(lines.slice(startIndex, nextIndex), nextIndex)
+}
+
 const htmlBlockReaders = [
+  readIndentedCodeFenceSourceBlock,
   readCodeBlock,
+  readIndentedDisplayMathSourceBlock,
   readDisplayMathBlock,
   readUnsupportedHtmlSourceBlock,
   readIndentedImageSourceBlock,
@@ -165,6 +183,17 @@ function readDisplayMathBlock(lines: MarkdownLines, startIndex: number): ReadHtm
   const displayMath = readMobileDisplayMathBlock(lines, startIndex)
   return displayMath
     ? { html: `<p>${displayMath.lines.map(escapeHtml).join('<br>')}</p>`, nextIndex: displayMath.nextIndex }
+    : null
+}
+
+function readIndentedDisplayMathSourceBlock(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
+  if (!hasLeadingWhitespace(lines[startIndex] ?? '') || !isMobileDisplayMathStart(lines[startIndex] ?? '')) {
+    return null
+  }
+
+  const displayMath = readMobileDisplayMathBlock(lines, startIndex)
+  return displayMath
+    ? sourceLinesParagraphBlock(lines.slice(startIndex, displayMath.nextIndex), displayMath.nextIndex)
     : null
 }
 
@@ -253,6 +282,13 @@ function readIndentedListSourceBlock(lines: MarkdownLines, startIndex: number): 
   }
 }
 
+function sourceLinesParagraphBlock(sourceLines: MarkdownLines, nextIndex: number): ReadHtmlBlockResult {
+  return {
+    html: `<p>${sourceLines.map(escapeHtml).join('<br>')}</p>`,
+    nextIndex,
+  }
+}
+
 function readList(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
   const first = listLine(lines[startIndex] ?? '')
   if (!first) return null
@@ -328,7 +364,11 @@ function listLine(line: MarkdownLine): (MobileMarkdownListItem & { kind: ListKin
 }
 
 function isIndentedListSourceLine(line: MarkdownLine): boolean {
-  return /^\s/u.test(line) && listLine(line) !== null
+  return hasLeadingWhitespace(line) && listLine(line) !== null
+}
+
+function hasLeadingWhitespace(line: MarkdownLine): boolean {
+  return /^\s/u.test(line)
 }
 
 function listDepth(indent: MarkdownLine): number {
@@ -412,10 +452,31 @@ function normalizeMobileFallbackParagraphMarkdown(markdown: MarkdownBody): Markd
   const htmlBlockMarkdown = normalizeUnsupportedHtmlBlockMarkdown(markdown)
   if (htmlBlockMarkdown !== markdown) return htmlBlockMarkdown
 
+  const indentedCodeFenceSourceMarkdown = normalizeIndentedCodeFenceSourceMarkdown(markdown)
+  if (indentedCodeFenceSourceMarkdown !== markdown) return indentedCodeFenceSourceMarkdown
+
   const indentedListSourceMarkdown = normalizeIndentedListSourceMarkdown(markdown)
   if (indentedListSourceMarkdown !== markdown) return indentedListSourceMarkdown
 
   return normalizeUnsupportedTableMarkdown(markdown)
+}
+
+function normalizeIndentedCodeFenceSourceMarkdown(markdown: MarkdownBody): MarkdownBody {
+  const lines = markdown.split('\n').map(stripHardBreakMarker)
+  if (!isIndentedCodeFenceSourceParagraph(lines)) return markdown
+
+  return lines.join('\n')
+}
+
+function isIndentedCodeFenceSourceParagraph(lines: MarkdownLines): boolean {
+  const opening = hasLeadingWhitespace(lines[0] ?? '')
+    ? readMobileMarkdownCodeFence(lines[0] ?? '')
+    : null
+  return Boolean(
+    opening
+    && lines.length > 1
+    && isMobileMarkdownCodeFenceClose(lines[lines.length - 1] ?? '', opening),
+  )
 }
 
 function normalizeIndentedListSourceMarkdown(markdown: MarkdownBody): MarkdownBody {
