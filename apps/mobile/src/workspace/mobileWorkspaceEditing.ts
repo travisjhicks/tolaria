@@ -56,6 +56,7 @@ import {
   noteWritePath,
   rewriteMovedNoteWikilinks,
 } from './mobileWorkspacePathRewrites'
+import { writeMobileFrontmatterValue } from './mobileFrontmatterWrites'
 import type { MobileTypeDefinitionPatch } from './mobileTypeDefinitions'
 import { applyMobileTypeEdit } from './mobileWorkspaceTypeEditing'
 import { normalizeRelationshipKey } from './mobileWorkspaceSuggestions'
@@ -1023,21 +1024,8 @@ function writeFrontmatterValue(
   value: LocalVaultFrontmatterValue | undefined,
 ): MarkdownContent {
   const document = parseLocalVaultDocument(content)
-  const nextFrontmatter = { ...document.frontmatter }
-
-  if (shouldRemoveFrontmatterValue(value)) {
-    Reflect.deleteProperty(nextFrontmatter, key)
-  } else {
-    nextFrontmatter[key] = value
-  }
-
+  const nextFrontmatter = writeMobileFrontmatterValue(document.frontmatter, key, value)
   return serializeDocument(nextFrontmatter, document.body)
-}
-
-function shouldRemoveFrontmatterValue(
-  value: LocalVaultFrontmatterValue | undefined,
-): value is undefined | null | [] {
-  return value === undefined || value === null || isEmptyArray(value)
 }
 
 function serializeDocument(frontmatter: LocalVaultFrontmatter, body: MarkdownContent): MarkdownContent {
@@ -1226,10 +1214,6 @@ function humanizeKey(key: FrontmatterKey): string {
   return key
     .replaceAll('_', ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase())
-}
-
-function isEmptyArray(value: LocalVaultFrontmatterValue | undefined): boolean {
-  return Array.isArray(value) && value.length === 0
 }
 
 function linkCount(body: MarkdownContent): number {
