@@ -47,6 +47,39 @@ describe('mobile wikilink resolution', () => {
       }),
     ], 'Project Alpha.md')).toBe('research/project-alpha.md')
   })
+
+  it('resolves desktop legacy path-style targets through path suffixes and filename stems', () => {
+    expect(mobileNoteIdForWikilinkTarget([
+      note({
+        id: 'docs/adr/0031-foo.md',
+        path: 'docs/adr/0031-foo.md',
+        title: '0031 Foo',
+      }),
+      note({
+        id: 'hello.md',
+        path: 'hello.md',
+        title: 'Hello',
+      }),
+    ], 'adr/0031-foo')).toBe('docs/adr/0031-foo.md')
+
+    expect(mobileNoteIdForWikilinkTarget([
+      note({
+        id: 'alice.md',
+        path: 'alice.md',
+        title: 'Alice',
+      }),
+    ], 'person/alice')).toBe('alice.md')
+  })
+
+  it('resolves desktop kebab-case targets through humanized titles', () => {
+    expect(mobileNoteIdForWikilinkTarget([
+      note({
+        id: 'renamed-file.md',
+        path: 'renamed-file.md',
+        title: 'My Project',
+      }),
+    ], 'my-project')).toBe('renamed-file.md')
+  })
 })
 
 function note(overrides: Partial<MobileNote>): MobileNote {
