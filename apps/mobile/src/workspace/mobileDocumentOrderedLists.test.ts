@@ -21,6 +21,13 @@ describe('mobile document ordered lists', () => {
     expect(html).not.toContain('<ol')
   })
 
+  it('keeps repeated one-marker ordered lists editable as source', () => {
+    const html = mobileMarkdownBodyToTentapHtml('1. Create\n1. Learn\n1. Connect\n')
+
+    expect(html).toBe('<p>1. Create<br>1. Learn<br>1. Connect</p>')
+    expect(html).not.toContain('<ol')
+  })
+
   it('serializes non-1 ordered lists back to desktop markdown', () => {
     const document: TiptapJsonNode = {
       type: 'doc',
@@ -50,6 +57,17 @@ describe('mobile document ordered lists', () => {
     expect(tiptapJsonToMobileMarkdown(document)).toBe(
       '1) Prioritize host serenity\n2) Invite close friends early',
     )
+  })
+
+  it('keeps repeated one-marker source lines after native saves', () => {
+    const document: TiptapJsonNode = {
+      type: 'doc',
+      content: [
+        paragraphNode('1. Create', '1. Learn', '1. Connect'),
+      ],
+    }
+
+    expect(tiptapJsonToMobileMarkdown(document)).toBe('1. Create\n1. Learn\n1. Connect')
   })
 })
 

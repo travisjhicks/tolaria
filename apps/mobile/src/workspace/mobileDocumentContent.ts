@@ -28,6 +28,7 @@ type ReadParagraphResult = { lines: MarkdownLines; nextIndex: number }
 type ReadQuoteResult = { paragraphs: MarkdownLines[]; nextIndex: number }
 type UrlText = string
 type WikilinkTarget = string
+type MarkdownNormalizer = (markdown: MarkdownBody) => MarkdownBody
 
 export type TiptapJsonMark = {
   attrs?: Record<string, unknown>
@@ -170,6 +171,7 @@ const htmlBlockReaders = [
   readIndentedTextSourceBlock,
   readIndentedListSourceBlock,
   readOrderedParenListSourceBlock,
+  readIrregularOrderedDotListSourceBlock,
   readList,
 ]
 
@@ -334,6 +336,29 @@ function readOrderedParenListSourceBlock(lines: MarkdownLines, startIndex: numbe
   return sourceLinesParagraphBlock(sourceLines, index)
 }
 
+function readIrregularOrderedDotListSourceBlock(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
+  const source = readOrderedDotListSourceLines(lines, startIndex)
+  if (!source || !isIrregularOrderedDotListSource(source.lines)) return null
+
+  return sourceLinesParagraphBlock(source.lines, source.nextIndex)
+}
+
+function readOrderedDotListSourceLines(
+  lines: MarkdownLines,
+  startIndex: number,
+): { lines: MarkdownLines; nextIndex: number } | null {
+  if (orderedDotListSourceLineNumber(lines[startIndex] ?? '') === null) return null
+
+  const sourceLines: string[] = []
+  let index = startIndex
+  while (index < lines.length && orderedDotListSourceLineNumber(lines[index] ?? '') !== null) {
+    sourceLines.push(lines[index] ?? '')
+    index += 1
+  }
+
+  return { lines: sourceLines, nextIndex: index }
+}
+
 function sourceLinesParagraphBlock(sourceLines: MarkdownLines, nextIndex: number): ReadHtmlBlockResult {
   return {
     html: `<p>${sourceLines.map(escapeHtml).join('<br>')}</p>`,
@@ -425,6 +450,21 @@ function isIndentedListSourceLine(line: MarkdownLine): boolean {
 
 function isOrderedParenListSourceLine(line: MarkdownLine): boolean {
   return /^\d+\)(?:\s+.*)?$/u.test(line)
+}
+
+function isIrregularOrderedDotListSource(lines: MarkdownLines): boolean {
+  if (lines.length < 2) return false
+
+  const numbers = lines.map(orderedDotListSourceLineNumber)
+  const start = numbers[0]
+  if (start === null || numbers.some((number) => number === null)) return false
+
+  return numbers.some((number, index) => number !== start + index)
+}
+
+function orderedDotListSourceLineNumber(line: MarkdownLine): number | null {
+  const match = line.match(/^(\d+)\.(?:\s+.*)?$/u)
+  return match ? Number(match[1]) : null
 }
 
 function isIndentedTextSourceLine(line: MarkdownLine): boolean {
@@ -550,29 +590,25 @@ function serializeParagraph(node: TiptapJsonNode): MarkdownBody {
 }
 
 function normalizeMobileFallbackParagraphMarkdown(markdown: MarkdownBody): MarkdownBody {
-  const displayMathMarkdown = normalizeMobileDisplayMathMarkdown(markdown)
-  if (displayMathMarkdown !== markdown) return displayMathMarkdown
+  for (const normalize of mobileFallbackParagraphNormalizers) {
+    const normalizedMarkdown = normalize(markdown)
+    if (normalizedMarkdown !== markdown) return normalizedMarkdown
+  }
 
-  const inlineImageSourceMarkdown = normalizeInlineImageSourceMarkdown(markdown)
-  if (inlineImageSourceMarkdown !== markdown) return inlineImageSourceMarkdown
-
-  const htmlBlockMarkdown = normalizeUnsupportedHtmlBlockMarkdown(markdown)
-  if (htmlBlockMarkdown !== markdown) return htmlBlockMarkdown
-
-  const indentedCodeFenceSourceMarkdown = normalizeIndentedCodeFenceSourceMarkdown(markdown)
-  if (indentedCodeFenceSourceMarkdown !== markdown) return indentedCodeFenceSourceMarkdown
-
-  const indentedListSourceMarkdown = normalizeIndentedListSourceMarkdown(markdown)
-  if (indentedListSourceMarkdown !== markdown) return indentedListSourceMarkdown
-
-  const orderedParenListSourceMarkdown = normalizeOrderedParenListSourceMarkdown(markdown)
-  if (orderedParenListSourceMarkdown !== markdown) return orderedParenListSourceMarkdown
-
-  const indentedTextSourceMarkdown = normalizeIndentedTextSourceMarkdown(markdown)
-  if (indentedTextSourceMarkdown !== markdown) return indentedTextSourceMarkdown
-
-  return normalizeUnsupportedTableMarkdown(markdown)
+  return markdown
 }
+
+const mobileFallbackParagraphNormalizers: MarkdownNormalizer[] = [
+  normalizeMobileDisplayMathMarkdown,
+  normalizeInlineImageSourceMarkdown,
+  normalizeUnsupportedHtmlBlockMarkdown,
+  normalizeIndentedCodeFenceSourceMarkdown,
+  normalizeIndentedListSourceMarkdown,
+  normalizeOrderedParenListSourceMarkdown,
+  normalizeIrregularOrderedDotListSourceMarkdown,
+  normalizeIndentedTextSourceMarkdown,
+  normalizeUnsupportedTableMarkdown,
+]
 
 function normalizeInlineImageSourceMarkdown(markdown: MarkdownBody): MarkdownBody {
   const lines = markdown.split('\n').map(stripHardBreakMarker)
@@ -611,6 +647,13 @@ function normalizeIndentedListSourceMarkdown(markdown: MarkdownBody): MarkdownBo
 function normalizeOrderedParenListSourceMarkdown(markdown: MarkdownBody): MarkdownBody {
   const lines = markdown.split('\n').map(stripHardBreakMarker)
   if (!lines.every(isOrderedParenListSourceLine)) return markdown
+
+  return lines.join('\n')
+}
+
+function normalizeIrregularOrderedDotListSourceMarkdown(markdown: MarkdownBody): MarkdownBody {
+  const lines = markdown.split('\n').map(stripHardBreakMarker)
+  if (!isIrregularOrderedDotListSource(lines)) return markdown
 
   return lines.join('\n')
 }
