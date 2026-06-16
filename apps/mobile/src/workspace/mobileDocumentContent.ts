@@ -727,9 +727,18 @@ function escapeMarkdownLinkDestination(href: UrlText): UrlText {
 }
 
 function escapePlainInlineMarkdown(text: PlainText): PlainText {
-  return text
+  const plainSourceSpans: string[] = []
+  const protectedText = text.replace(plainSourceSpanPattern, (span) => {
+    const token = plainSourceSpanToken(plainSourceSpans.length)
+    plainSourceSpans.push(span)
+    return token
+  })
+
+  const escapedText = protectedText
     .replace(/\\/g, '\\\\')
     .replace(/([`*_[\]])/g, '\\$1')
+
+  return restorePlainSourceSpanTokens(escapedText, plainSourceSpans)
 }
 
 function plainText(nodes: TiptapJsonNode[]): string {
@@ -792,6 +801,13 @@ function escapedMarkdownToken(index: number): string {
   return `\u0000ESCAPEDMARKDOWN${index}\u0000`
 }
 
+const plainSourceSpanPattern =
+  /\b(?:https?|mailto):[^\s<>()]+(?:\([^\s<>()]*\)[^\s<>()]*)*|\b[A-Za-z0-9.!#$%&*+/=?^_`{|}~-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/gu
+
+function plainSourceSpanToken(index: number): string {
+  return `\u0000PLAINSOURCESPAN${index}\u0000`
+}
+
 function restoreCodeSpanTokens(html: HtmlSnippet, codeSpans: HtmlSnippet[]): HtmlSnippet {
   return codeSpans.reduce((current, codeSpan, index) => (
     current.replaceAll(codeSpanToken(index), codeSpan)
@@ -802,4 +818,10 @@ function restoreEscapedMarkdownTokens(html: HtmlSnippet, escapedMarkdownChars: H
   return escapedMarkdownChars.reduce((current, escapedChar, index) => (
     current.replaceAll(escapedMarkdownToken(index), escapedChar)
   ), html)
+}
+
+function restorePlainSourceSpanTokens(text: PlainText, spans: PlainText[]): PlainText {
+  return spans.reduce((current, span, index) => (
+    current.replaceAll(plainSourceSpanToken(index), span)
+  ), text)
 }
