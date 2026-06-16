@@ -7,9 +7,10 @@ type UrlText = string
 type MobileMarkdownImage = {
   alt: ImageAltText
   src: UrlText
+  title?: PlainText
 }
 
-const MARKDOWN_IMAGE_LINE_PATTERN = /^\s*!\[((?:\\.|[^\]\\\n])*)\]\((<[^>\n]+>|(?:\\.|[^)\s\n])+)(?:[ \t]+"(?:\\.|[^"\\\n])*")?\)\s*$/u
+const MARKDOWN_IMAGE_LINE_PATTERN = /^\s*!\[((?:\\.|[^\]\\\n])*)\]\((<[^>\n]+>|(?:\\.|[^)\s\n])+)(?:[ \t]+"((?:\\.|[^"\\\n])*)")?\)\s*$/u
 
 export function mobileMarkdownImageHtml(line: MarkdownLine): HtmlSnippet | null {
   const image = readMobileMarkdownImage(line)
@@ -19,7 +20,8 @@ export function mobileMarkdownImageHtml(line: MarkdownLine): HtmlSnippet | null 
 export function mobileImageNodeMarkdown(attrs: Record<string, unknown> | undefined): MarkdownLine {
   const src = typeof attrs?.src === 'string' ? attrs.src : ''
   const alt = typeof attrs?.alt === 'string' ? attrs.alt : ''
-  return src ? `![${escapeMarkdownLabel(alt)}](${escapeMarkdownDestination(src)})` : ''
+  const title = typeof attrs?.title === 'string' ? attrs.title : ''
+  return src ? `![${escapeMarkdownLabel(alt)}](${imageDestination(src, title)})` : ''
 }
 
 function readMobileMarkdownImage(line: MarkdownLine): MobileMarkdownImage | null {
@@ -29,11 +31,13 @@ function readMobileMarkdownImage(line: MarkdownLine): MobileMarkdownImage | null
   return {
     alt: unescapeMarkdownText(match[1] ?? ''),
     src: unescapeMarkdownDestination(match[2] ?? ''),
+    title: match[3] ? unescapeMarkdownText(match[3]) : undefined,
   }
 }
 
 function imageHtml(image: MobileMarkdownImage): HtmlSnippet {
-  return `<img src="${escapeHtml(image.src)}" alt="${escapeHtml(image.alt)}">`
+  const title = image.title ? ` title="${escapeHtml(image.title)}"` : ''
+  return `<img src="${escapeHtml(image.src)}" alt="${escapeHtml(image.alt)}"${title}>`
 }
 
 function escapeMarkdownLabel(value: PlainText): PlainText {
@@ -43,6 +47,15 @@ function escapeMarkdownLabel(value: PlainText): PlainText {
 function escapeMarkdownDestination(value: UrlText): UrlText {
   if (/[\s<>]/u.test(value)) return `<${value.replace(/>/gu, '%3E')}>`
   return value.replace(/\\/gu, '\\\\').replace(/\)/gu, '\\)')
+}
+
+function imageDestination(src: UrlText, title: PlainText): PlainText {
+  const destination = escapeMarkdownDestination(src)
+  return title ? `${destination} "${escapeMarkdownTitle(title)}"` : destination
+}
+
+function escapeMarkdownTitle(value: PlainText): PlainText {
+  return value.replace(/\\/gu, '\\\\').replace(/"/gu, '\\"')
 }
 
 function unescapeMarkdownText(value: PlainText): PlainText {

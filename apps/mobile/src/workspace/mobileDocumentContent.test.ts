@@ -229,6 +229,12 @@ Updated body.
     expect(html).not.toContain('<a ')
   })
 
+  it('preserves markdown image titles as native image metadata', () => {
+    const html = mobileMarkdownBodyToTentapHtml('![shot](attachments/file.png "starter vault")\n')
+
+    expect(html).toBe('<img src="attachments/file.png" alt="shot" title="starter vault">')
+  })
+
   it('keeps indented markdown images editable as source until nested image editing is supported', () => {
     const html = mobileMarkdownBodyToTentapHtml('  ![](https://example.com/agent.png)\n\nDone\n')
 
@@ -488,6 +494,24 @@ Updated body.
     }
 
     expect(tiptapJsonToMobileMarkdown(document)).toBe('![Architecture diagram](<attachments/mobile diagram.png>)')
+  })
+
+  it('serializes TenTap image titles back to desktop markdown image titles', () => {
+    const document: TiptapJsonNode = {
+      type: 'doc',
+      content: [
+        {
+          attrs: {
+            alt: 'shot',
+            src: 'attachments/file.png',
+            title: 'starter vault',
+          },
+          type: 'image',
+        },
+      ],
+    }
+
+    expect(tiptapJsonToMobileMarkdown(document)).toBe('![shot](attachments/file.png "starter vault")')
   })
 })
 
