@@ -27,11 +27,19 @@ type SidebarNotesResolver = (
   notes: MobileNote[],
   selection: TabletSidebarItemSelection,
 ) => MobileNote[]
+type NoteListPropertyResolver = (
+  snapshot: MobileWorkspaceSnapshot,
+  selection: TabletSidebarItemSelection,
+) => string[]
 
 const sidebarSectionResolvers: Record<string, SidebarNotesResolver> = {
   favorites: (_snapshot, notes, selection) => notes.filter((note) => note.favorite || note.title === selection.label),
   types: (snapshot, notes, selection) => notesForTypeSelection(snapshot, notes, selection),
   views: (snapshot, _notes, selection) => notesForSavedView(snapshot, selection),
+}
+const noteListPropertyResolvers: Record<string, NoteListPropertyResolver> = {
+  types: (snapshot, selection) => typeDefinitionForSelection(snapshot, selection)?.listPropertiesDisplay ?? [],
+  views: (snapshot, selection) => savedViewForSelection(snapshot, selection)?.definition.listPropertiesDisplay ?? [],
 }
 
 export function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot, searchQuery: SearchQuery) {
@@ -170,7 +178,7 @@ function notesForTypeSelection(
   notes: MobileNote[],
   selection: TabletSidebarItemSelection,
 ) {
-  const matchingNotes = notes.filter((note) => noteMatchesType(note, selection))
+  const matchingNotes = notes.filter((note) => !note.archived && noteMatchesType(note, selection))
   return sortMobileNotesBySort(matchingNotes, typeDefinitionForSelection(snapshot, selection)?.sort ?? null)
 }
 
@@ -179,9 +187,7 @@ export function noteListPropertiesForSelection(
   selection: TabletSidebarSelection,
 ) {
   if (selection.kind !== 'item') return []
-  if (selection.sectionId === 'views') return savedViewForSelection(snapshot, selection)?.definition.listPropertiesDisplay ?? []
-  if (selection.sectionId === 'types') return typeDefinitionForSelection(snapshot, selection)?.listPropertiesDisplay ?? []
-  return []
+  return noteListPropertyResolvers[selection.sectionId]?.(snapshot, selection) ?? []
 }
 
 function savedViewForSelection(

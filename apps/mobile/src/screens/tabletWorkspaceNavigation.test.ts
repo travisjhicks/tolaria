@@ -10,6 +10,7 @@ import type { MobileNote, MobileWorkspaceSnapshot } from '../workspace/mobileWor
 describe('tablet workspace navigation', () => {
   it('uses canonical type names for renamed desktop Type sidebar sections', () => {
     const snapshot = workspaceSnapshot([
+      note({ archived: true, id: 'archived', properties: [{ key: 'Priority', label: 'Priority', value: 0 }], title: 'Archived', type: 'Project' }),
       note({ id: 'high', properties: [{ key: 'Priority', label: 'Priority', value: 1 }], title: 'High', type: 'Project' }),
       note({ id: 'low', properties: [{ key: 'Priority', label: 'Priority', value: 2 }], title: 'Low', type: 'Project' }),
       note({ id: 'label-match', title: 'Wrong Type', type: 'Client Work' }),
