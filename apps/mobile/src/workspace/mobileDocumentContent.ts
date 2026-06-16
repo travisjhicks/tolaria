@@ -243,11 +243,11 @@ function readIndentedHeadingSourceBlock(lines: MarkdownLines, startIndex: number
 }
 
 function readHeading(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
-  const heading = lines[startIndex]?.match(/^(#{1,6})\s+(.+)$/)
+  const heading = lines[startIndex]?.match(/^(#{1,6})(?:[ \t]+(.*)|[ \t]*)$/u)
   if (!heading) return null
 
   const level = heading[1].length
-  return { html: `<h${level}>${inlineMarkdownToHtml(heading[2])}</h${level}>`, nextIndex: startIndex + 1 }
+  return { html: `<h${level}>${inlineMarkdownToHtml(heading[2] ?? '')}</h${level}>`, nextIndex: startIndex + 1 }
 }
 
 function readQuote(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
@@ -385,16 +385,16 @@ function isBlockStart(lines: MarkdownLines, index: number): boolean {
 }
 
 function listLine(line: MarkdownLine): (MobileMarkdownListItem & { kind: ListKind }) | null {
-  const task = line.match(/^(\s*)[-*+]\s+\[([ xX])]\s+(.+)$/)
+  const task = line.match(/^(\s*)[-*+]\s+\[([ xX])\](?:\s+(.*))?$/u)
   if (task) {
-    return { checked: task[2].toLowerCase() === 'x', depth: listDepth(task[1]), kind: 'task', text: task[3] }
+    return { checked: task[2].toLowerCase() === 'x', depth: listDepth(task[1]), kind: 'task', text: task[3] ?? '' }
   }
 
-  const bullet = line.match(/^(\s*)[-*+]\s+(.+)$/)
-  if (bullet) return { depth: listDepth(bullet[1]), kind: 'bullet', text: bullet[2] }
+  const bullet = line.match(/^(\s*)[-*+](?:\s+(.*))?$/u)
+  if (bullet) return { depth: listDepth(bullet[1]), kind: 'bullet', text: bullet[2] ?? '' }
 
-  const ordered = line.match(/^(\s*)\d+[.)]\s+(.+)$/)
-  if (ordered) return { depth: listDepth(ordered[1]), kind: 'ordered', text: ordered[2] }
+  const ordered = line.match(/^(\s*)\d+[.)](?:\s+(.*))?$/u)
+  if (ordered) return { depth: listDepth(ordered[1]), kind: 'ordered', text: ordered[2] ?? '' }
 
   return null
 }
