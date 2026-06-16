@@ -20,6 +20,12 @@ describe('mobile document empty markdown blocks', () => {
     expect(orderedHtml).toBe('<ol><li><p></p></li><li><p>Next</p></li></ol>')
   })
 
+  it('hydrates blank desktop blockquotes as blockquote blocks', () => {
+    const html = mobileMarkdownBodyToTentapHtml('> \n\nDone\n')
+
+    expect(html).toBe('<blockquote><p></p></blockquote>\n<p>Done</p>')
+  })
+
   it('serializes empty heading and list blocks back to desktop markdown', () => {
     const document: TiptapJsonNode = {
       type: 'doc',
@@ -43,6 +49,20 @@ describe('mobile document empty markdown blocks', () => {
     }
 
     expect(tiptapJsonToMobileMarkdown(document)).toBe(['##', '', '- ', '- Next', '', '1. ', '2. Next'].join('\n'))
+  })
+
+  it('serializes blank blockquote blocks back to desktop markdown', () => {
+    const document: TiptapJsonNode = {
+      type: 'doc',
+      content: [
+        {
+          type: 'blockquote',
+          content: [paragraphNode()],
+        },
+      ],
+    }
+
+    expect(tiptapJsonToMobileMarkdown(document)).toBe('>')
   })
 })
 

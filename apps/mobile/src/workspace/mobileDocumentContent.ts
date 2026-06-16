@@ -258,17 +258,21 @@ function readQuote(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResul
 function readQuoteParagraphs(lines: MarkdownLines, startIndex: number): ReadQuoteResult | null {
   const paragraphs: MarkdownLines[] = [[]]
   let index = startIndex
+  let quoteMarkers = 0
 
   while (index < lines.length) {
     const match = lines[index]?.match(/^>\s?(.*)$/)
     if (!match) break
 
+    quoteMarkers += 1
     appendQuoteLine(paragraphs, match[1])
     index += 1
   }
 
   const nonEmptyParagraphs = paragraphs.filter((paragraph) => paragraph.length > 0)
-  return nonEmptyParagraphs.length > 0 ? { paragraphs: nonEmptyParagraphs, nextIndex: index } : null
+  if (nonEmptyParagraphs.length > 0) return { paragraphs: nonEmptyParagraphs, nextIndex: index }
+
+  return quoteMarkers > 0 ? { paragraphs: [[]], nextIndex: index } : null
 }
 
 function appendQuoteLine(paragraphs: MarkdownLines[], line: MarkdownLine): void {
