@@ -359,6 +359,36 @@ filters:
     expect(evaluateMobileSavedView(recentView!, notes).map((candidate) => candidate.id)).toEqual(['recent', 'today'])
   })
 
+  it('rejects invalid ISO date-only values like desktop saved-view filters', () => {
+    const invalidTargetView = parseMobileSavedViewFile({
+      relativePath: 'views/invalid-target-date.yml',
+      content: `name: Invalid Target Date
+filters:
+  all:
+    - field: Date
+      op: equals
+      value: 2026-02-31
+`,
+    }, 0)
+    const validTargetView = parseMobileSavedViewFile({
+      relativePath: 'views/valid-target-date.yml',
+      content: `name: Valid Target Date
+filters:
+  all:
+    - field: Date
+      op: equals
+      value: 2026-03-03
+`,
+    }, 1)
+
+    expect(evaluateMobileSavedView(invalidTargetView!, [
+      note({ id: 'normalized-target-would-be-wrong', properties: [{ key: 'Date', label: 'Date', value: '2026-03-03' }] }),
+    ])).toEqual([])
+    expect(evaluateMobileSavedView(validTargetView!, [
+      note({ id: 'normalized-field-would-be-wrong', properties: [{ key: 'Date', label: 'Date', value: '2026-02-31' }] }),
+    ])).toEqual([])
+  })
+
   it('serializes desktop-compatible saved-view YAML that can be parsed back', () => {
     const content = serializeMobileSavedViewDefinition({
       color: 'purple',

@@ -894,8 +894,7 @@ function parseDateFilterInput(value: string, reference = new Date()): Date | nul
   const relative = parseRelativeDateInput(trimmed, reference)
   if (relative) return relative
 
-  const isoDate = parseIsoDateOnly(trimmed)
-  if (isoDate) return isoDate
+  if (isIsoDateOnly(trimmed)) return parseIsoDateOnly(trimmed)
 
   const timestamp = Date.parse(trimmed)
   return Number.isNaN(timestamp) ? null : new Date(timestamp)
@@ -909,7 +908,14 @@ function parseIsoDateOnly(value: string): Date | null {
   const month = Number(match[2])
   const day = Number(match[3])
   const parsed = new Date(year, month - 1, day)
-  return Number.isNaN(parsed.getTime()) ? null : parsed
+  if (Number.isNaN(parsed.getTime())) return null
+  return parsed.getFullYear() === year && parsed.getMonth() === month - 1 && parsed.getDate() === day
+    ? parsed
+    : null
+}
+
+function isIsoDateOnly(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/u.test(value)
 }
 
 function parseRelativeDateInput(value: string, reference: Date): Date | null {
