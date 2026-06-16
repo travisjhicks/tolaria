@@ -24,7 +24,12 @@ type MarkdownLines = MarkdownLine[]
 type NoteTitleText = string
 type PlainText = string
 type ReadHtmlBlockResult = { html: HtmlSnippet; nextIndex: number }
-type ReadListSourceLinesResult = { hasContinuation: boolean; lines: MarkdownLines; nextIndex: number }
+type ReadListSourceLinesResult = {
+  hasContinuation: boolean
+  hasHardBreak: boolean
+  lines: MarkdownLines
+  nextIndex: number
+}
 type ReadParagraphResult = { lines: MarkdownLines; nextIndex: number }
 type ReadQuoteResult = { paragraphs: MarkdownLines[]; nextIndex: number }
 type UrlText = string
@@ -172,6 +177,7 @@ const htmlBlockReaders = [
   readIndentedTextSourceBlock,
   readIndentedListSourceBlock,
   readListContinuationSourceBlock,
+  readListHardBreakSourceBlock,
   readOrderedParenListSourceBlock,
   readIrregularOrderedDotListSourceBlock,
   readList,
@@ -332,27 +338,47 @@ function readListContinuationSourceBlock(lines: MarkdownLines, startIndex: numbe
   return sourceLinesParagraphBlock(source.lines, source.nextIndex)
 }
 
+function readListHardBreakSourceBlock(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
+  const source = readListSourceLines(lines, startIndex)
+  if (!source?.hasHardBreak) return null
+
+  return sourceLinesParagraphBlock(source.lines, source.nextIndex)
+}
+
 function readListSourceLines(lines: MarkdownLines, startIndex: number): ReadListSourceLinesResult | null {
-  const first = listLine(lines[startIndex] ?? '')
+  const firstLine = lines[startIndex] ?? ''
+  const first = listLine(firstLine)
   if (!first) return null
 
-  const baseIndent = leadingWhitespaceLength(lines[startIndex] ?? '')
+  const baseIndent = leadingWhitespaceLength(firstLine)
   const sourceLines: string[] = []
   let hasContinuation = false
+  let hasHardBreak = false
   let index = startIndex
 
   while (index < lines.length) {
-    const line = lines[index] ?? ''
-    if (!line.trim() || isOutdentedListSourceLine(line, baseIndent)) break
+    const sourceLine = readListSourceLine(lines[index] ?? '', baseIndent)
+    if (!sourceLine) break
 
-    hasContinuation ||= isListContinuationSourceLine(line, baseIndent)
-    if (!listLine(line) && !isListContinuationSourceLine(line, baseIndent)) break
-
-    sourceLines.push(line)
+    hasContinuation ||= sourceLine.hasContinuation
+    hasHardBreak ||= sourceLine.hasHardBreak
+    sourceLines.push(sourceLine.line)
     index += 1
   }
 
-  return { hasContinuation, lines: sourceLines, nextIndex: index }
+  return { hasContinuation, hasHardBreak, lines: sourceLines, nextIndex: index }
+}
+
+function readListSourceLine(
+  line: MarkdownLine,
+  baseIndent: number,
+): { hasContinuation: boolean; hasHardBreak: boolean; line: MarkdownLine } | null {
+  if (!line.trim() || isOutdentedListSourceLine(line, baseIndent)) return null
+
+  const hasContinuation = isListContinuationSourceLine(line, baseIndent)
+  if (!listLine(line) && !hasContinuation) return null
+
+  return { hasContinuation, hasHardBreak: isListHardBreakSourceLine(line), line }
 }
 
 function readOrderedParenListSourceBlock(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
@@ -487,6 +513,11 @@ function isOutdentedListSourceLine(line: MarkdownLine, baseIndent: number): bool
 
 function isListContinuationSourceLine(line: MarkdownLine, baseIndent: number): boolean {
   return listLine(line) === null && leadingWhitespaceLength(line) > baseIndent && line.trim().length > 0
+}
+
+function isListHardBreakSourceLine(line: MarkdownLine): boolean {
+  const item = listLine(line)
+  return Boolean(item && item.text.trim().length > 0 && explicitMarkdownHardBreak(line).break)
 }
 
 function isOrderedParenListSourceLine(line: MarkdownLine): boolean {
@@ -650,6 +681,7 @@ const mobileFallbackParagraphNormalizers: MarkdownNormalizer[] = [
   normalizeIndentedCodeFenceSourceMarkdown,
   normalizeIndentedListSourceMarkdown,
   normalizeListContinuationSourceMarkdown,
+  normalizeListHardBreakSourceMarkdown,
   normalizeOrderedParenListSourceMarkdown,
   normalizeIrregularOrderedDotListSourceMarkdown,
   normalizeIndentedTextSourceMarkdown,
@@ -694,6 +726,14 @@ function normalizeListContinuationSourceMarkdown(markdown: MarkdownBody): Markdo
   const lines = markdown.split('\n').map(stripHardBreakMarker)
   const source = readListSourceLines(lines, 0)
   if (!source?.hasContinuation || source.nextIndex !== lines.length) return markdown
+
+  return source.lines.join('\n')
+}
+
+function normalizeListHardBreakSourceMarkdown(markdown: MarkdownBody): MarkdownBody {
+  const lines = markdown.split('\n').map(stripHardBreakMarker)
+  const source = readListSourceLines(lines, 0)
+  if (!source?.hasHardBreak || source.nextIndex !== lines.length) return markdown
 
   return source.lines.join('\n')
 }
