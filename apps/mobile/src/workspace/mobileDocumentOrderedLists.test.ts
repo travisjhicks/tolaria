@@ -14,6 +14,13 @@ describe('mobile document ordered lists', () => {
     )
   })
 
+  it('keeps desktop ordered lists with paren markers editable as source', () => {
+    const html = mobileMarkdownBodyToTentapHtml('1) Prioritize host serenity\n2) Invite close friends early\n')
+
+    expect(html).toBe('<p>1) Prioritize host serenity<br>2) Invite close friends early</p>')
+    expect(html).not.toContain('<ol')
+  })
+
   it('serializes non-1 ordered lists back to desktop markdown', () => {
     const document: TiptapJsonNode = {
       type: 'doc',
@@ -31,11 +38,27 @@ describe('mobile document ordered lists', () => {
 
     expect(tiptapJsonToMobileMarkdown(document)).toBe('42. First retained rule\n43. Next retained rule')
   })
+
+  it('keeps ordered paren source lines after native saves', () => {
+    const document: TiptapJsonNode = {
+      type: 'doc',
+      content: [
+        paragraphNode('1) Prioritize host serenity', '2) Invite close friends early'),
+      ],
+    }
+
+    expect(tiptapJsonToMobileMarkdown(document)).toBe(
+      '1) Prioritize host serenity\n2) Invite close friends early',
+    )
+  })
 })
 
-function paragraphNode(text: string): TiptapJsonNode {
+function paragraphNode(...lines: string[]): TiptapJsonNode {
   return {
     type: 'paragraph',
-    content: [{ text, type: 'text' }],
+    content: lines.flatMap((line, index): TiptapJsonNode[] => [
+      ...(index > 0 ? [{ type: 'hardBreak' }] : []),
+      ...(line ? [{ text: line, type: 'text' }] : []),
+    ]),
   }
 }

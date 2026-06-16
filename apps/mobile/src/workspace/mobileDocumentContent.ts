@@ -169,6 +169,7 @@ const htmlBlockReaders = [
   readQuote,
   readIndentedTextSourceBlock,
   readIndentedListSourceBlock,
+  readOrderedParenListSourceBlock,
   readList,
 ]
 
@@ -320,6 +321,19 @@ function readIndentedTextSourceBlock(lines: MarkdownLines, startIndex: number): 
   return sourceLinesParagraphBlock(sourceLines, index)
 }
 
+function readOrderedParenListSourceBlock(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
+  if (!isOrderedParenListSourceLine(lines[startIndex] ?? '')) return null
+
+  const sourceLines: string[] = []
+  let index = startIndex
+  while (index < lines.length && isOrderedParenListSourceLine(lines[index] ?? '')) {
+    sourceLines.push(lines[index] ?? '')
+    index += 1
+  }
+
+  return sourceLinesParagraphBlock(sourceLines, index)
+}
+
 function sourceLinesParagraphBlock(sourceLines: MarkdownLines, nextIndex: number): ReadHtmlBlockResult {
   return {
     html: `<p>${sourceLines.map(escapeHtml).join('<br>')}</p>`,
@@ -407,6 +421,10 @@ function listLine(line: MarkdownLine): (MobileMarkdownListItem & { kind: ListKin
 
 function isIndentedListSourceLine(line: MarkdownLine): boolean {
   return hasLeadingWhitespace(line) && listLine(line) !== null
+}
+
+function isOrderedParenListSourceLine(line: MarkdownLine): boolean {
+  return /^\d+\)(?:\s+.*)?$/u.test(line)
 }
 
 function isIndentedTextSourceLine(line: MarkdownLine): boolean {
@@ -547,6 +565,9 @@ function normalizeMobileFallbackParagraphMarkdown(markdown: MarkdownBody): Markd
   const indentedListSourceMarkdown = normalizeIndentedListSourceMarkdown(markdown)
   if (indentedListSourceMarkdown !== markdown) return indentedListSourceMarkdown
 
+  const orderedParenListSourceMarkdown = normalizeOrderedParenListSourceMarkdown(markdown)
+  if (orderedParenListSourceMarkdown !== markdown) return orderedParenListSourceMarkdown
+
   const indentedTextSourceMarkdown = normalizeIndentedTextSourceMarkdown(markdown)
   if (indentedTextSourceMarkdown !== markdown) return indentedTextSourceMarkdown
 
@@ -583,6 +604,13 @@ function isIndentedCodeFenceSourceParagraph(lines: MarkdownLines): boolean {
 function normalizeIndentedListSourceMarkdown(markdown: MarkdownBody): MarkdownBody {
   const lines = markdown.split('\n').map(stripHardBreakMarker)
   if (!lines.every(isIndentedListSourceLine)) return markdown
+
+  return lines.join('\n')
+}
+
+function normalizeOrderedParenListSourceMarkdown(markdown: MarkdownBody): MarkdownBody {
+  const lines = markdown.split('\n').map(stripHardBreakMarker)
+  if (!lines.every(isOrderedParenListSourceLine)) return markdown
 
   return lines.join('\n')
 }
