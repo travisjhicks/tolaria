@@ -4,7 +4,11 @@ import {
   type LocalVaultFrontmatter,
   type LocalVaultFrontmatterValue,
 } from './localVaultFrontmatter'
-import { isMobileDisplayMathStart, readMobileDisplayMathBlock } from './mobileDisplayMath'
+import {
+  isMobileDisplayMathStart,
+  normalizeMobileDisplayMathMarkdown,
+  readMobileDisplayMathBlock,
+} from './mobileDisplayMath'
 import { mobileEditorBlocksToMarkdown, mobileFallbackBulletsToMarkdown } from './mobileEditorBlockMarkdown'
 import type { MobileNote } from './mobileWorkspaceModel'
 
@@ -348,7 +352,7 @@ function serializeBlockNode(node: TiptapJsonNode): MarkdownBody {
 }
 
 const blockNodeSerializers: Record<string, (node: TiptapJsonNode) => MarkdownBody> = {
-  paragraph: (node) => serializeInlineChildren(node.content ?? []),
+  paragraph: (node) => normalizeMobileDisplayMathMarkdown(serializeInlineChildren(node.content ?? [])),
   heading: (node) => `${'#'.repeat(headingLevel(node))} ${serializeInlineChildren(node.content ?? [])}`.trimEnd(),
   bulletList: (node) => serializeList(node, 'bullet'),
   orderedList: (node) => serializeList(node, 'ordered'),
@@ -366,7 +370,7 @@ function serializeInlineChildren(nodes: TiptapJsonNode[]): string {
 
 function serializeInlineNode(node: TiptapJsonNode): string {
   if (node.type === 'text') return applyMarks(node.text ?? '', node.marks ?? [])
-  if (node.type === 'hardBreak') return '\n'
+  if (node.type === 'hardBreak') return '  \n'
   if (node.type === 'image') return imageMarkdown(node)
   return serializeInlineChildren(node.content ?? [])
 }

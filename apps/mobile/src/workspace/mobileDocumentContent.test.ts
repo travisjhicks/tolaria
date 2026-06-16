@@ -211,4 +211,22 @@ Updated body.
 
     expect(tiptapJsonToMobileMarkdown(document)).toBe('$$\n\\int_0^1 x\\,dx\n$$')
   })
+
+  it('keeps non-math TenTap hard breaks as markdown hard break markers', () => {
+    const document: TiptapJsonNode = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            { text: 'Line one', type: 'text' },
+            { type: 'hardBreak' },
+            { text: 'Line two', type: 'text' },
+          ],
+        },
+      ],
+    }
+
+    expect(tiptapJsonToMobileMarkdown(document)).toBe('Line one  \nLine two')
+  })
 })
