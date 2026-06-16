@@ -3,10 +3,8 @@ import { KeyboardAvoidingView, StyleSheet, View } from 'react-native'
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
 import {
   mobileDocumentBody,
-  mobileDocumentWithBody,
   mobileMarkdownBodyToTentapHtml,
   mobileNoteEditableContent,
-  tiptapJsonToMobileMarkdown,
 } from '../../workspace/mobileDocumentContent'
 import type { MobileEditorBlock, MobileNote } from '../../workspace/mobileWorkspaceModel'
 import { probeProps, type MobileLayoutProbe } from '../../qa/mobileLayoutProbe'
@@ -18,6 +16,7 @@ import {
   nativeWysiwygFormattingActions,
   type NativeWysiwygCommandBridge,
 } from './MobileWysiwygFormatCommands'
+import { nativeWysiwygDocumentContentFromJson } from './MobileWysiwygDocumentSerialization'
 
 type MobileWysiwygMarkdownEditorProps = {
   blocks: MobileEditorBlock[]
@@ -233,22 +232,16 @@ function writeEditorJsonToMarkdown({
   onUpdateContent: (noteId: string, content: string) => void
   refs: NativeTentapEditorRefs
 }) {
-  const nextMarkdown = tiptapJsonToMobileMarkdown(json)
-  if (shouldSkipFirstEmptySerialization(refs, initialBodyHasContent, nextMarkdown)) return
-
-  const nextContent = mobileDocumentWithBody(refs.contentRef.current, `${nextMarkdown}\n`)
+  const nextContent = nativeWysiwygDocumentContentFromJson({
+    currentContent: refs.contentRef.current,
+    initialBodyHasContent,
+    isFirstSerialization: refs.firstEditorSerializationRef.current,
+    json,
+  })
   refs.firstEditorSerializationRef.current = false
-  if (nextContent !== refs.contentRef.current) onUpdateContent(noteId, nextContent)
-}
-
-function shouldSkipFirstEmptySerialization(
-  refs: NativeTentapEditorRefs,
-  initialBodyHasContent: boolean,
-  nextMarkdown: string,
-) {
-  const shouldSkip = refs.firstEditorSerializationRef.current && initialBodyHasContent && nextMarkdown.trim() === ''
-  if (shouldSkip) refs.firstEditorSerializationRef.current = false
-  return shouldSkip
+  if (!nextContent.skipped && nextContent.content !== refs.contentRef.current) {
+    onUpdateContent(noteId, nextContent.content)
+  }
 }
 
 function useScheduleDocumentFlush(
