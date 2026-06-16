@@ -470,7 +470,8 @@ function linkMarkdown(text: LinkLabel, attrs: Record<string, unknown> | undefine
   const href = typeof attrs?.href === 'string' ? attrs.href : ''
   if (!href) return text
   if (href.startsWith(WIKILINK_HREF_PREFIX)) {
-    return `[[${decodeURIComponent(href.slice(WIKILINK_HREF_PREFIX.length))}|${text}]]`
+    const target = decodeURIComponent(href.slice(WIKILINK_HREF_PREFIX.length))
+    return target === text ? `[[${target}]]` : `[[${target}|${text}]]`
   }
   return `[${text}](${href})`
 }

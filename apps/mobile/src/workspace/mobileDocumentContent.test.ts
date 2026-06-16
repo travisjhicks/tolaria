@@ -231,6 +231,34 @@ Updated body.
     ].join('\n'))
   })
 
+  it('serializes plain TenTap wikilinks without redundant display aliases', () => {
+    const document: TiptapJsonNode = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            { text: 'See ', type: 'text' },
+            {
+              marks: [{ attrs: { href: 'tolaria://wikilink/Project%20Alpha' }, type: 'link' }],
+              text: 'Project Alpha',
+              type: 'text',
+            },
+            { text: ' and ', type: 'text' },
+            {
+              marks: [{ attrs: { href: 'tolaria://wikilink/Tolaria%2FMobile%20UI' }, type: 'link' }],
+              text: 'Mobile UI',
+              type: 'text',
+            },
+            { text: '.', type: 'text' },
+          ],
+        },
+      ],
+    }
+
+    expect(tiptapJsonToMobileMarkdown(document)).toBe('See [[Project Alpha]] and [[Tolaria/Mobile UI|Mobile UI]].')
+  })
+
   it('serializes display math hard breaks back to durable markdown source', () => {
     const document: TiptapJsonNode = {
       type: 'doc',
