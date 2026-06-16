@@ -13,6 +13,33 @@ describe('mobile wikilink resolution', () => {
       }),
     ], 'alpha project')).toBe('projects/project-alpha.md')
   })
+
+  it('resolves title targets with the same diacritic folding as search and autocomplete', () => {
+    expect(mobileNoteIdForWikilinkTarget([
+      note({
+        id: 'journal/cafe-notes.md',
+        path: 'journal/cafe-notes.md',
+        title: 'Café Notes',
+      }),
+    ], 'Cafe Notes')).toBe('journal/cafe-notes.md')
+  })
+
+  it('resolves md-suffixed path and title targets to the same note identity', () => {
+    expect(mobileNoteIdForWikilinkTarget([
+      note({
+        id: 'research/project-alpha.md',
+        path: 'research/project-alpha.md',
+        title: 'Project Alpha',
+      }),
+    ], 'research/project-alpha.md')).toBe('research/project-alpha.md')
+    expect(mobileNoteIdForWikilinkTarget([
+      note({
+        id: 'research/project-alpha.md',
+        path: 'research/project-alpha.md',
+        title: 'Project Alpha',
+      }),
+    ], 'Project Alpha.md')).toBe('research/project-alpha.md')
+  })
 })
 
 function note(overrides: Partial<MobileNote>): MobileNote {

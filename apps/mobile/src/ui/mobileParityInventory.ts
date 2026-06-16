@@ -197,7 +197,7 @@ export const mobileParityInventory = [
     surface: 'Web fallback document editor',
   },
   {
-    assertions: ['editor computed styles', 'markdown block parser regression checks'],
+    assertions: ['editor computed styles', 'markdown block parser regression checks', 'wikilink tap target resolution parity'],
     contracts: ['desktopEditorParity'],
     desktopSource: 'EditorTheme.css, theme.json, BlockNote markdown block rendering',
     mobileFile: 'src/components/workspace/MobileEditorBlocks.tsx',

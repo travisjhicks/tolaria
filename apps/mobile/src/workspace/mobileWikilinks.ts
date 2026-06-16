@@ -1,4 +1,5 @@
 import type { MobileNote } from './mobileWorkspaceModel'
+import { normalizedMobileSearchQuery } from './mobileNoteSearch'
 
 type WikilinkText = string
 type WikilinkTarget = string
@@ -18,29 +19,6 @@ export function parseMobileWikilink(value: WikilinkText): MobileParsedWikilink |
   }
 }
 
-export function mobileNoteIdForWikilinkTarget(
-  notes: MobileNote[],
-  target: WikilinkTarget,
-): string | null {
-  return mobileNoteForWikilinkTarget(notes, target)?.id ?? null
-}
-
-export function mobileNoteForWikilinkTarget(
-  notes: MobileNote[],
-  target: WikilinkTarget,
-): MobileNote | null {
-  const normalizedTarget = normalizeWikilinkTarget(target)
-  if (!normalizedTarget) return null
-
-  return notes.find((note) => mobileNoteTargetCandidates(note).some((candidate) => {
-    return normalizeWikilinkTarget(candidate) === normalizedTarget
-  })) ?? null
-}
-
-export function mobileWikilinkTargetForNote(note: MobileNote): WikilinkTarget {
-  return (note.path ?? note.id).replace(/\.[^.]+$/u, '')
-}
-
 function mobileNoteTargetCandidates(note: MobileNote): string[] {
   const idStem = note.id.replace(/\.[^.]+$/u, '')
   const pathStem = (note.path ?? note.id).replace(/\.[^.]+$/u, '')
@@ -56,5 +34,28 @@ function mobileNoteTargetCandidates(note: MobileNote): string[] {
 }
 
 function normalizeWikilinkTarget(value: string): string {
-  return value.trim().toLowerCase()
+  return normalizedMobileSearchQuery(value).replace(/\.md$/iu, '')
+}
+
+export function mobileNoteForWikilinkTarget(
+  notes: MobileNote[],
+  target: WikilinkTarget,
+): MobileNote | null {
+  const normalizedTarget = normalizeWikilinkTarget(target)
+  if (!normalizedTarget) return null
+
+  return notes.find((note) => mobileNoteTargetCandidates(note).some((candidate) => {
+    return normalizeWikilinkTarget(candidate) === normalizedTarget
+  })) ?? null
+}
+
+export function mobileNoteIdForWikilinkTarget(
+  notes: MobileNote[],
+  target: WikilinkTarget,
+): string | null {
+  return mobileNoteForWikilinkTarget(notes, target)?.id ?? null
+}
+
+export function mobileWikilinkTargetForNote(note: MobileNote): WikilinkTarget {
+  return (note.path ?? note.id).replace(/\.[^.]+$/u, '')
 }
