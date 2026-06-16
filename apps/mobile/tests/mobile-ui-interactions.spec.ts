@@ -546,6 +546,7 @@ async function addDatePropertyFromSuggestion(page: PageLike) {
   await page.getByTestId('property-placeholder-suggested-date').click()
   await expect(page.getByTestId('workspace-property-name-input')).toBeVisible()
   await expect(page.getByTestId('workspace-property-name-input')).toHaveValue('Date')
+  await expect(page.getByTestId('workspace-property-kind-date')).toHaveAttribute('aria-selected', 'true')
   await page.getByTestId('workspace-property-value-input').fill('2026-06-14')
   await page.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()

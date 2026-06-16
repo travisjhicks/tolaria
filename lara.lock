@@ -697,6 +697,10 @@ files:
     inspector.properties.valueKind.list: 4ee29ca12c7d126654bd0e5275de6135
     inspector.properties.valueKind.number: b2ee912b91d69b435159c7c3f6df7f5f
     inspector.properties.valueKind.boolean: 8ecd4db6773b5fc170ddd9d33129aae3
+    inspector.properties.valueKind.status: ec53a8c4f07baed5d8825072c89799be
+    inspector.properties.valueKind.date: 44749712dbec183e983dcd78a7736c41
+    inspector.properties.valueKind.url: e6b391a8d2c4d45902a23a8b6585703d
+    inspector.properties.valueKind.color: cb5feb1b7314637725a2e73bdc9f7295
     inspector.relationship.add: ec211f7c20af43e742bf2570c3cb84f9
     inspector.relationship.addRelationship: d2b0cb45dcdbb00ee70db397c36f73ad
     inspector.relationship.name: 7ed3fccc071d6939eff211b1a6fd9696

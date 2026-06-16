@@ -73,6 +73,7 @@ function PropertyValueKindButton({
 }) {
   return (
     <Pressable
+      aria-selected={selected}
       accessibilityLabel={label}
       accessibilityRole="button"
       accessibilityState={{ disabled, selected }}
@@ -126,6 +127,10 @@ const propertyValueKindOptions: Array<{ kind: MobilePropertyValueKind; labelKey:
   { kind: 'list', labelKey: 'inspector.properties.valueKind.list' },
   { kind: 'number', labelKey: 'inspector.properties.valueKind.number' },
   { kind: 'boolean', labelKey: 'inspector.properties.valueKind.boolean' },
+  { kind: 'status', labelKey: 'inspector.properties.valueKind.status' },
+  { kind: 'date', labelKey: 'inspector.properties.valueKind.date' },
+  { kind: 'url', labelKey: 'inspector.properties.valueKind.url' },
+  { kind: 'color', labelKey: 'inspector.properties.valueKind.color' },
 ]
 
 const styles = StyleSheet.create({

@@ -729,7 +729,7 @@ function addPropertyFields(key?: string): ReadOnlyFormField[] {
   return [
     { key: 'propertyName', value: key ?? '' },
     { key: 'propertyValue', value: '' },
-    { key: 'propertyValueKind', value: 'string' },
+    { key: 'propertyValueKind', value: mobilePropertyValueKindForKey(key ?? '', 'string') },
   ]
 }
 
