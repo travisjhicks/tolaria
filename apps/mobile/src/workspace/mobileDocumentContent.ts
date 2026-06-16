@@ -424,11 +424,21 @@ function isMarkdownTableDivider(line: MarkdownLine): boolean {
 
 function inlineMarkdownToHtml(markdown: MarkdownLine): string {
   const codeSpans: string[] = []
-  const escapedMarkdown = escapeHtml(markdown).replace(/`([^`]+)`/g, (_match, code: PlainText) => {
+  const escapedMarkdownChars: string[] = []
+  const markdownWithoutCodeSpans = markdown.replace(/`([^`]+)`/g, (_match, code: PlainText) => {
     const token = codeSpanToken(codeSpans.length)
-    codeSpans.push(`<code>${code}</code>`)
+    codeSpans.push(`<code>${escapeHtml(code)}</code>`)
     return token
   })
+  const protectedMarkdown = markdownWithoutCodeSpans.replace(
+    /\\([\\`*_[\]{}()#+\-.!|<>~])/g,
+    (_match, char: PlainText) => {
+      const token = escapedMarkdownToken(escapedMarkdownChars.length)
+      escapedMarkdownChars.push(escapeHtml(char))
+      return token
+    },
+  )
+  const escapedMarkdown = escapeHtml(protectedMarkdown)
 
   const html = linkifyInlineMarkdown(escapedMarkdown)
     .replace(/==([^=]+)==/g, '<mark>$1</mark>')
@@ -439,7 +449,7 @@ function inlineMarkdownToHtml(markdown: MarkdownLine): string {
     .replace(/_([^_]+)_/g, '<em>$1</em>')
     .replace(/~~([^~]+)~~/g, '<s>$1</s>')
 
-  return restoreCodeSpanTokens(html, codeSpans)
+  return restoreEscapedMarkdownTokens(restoreCodeSpanTokens(html, codeSpans), escapedMarkdownChars)
 }
 
 function linkifyInlineMarkdown(markdown: MarkdownLine): string {
@@ -493,7 +503,7 @@ function serializeBlockNode(node: TiptapJsonNode): MarkdownBody {
 }
 
 const blockNodeSerializers: Record<string, (node: TiptapJsonNode) => MarkdownBody> = {
-  paragraph: (node) => normalizeMobileFallbackParagraphMarkdown(serializeInlineChildren(node.content ?? [])),
+  paragraph: serializeParagraph,
   heading: (node) => `${'#'.repeat(headingLevel(node))} ${serializeInlineChildren(node.content ?? [])}`.trimEnd(),
   bulletList: (node) => serializeList(node, 'bullet'),
   orderedList: (node) => serializeList(node, 'ordered'),
@@ -503,6 +513,14 @@ const blockNodeSerializers: Record<string, (node: TiptapJsonNode) => MarkdownBod
   horizontalRule: () => '---',
   image: imageMarkdown,
   table: tableMarkdown,
+}
+
+function serializeParagraph(node: TiptapJsonNode): MarkdownBody {
+  const rawMarkdown = serializeInlineChildren(node.content ?? [])
+  const normalizedMarkdown = normalizeMobileFallbackParagraphMarkdown(rawMarkdown)
+  return normalizedMarkdown !== rawMarkdown
+    ? normalizedMarkdown
+    : serializeInlineChildren(node.content ?? [], { escapePlainText: true })
 }
 
 function normalizeMobileFallbackParagraphMarkdown(markdown: MarkdownBody): MarkdownBody {
@@ -580,15 +598,26 @@ function stripHardBreakMarker(line: MarkdownLine): MarkdownLine {
   return line.endsWith('  ') ? line.slice(0, -2) : line
 }
 
-function serializeInlineChildren(nodes: TiptapJsonNode[]): string {
-  return nodes.map((node) => serializeInlineNode(node)).join('')
+function serializeInlineChildren(
+  nodes: TiptapJsonNode[],
+  options?: { escapePlainText?: boolean },
+): string {
+  return nodes.map((node) => serializeInlineNode(node, options)).join('')
 }
 
-function serializeInlineNode(node: TiptapJsonNode): string {
-  if (node.type === 'text') return applyMarks(node.text ?? '', node.marks ?? [])
+function serializeInlineNode(node: TiptapJsonNode, options?: { escapePlainText?: boolean }): string {
+  if (node.type === 'text') return serializeTextNode(node, options)
   if (node.type === 'hardBreak') return '  \n'
   if (node.type === 'image') return imageMarkdown(node)
-  return serializeInlineChildren(node.content ?? [])
+  return serializeInlineChildren(node.content ?? [], options)
+}
+
+function serializeTextNode(node: TiptapJsonNode, options?: { escapePlainText?: boolean }): string {
+  const text = node.text ?? ''
+  const marks = node.marks ?? []
+  return options?.escapePlainText === true && marks.length === 0
+    ? escapePlainInlineMarkdown(text)
+    : applyMarks(text, marks)
 }
 
 function serializeList(node: TiptapJsonNode, kind: ListKind): MarkdownBody {
@@ -683,6 +712,12 @@ function escapeMarkdownLinkDestination(href: UrlText): UrlText {
   return href.replace(/\\/g, '\\\\').replace(/\)/g, '\\)')
 }
 
+function escapePlainInlineMarkdown(text: PlainText): PlainText {
+  return text
+    .replace(/\\/g, '\\\\')
+    .replace(/([`*_[\]])/g, '\\$1')
+}
+
 function plainText(nodes: TiptapJsonNode[]): string {
   return nodes.map((node) => (
     node.type === 'text' ? node.text ?? '' : plainText(node.content ?? [])
@@ -739,8 +774,18 @@ function codeSpanToken(index: number): string {
   return `\u0000CODESPAN${index}\u0000`
 }
 
+function escapedMarkdownToken(index: number): string {
+  return `\u0000ESCAPEDMARKDOWN${index}\u0000`
+}
+
 function restoreCodeSpanTokens(html: HtmlSnippet, codeSpans: HtmlSnippet[]): HtmlSnippet {
   return codeSpans.reduce((current, codeSpan, index) => (
     current.replaceAll(codeSpanToken(index), codeSpan)
+  ), html)
+}
+
+function restoreEscapedMarkdownTokens(html: HtmlSnippet, escapedMarkdownChars: HtmlSnippet[]): HtmlSnippet {
+  return escapedMarkdownChars.reduce((current, escapedChar, index) => (
+    current.replaceAll(escapedMarkdownToken(index), escapedChar)
   ), html)
 }

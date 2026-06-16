@@ -135,6 +135,13 @@ Updated body.
     expect(html).not.toContain('<code><mark>literal</mark></code>')
   })
 
+  it('hydrates escaped inline markdown punctuation as literal text', () => {
+    const html = mobileMarkdownBodyToTentapHtml('Keep \\(No highlights\\) and ¯\\_(ツ)_/¯\n')
+
+    expect(html).toBe('<p>Keep (No highlights) and ¯_(ツ)_/¯</p>')
+    expect(html).not.toContain('<em>')
+  })
+
   it('keeps unsupported markdown table lines editable in TenTap basic mode', () => {
     const html = mobileMarkdownBodyToTentapHtml('| Surface | Target |\n| --- | --- |\n| Editor | WYSIWYG |\n')
 
@@ -427,6 +434,12 @@ Updated body.
     expect(tiptapJsonToMobileMarkdown(document)).toBe(
       'Location: <https://example.com/room?id=42> and <luca@example.com>',
     )
+  })
+
+  it('escapes literal inline markdown punctuation when serializing plain text', () => {
+    const document = paragraphDocument('Keep (No highlights) and ¯_(ツ)_/¯')
+
+    expect(tiptapJsonToMobileMarkdown(document)).toBe('Keep (No highlights) and ¯\\_(ツ)\\_/¯')
   })
 
   it('serializes display math hard breaks back to durable markdown source', () => {
