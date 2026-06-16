@@ -8,6 +8,11 @@ import {
   type NativeWorkspaceSelection,
 } from '../workspace/nativeWorkspacePicker'
 import { initialMobileEditorStateFromMode } from './mobileEditorMode'
+import {
+  nativeWysiwygMutationProbeEnabled,
+  nativeWysiwygMutationProbeInitialContent,
+} from '../qa/nativeWysiwygMutationProbe'
+import type { MobileNote, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
 
 export function MobileUiLab() {
   const { width } = useWindowDimensions()
@@ -24,7 +29,9 @@ export function MobileUiLab() {
   }
   const { initialEditorEditing, initialEditorEditingMode } = initialMobileEditorStateFromMode(editorMode(searchParams))
   const layoutProbe = layoutProbeEnabled(searchParams)
-  const snapshot = readOnlyWorkspaceRepository.readSnapshot(repositoryRequest)
+  const wysiwygMutationProbe = nativeWysiwygMutationProbeEnabled(searchParams)
+  const baseSnapshot = readOnlyWorkspaceRepository.readSnapshot(repositoryRequest)
+  const snapshot = wysiwygMutationProbe ? snapshotWithWysiwygMutationProbeContent(baseSnapshot) : baseSnapshot
   const workspaceKey = mobileWorkspaceKey({
     initialEditorEditing,
     initialEditorEditingMode,
@@ -33,6 +40,7 @@ export function MobileUiLab() {
     scenarioId,
     snapshot,
     source,
+    wysiwygMutationProbe,
   })
   const handleOpenNativeVault = useCallback(async () => {
     const selection = await pickNativeWorkspaceDirectory(repositoryRequest.vaultRootUri)
@@ -50,6 +58,7 @@ export function MobileUiLab() {
         repository={readOnlyWorkspaceRepository}
         repositoryRequest={repositoryRequest}
         snapshot={snapshot}
+        wysiwygMutationProbe={wysiwygMutationProbe}
       />
     )
   }
@@ -113,6 +122,26 @@ function layoutProbeEnabled(searchParams: URLSearchParams) {
   return searchParams.get('layoutProbe') === '1' || envFlagEnabled('EXPO_PUBLIC_TOLARIA_LAYOUT_PROBE')
 }
 
+function snapshotWithWysiwygMutationProbeContent(snapshot: MobileWorkspaceSnapshot): MobileWorkspaceSnapshot {
+  const selectedNoteId = snapshot.selectedNoteId ?? snapshot.notes[0]?.id
+  if (!selectedNoteId) return snapshot
+
+  const seedSelectedNote = (note: MobileNote) => {
+    if (note.id !== selectedNoteId || note.rawContent !== undefined) return note
+
+    return {
+      ...note,
+      rawContent: nativeWysiwygMutationProbeInitialContent(note),
+    }
+  }
+
+  return {
+    ...snapshot,
+    allNotes: snapshot.allNotes?.map(seedSelectedNote),
+    notes: snapshot.notes.map(seedSelectedNote),
+  }
+}
+
 function mobileWorkspaceKey({
   initialEditorEditing,
   initialEditorEditingMode,
@@ -121,6 +150,7 @@ function mobileWorkspaceKey({
   scenarioId,
   snapshot,
   source,
+  wysiwygMutationProbe,
 }: {
   initialEditorEditing: boolean
   initialEditorEditingMode: string
@@ -129,6 +159,7 @@ function mobileWorkspaceKey({
   scenarioId: string | null
   snapshot: ReturnType<typeof readOnlyWorkspaceRepository.readSnapshot>
   source: ReturnType<typeof currentSnapshotSource>
+  wysiwygMutationProbe: boolean
 }) {
   const sourceInfo = snapshot.source
 
@@ -138,6 +169,7 @@ function mobileWorkspaceKey({
     qaRun ?? 'interactive',
     initialEditorEditing ? 'raw-editor' : 'read-editor',
     initialEditorEditingMode,
+    wysiwygMutationProbe ? 'wysiwyg-mutation-probe' : 'no-wysiwyg-mutation-probe',
     layoutProbeMode(layoutProbe),
     sourceInfo ? sourceInfo.kind : 'fixture',
     sourceInfo ? sourceInfo.label : 'Tolaria Vault',

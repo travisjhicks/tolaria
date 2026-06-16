@@ -23,6 +23,7 @@
     "mobile:qa:ios-wysiwyg": "node apps/mobile/scripts/capture-ios-simulator.mjs --landscape --out /tmp/tolaria-mobile-ui-simulator/ipad-wysiwyg-editor.png --open-url 'exp://127.0.0.1:8081/--/?layoutProbe=1&editorMode=wysiwyg' --wait 5000",
     "mobile:qa:ios-layout": "node apps/mobile/scripts/assert-ios-layout-metrics.mjs --open-url 'exp://127.0.0.1:8081/--/?layoutProbe=1' --wait 3000",
     "mobile:qa:ios-wysiwyg-layout": "node apps/mobile/scripts/assert-ios-layout-metrics.mjs --require-wysiwyg --open-url 'exp://127.0.0.1:8081/--/?layoutProbe=1&editorMode=wysiwyg' --wait 5000",
+    "mobile:qa:ios-wysiwyg-mutation": "node apps/mobile/scripts/assert-ios-layout-metrics.mjs --require-wysiwyg --require-wysiwyg-mutation --open-url 'exp://127.0.0.1:8081/--/?layoutProbe=1&editorMode=wysiwyg' --wait 6500",
     "mobile:qa:screenshots": "pnpm mobile:export:web && playwright test --config apps/mobile/playwright.config.ts",
     "mobile:start": "pnpm --filter @tolaria/mobile start",
     "mobile:ios": "pnpm --filter @tolaria/mobile ios",

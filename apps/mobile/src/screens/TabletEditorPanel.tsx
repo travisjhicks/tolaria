@@ -35,6 +35,7 @@ type TabletEditorPanelProps = {
   onOpenMoreActions: () => void
   onToggleFavorite: () => void
   onUpdateContent: (noteId: string, content: string) => void
+  wysiwygMutationProbe?: boolean
 }
 
 type EditorToolbarProps = {
@@ -58,6 +59,7 @@ type EditorContentProps = {
   layoutProbe: MobileLayoutProbe
   onNavigateWikilink: (target: string) => void
   onUpdateContent: (noteId: string, content: string) => void
+  wysiwygMutationProbe?: boolean
 }
 
 export type EditorEditingMode = 'source' | 'wysiwyg'
@@ -76,6 +78,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
     onOpenMoreActions,
     onToggleFavorite,
     onUpdateContent,
+    wysiwygMutationProbe = false,
   } = props
   const [editing, setEditing] = useState(initialEditing)
   const [editingMode, setEditingMode] = useState<EditorEditingMode>(initialEditingMode)
@@ -123,6 +126,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
             notes={notes}
             onNavigateWikilink={onNavigateWikilink}
             onUpdateContent={onUpdateContent}
+            wysiwygMutationProbe={wysiwygMutationProbe}
           />
         </View>
       ) : (
@@ -138,6 +142,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
             notes={notes}
             onNavigateWikilink={onNavigateWikilink}
             onUpdateContent={onUpdateContent}
+            wysiwygMutationProbe={wysiwygMutationProbe}
           />
         </ScrollView>
       )}
@@ -204,6 +209,7 @@ function EditorContent({
   notes,
   onNavigateWikilink,
   onUpdateContent,
+  wysiwygMutationProbe = false,
 }: EditorContentProps) {
   if (editing) {
     if (editingMode === 'source') {
@@ -230,6 +236,7 @@ function EditorContent({
         note={note}
         notes={notes}
         onUpdateContent={onUpdateContent}
+        wysiwygMutationProbe={wysiwygMutationProbe}
       />
     )
   }

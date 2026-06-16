@@ -3,9 +3,15 @@ import { MobileMarkdownSourceEditor, type MobileMarkdownSourceEditorProps } from
 
 type MobileWysiwygMarkdownEditorProps = MobileMarkdownSourceEditorProps & {
   layoutProbe?: MobileLayoutProbe
+  wysiwygMutationProbe?: boolean
 }
 
-export function MobileWysiwygMarkdownEditor({ layoutProbe, ...props }: MobileWysiwygMarkdownEditorProps) {
+export function MobileWysiwygMarkdownEditor({
+  layoutProbe,
+  wysiwygMutationProbe,
+  ...props
+}: MobileWysiwygMarkdownEditorProps) {
   void layoutProbe
+  void wysiwygMutationProbe
   return <MobileMarkdownSourceEditor {...props} />
 }

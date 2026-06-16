@@ -184,4 +184,5 @@ export type TabletWorkspaceChromeProps = {
   typeSortPropertyOptions: string[]
   viewPropertyOptions: string[]
   viewSortPropertyOptions: string[]
+  wysiwygMutationProbe?: boolean
 }

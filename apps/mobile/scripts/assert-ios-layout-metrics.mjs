@@ -10,6 +10,12 @@ import {
   parseNativeLayoutMetrics,
 } from '../src/qa/nativeLayoutMetrics.ts'
 import { assertNativeQaOpenUrl } from '../src/qa/nativeQaUrls.ts'
+import {
+  assertNativeWysiwygMutationProofs,
+  formatNativeWysiwygMutationFailures,
+  nativeWysiwygMutationPreProofLogText,
+  parseNativeWysiwygMutationProofs,
+} from '../src/qa/nativeWysiwygMutationProbe.ts'
 
 const defaultLogWindow = '5m'
 const defaultExpoGoBundleId = 'host.exp.Exponent'
@@ -26,6 +32,8 @@ Options:
   --open-url <url>      Open a simulator URL before collecting logs. Use Expo deep links with layoutProbe=1.
                        http(s) URLs are rejected because they open Mobile Safari, not the native app.
   --require-wysiwyg     Also require WYSIWYG editor layout metrics from editorMode=wysiwyg QA URLs.
+  --require-wysiwyg-mutation
+                       Also require the native TenTap mutation/save proof from wysiwygMutationProbe=1.
   --wait <ms>           Delay after opening a URL before collecting logs. Defaults to 3000.
   --help                Show this help.
 `)
@@ -76,7 +84,7 @@ function selectDevice(requestedDevice) {
   return selected.udid
 }
 
-function collectSimulatorLogs(device, { last, start }) {
+function collectSimulatorLogs(device, { includeWysiwygMutation, last, start }) {
   const timeArgs = start ? ['--start', start] : ['--last', last]
   return run('xcrun', [
     'simctl',
@@ -88,8 +96,15 @@ function collectSimulatorLogs(device, { last, start }) {
     '--style',
     'compact',
     '--predicate',
-    'eventMessage CONTAINS "TOLARIA_MOBILE_LAYOUT_METRIC"',
+    simulatorLogPredicate(includeWysiwygMutation),
   ])
+}
+
+function simulatorLogPredicate(includeWysiwygMutation) {
+  const layoutPredicate = 'eventMessage CONTAINS "TOLARIA_MOBILE_LAYOUT_METRIC"'
+  if (!includeWysiwygMutation) return layoutPredicate
+
+  return `${layoutPredicate} OR eventMessage CONTAINS "TOLARIA_MOBILE_WYSIWYG_MUTATION_PROBE"`
 }
 
 async function openFreshProbeUrl(device, url, waitMs) {
@@ -164,27 +179,49 @@ async function main() {
   const openUrl = readOption(args, '--open-url', undefined)
   const last = readOption(args, '--last', defaultLogWindow)
   const requireWysiwyg = args.includes('--require-wysiwyg')
+  const requireWysiwygMutation = args.includes('--require-wysiwyg-mutation')
   const waitMs = Number(readOption(args, '--wait', '3000'))
   let logStart
 
   if (openUrl) {
     assertNativeQaOpenUrl(openUrl, 'Native iOS layout metrics')
     logStart = simulatorLogTimestamp(new Date(Date.now() - 1000))
-    await openFreshProbeUrl(device, openUrl, waitMs)
+    await openFreshProbeUrl(device, nativeQaUrl(openUrl, { requireWysiwygMutation }), waitMs)
   }
 
-  const logs = collectSimulatorLogs(device, { last, start: logStart })
-  const metrics = latestNativeLayoutMetrics(parseNativeLayoutMetrics(logs))
+  const logs = collectSimulatorLogs(device, {
+    includeWysiwygMutation: requireWysiwygMutation,
+    last,
+    start: logStart,
+  })
+  const layoutLogs = requireWysiwygMutation ? nativeWysiwygMutationPreProofLogText(logs) : logs
+  const metrics = latestNativeLayoutMetrics(parseNativeLayoutMetrics(layoutLogs))
   const failures = [
     ...assertNativeMobileLayoutMetrics(metrics),
     ...(requireWysiwyg ? assertNativeWysiwygEditorLayoutMetrics(metrics) : []),
   ]
+  const mutationFailures = requireWysiwygMutation
+    ? assertNativeWysiwygMutationProofs(parseNativeWysiwygMutationProofs(logs))
+    : []
 
-  if (failures.length > 0) {
-    throw new Error(`Native iOS layout metrics failed:\n${formatNativeLayoutAssertionFailures(failures)}`)
+  if (failures.length > 0 || mutationFailures.length > 0) {
+    throw new Error(formatNativeQaFailures({ failures, mutationFailures }))
   }
 
   console.log(`Native iOS layout metrics passed (${Object.keys(metrics).length} metrics).`)
+}
+
+function nativeQaUrl(openUrl, { requireWysiwygMutation }) {
+  return requireWysiwygMutation
+    ? appendQueryParam(openUrl, 'wysiwygMutationProbe', '1')
+    : openUrl
+}
+
+function formatNativeQaFailures({ failures, mutationFailures }) {
+  return [
+    failures.length > 0 ? `Native iOS layout metrics failed:\n${formatNativeLayoutAssertionFailures(failures)}` : '',
+    mutationFailures.length > 0 ? `Native WYSIWYG mutation proof failed:\n${formatNativeWysiwygMutationFailures(mutationFailures)}` : '',
+  ].filter(Boolean).join('\n')
 }
 
 main().catch((error) => {

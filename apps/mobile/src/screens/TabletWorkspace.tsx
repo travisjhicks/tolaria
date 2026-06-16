@@ -26,6 +26,7 @@ export function TabletWorkspace({
   repository = fixtureReadOnlyWorkspaceRepository,
   repositoryRequest,
   snapshot,
+  wysiwygMutationProbe = false,
 }: {
   initialEditorEditing?: boolean
   initialEditorEditingMode?: TabletWorkspaceChromeProps['initialEditorEditingMode']
@@ -34,6 +35,7 @@ export function TabletWorkspace({
   repository?: ReadOnlyWorkspaceRepository
   repositoryRequest?: ReadOnlyWorkspaceRequest
   snapshot: MobileWorkspaceSnapshot
+  wysiwygMutationProbe?: boolean
 }) {
   const controller = useTabletWorkspaceController({ repository, repositoryRequest, snapshot })
   const { compactTablet, defaultPropertiesVisible } = useTabletScreenMode()
@@ -46,6 +48,7 @@ export function TabletWorkspace({
         initialEditorEditing={initialEditorEditing}
         initialEditorEditingMode={initialEditorEditingMode}
         layoutProbe={layoutProbe}
+        wysiwygMutationProbe={wysiwygMutationProbe}
         {...controller}
       />
       <MobileSyncStatusBar sync={controller.snapshot.sync} onOpenLocalVault={onOpenNativeVault} />
@@ -66,45 +69,7 @@ function useTabletScreenMode() {
 }
 
 function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
-  const {
-    activeFolderId,
-    activeItemId,
-    compactTablet,
-    defaultPropertiesVisible,
-    editorBlocks,
-    editorBullets,
-    initialEditorEditing,
-    initialEditorEditingMode,
-    layoutProbe,
-    noteListProperties,
-    noteListSubtitle,
-    noteListTitle,
-    notes,
-    onAddProperty,
-    onAddRelationship,
-    onDeleteProperty,
-    onEditProperty,
-    onOpenChangeNoteType,
-    onOpenCreateFolder,
-    onOpenCreateNote,
-    onOpenCreateType,
-    onOpenCreateView,
-    onOpenFolderActions,
-    onOpenMoreActions,
-    onOpenSearch,
-    onOpenTypeActions,
-    onOpenViewActions,
-    onRemoveRelationship,
-    onSelectFolder,
-    onSelectNote,
-    onSelectSidebarItem,
-    onToggleFavorite,
-    onUpdateNoteContent,
-    searchQuery,
-    selectedNote,
-    selectedNoteId,
-    snapshot,
-  } = props
+  const { compactTablet, defaultPropertiesVisible, onSelectNote, snapshot } = props
   const gestures = useTabletPanelGestures(compactTablet, defaultPropertiesVisible)
   const suggestionNotes = snapshot.allNotes ?? snapshot.notes
   const handleNavigateWikilink = useCallback((target: string) => {
@@ -114,73 +79,176 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
 
   return (
     <View style={styles.shell}>
-      {gestures.showSidebar ? (
-        <View {...gestures.sidebarSwipe} style={styles.panelHost}>
-          <MobileWorkspaceSidebar
-            activeFolderId={activeFolderId}
-            activeItemId={activeItemId}
-            layoutProbe={layoutProbe}
-            sections={snapshot.sidebarSections}
-            title={snapshot.source?.label}
-            onCreateFolder={onOpenCreateFolder}
-            onCreateType={onOpenCreateType}
-            onCreateView={onOpenCreateView}
-            onOpenFolderActions={onOpenFolderActions}
-            onOpenTypeActions={onOpenTypeActions}
-            onOpenViewActions={onOpenViewActions}
-            onSelectFolder={onSelectFolder}
-            onSelectItem={onSelectSidebarItem}
-          />
-        </View>
-      ) : <SwipeRail edge="left" swipeHandlers={gestures.sidebarRevealSwipe} />}
-      {gestures.noteListVisible ? (
-        <View {...gestures.noteListSwipe} style={styles.panelHost}>
-          <MobileNoteListPanel
-            compact={compactTablet}
-            displayPropertyKeys={noteListProperties}
-            layoutProbe={layoutProbe}
-            notes={notes}
-            searchQuery={searchQuery || undefined}
-            selectedNoteId={selectedNoteId}
-            subtitle={noteListSubtitle}
-            title={noteListTitle}
-            onOpenCreateNote={onOpenCreateNote}
-            onOpenSearch={onOpenSearch}
-            onSelectNote={onSelectNote}
-          />
-        </View>
-      ) : <SwipeRail edge="left" swipeHandlers={gestures.noteListRevealSwipe} />}
-      <TabletEditorPanel
-        blocks={editorBlocks}
-        bullets={editorBullets}
-        compact={compactTablet}
-        initialEditing={initialEditorEditing}
-        initialEditingMode={initialEditorEditingMode}
-        layoutProbe={layoutProbe}
-        note={selectedNote}
-        notes={suggestionNotes}
+      <TabletSidebarHost {...props} gestures={gestures} />
+      <TabletNoteListHost {...props} gestures={gestures} />
+      <TabletEditorPanelHost
+        {...props}
+        suggestionNotes={suggestionNotes}
         onNavigateWikilink={handleNavigateWikilink}
-        onOpenMoreActions={onOpenMoreActions}
-        onToggleFavorite={onToggleFavorite}
-        onUpdateContent={onUpdateNoteContent}
       />
-      {gestures.propertiesVisible ? (
-        <View {...gestures.propertiesSwipe} style={styles.panelHost}>
-          <MobilePropertiesPanel
-            compact={compactTablet}
-            note={selectedNote}
-            onAddProperty={onAddProperty}
-            onAddRelationship={onAddRelationship}
-            onDeleteProperty={onDeleteProperty}
-            onEditProperty={onEditProperty}
-            onOpenChangeNoteType={onOpenChangeNoteType}
-            onSelectNote={onSelectNote}
-            onRemoveRelationship={onRemoveRelationship}
-            typeDefinitions={snapshot.typeDefinitions}
-          />
-        </View>
-      ) : <SwipeRail edge="right" swipeHandlers={gestures.propertiesRevealSwipe} />}
+      <TabletPropertiesPanelHost {...props} gestures={gestures} />
       <WorkspaceActionSheetHost {...props} suggestionNotes={suggestionNotes} />
+    </View>
+  )
+}
+
+type TabletPanelGestures = ReturnType<typeof useTabletPanelGestures>
+type TabletPanelHostProps = TabletWorkspaceChromeProps & { gestures: TabletPanelGestures }
+
+function TabletSidebarHost({
+  activeFolderId,
+  activeItemId,
+  gestures,
+  layoutProbe,
+  onOpenCreateFolder,
+  onOpenCreateType,
+  onOpenCreateView,
+  onOpenFolderActions,
+  onOpenTypeActions,
+  onOpenViewActions,
+  onSelectFolder,
+  onSelectSidebarItem,
+  snapshot,
+}: TabletPanelHostProps) {
+  if (!gestures.showSidebar) return <SwipeRail edge="left" swipeHandlers={gestures.sidebarRevealSwipe} />
+
+  return (
+    <View {...gestures.sidebarSwipe} style={styles.panelHost}>
+      <MobileWorkspaceSidebar
+        activeFolderId={activeFolderId}
+        activeItemId={activeItemId}
+        layoutProbe={layoutProbe}
+        sections={snapshot.sidebarSections}
+        title={snapshot.source?.label}
+        onCreateFolder={onOpenCreateFolder}
+        onCreateType={onOpenCreateType}
+        onCreateView={onOpenCreateView}
+        onOpenFolderActions={onOpenFolderActions}
+        onOpenTypeActions={onOpenTypeActions}
+        onOpenViewActions={onOpenViewActions}
+        onSelectFolder={onSelectFolder}
+        onSelectItem={onSelectSidebarItem}
+      />
+    </View>
+  )
+}
+
+function TabletNoteListHost({
+  compactTablet,
+  gestures,
+  layoutProbe,
+  noteListProperties,
+  noteListSubtitle,
+  noteListTitle,
+  notes,
+  onOpenCreateNote,
+  onOpenSearch,
+  onSelectNote,
+  searchQuery,
+  selectedNoteId,
+}: TabletPanelHostProps) {
+  if (!gestures.noteListVisible) return <SwipeRail edge="left" swipeHandlers={gestures.noteListRevealSwipe} />
+
+  return (
+    <View {...gestures.noteListSwipe} style={styles.panelHost}>
+      <MobileNoteListPanel
+        compact={compactTablet}
+        displayPropertyKeys={noteListProperties}
+        layoutProbe={layoutProbe}
+        notes={notes}
+        searchQuery={searchQuery || undefined}
+        selectedNoteId={selectedNoteId}
+        subtitle={noteListSubtitle}
+        title={noteListTitle}
+        onOpenCreateNote={onOpenCreateNote}
+        onOpenSearch={onOpenSearch}
+        onSelectNote={onSelectNote}
+      />
+    </View>
+  )
+}
+
+type TabletEditorPanelHostProps = Pick<
+  TabletWorkspaceChromeProps,
+  | 'compactTablet'
+  | 'editorBlocks'
+  | 'editorBullets'
+  | 'initialEditorEditing'
+  | 'initialEditorEditingMode'
+  | 'layoutProbe'
+  | 'onOpenMoreActions'
+  | 'onToggleFavorite'
+  | 'onUpdateNoteContent'
+  | 'selectedNote'
+  | 'wysiwygMutationProbe'
+> & {
+  onNavigateWikilink: (target: string) => void
+  suggestionNotes: MobileNote[]
+}
+
+function TabletEditorPanelHost({
+  compactTablet,
+  editorBlocks,
+  editorBullets,
+  initialEditorEditing,
+  initialEditorEditingMode,
+  layoutProbe,
+  onNavigateWikilink,
+  onOpenMoreActions,
+  onToggleFavorite,
+  onUpdateNoteContent,
+  selectedNote,
+  suggestionNotes,
+  wysiwygMutationProbe,
+}: TabletEditorPanelHostProps) {
+  return (
+    <TabletEditorPanel
+      blocks={editorBlocks}
+      bullets={editorBullets}
+      compact={compactTablet}
+      initialEditing={initialEditorEditing}
+      initialEditingMode={initialEditorEditingMode}
+      layoutProbe={layoutProbe}
+      note={selectedNote}
+      notes={suggestionNotes}
+      onNavigateWikilink={onNavigateWikilink}
+      onOpenMoreActions={onOpenMoreActions}
+      onToggleFavorite={onToggleFavorite}
+      onUpdateContent={onUpdateNoteContent}
+      wysiwygMutationProbe={wysiwygMutationProbe}
+    />
+  )
+}
+
+function TabletPropertiesPanelHost({
+  compactTablet,
+  gestures,
+  onAddProperty,
+  onAddRelationship,
+  onDeleteProperty,
+  onEditProperty,
+  onOpenChangeNoteType,
+  onRemoveRelationship,
+  onSelectNote,
+  selectedNote,
+  snapshot,
+}: TabletPanelHostProps) {
+  if (!gestures.propertiesVisible) return <SwipeRail edge="right" swipeHandlers={gestures.propertiesRevealSwipe} />
+
+  return (
+    <View {...gestures.propertiesSwipe} style={styles.panelHost}>
+      <MobilePropertiesPanel
+        compact={compactTablet}
+        note={selectedNote}
+        onAddProperty={onAddProperty}
+        onAddRelationship={onAddRelationship}
+        onDeleteProperty={onDeleteProperty}
+        onEditProperty={onEditProperty}
+        onOpenChangeNoteType={onOpenChangeNoteType}
+        onSelectNote={onSelectNote}
+        onRemoveRelationship={onRemoveRelationship}
+        typeDefinitions={snapshot.typeDefinitions}
+      />
     </View>
   )
 }

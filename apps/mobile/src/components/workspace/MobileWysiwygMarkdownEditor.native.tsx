@@ -1,5 +1,5 @@
 import { RichText, TenTapStartKit, useEditorBridge, type EditorBridge } from '@10play/tentap-editor'
-import { KeyboardAvoidingView, StyleSheet, View } from 'react-native'
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native'
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
 import {
   mobileDocumentBody,
@@ -17,6 +17,11 @@ import {
   type NativeWysiwygCommandBridge,
 } from './MobileWysiwygFormatCommands'
 import { nativeWysiwygDocumentContentFromJson } from './MobileWysiwygDocumentSerialization'
+import {
+  nativeWysiwygMutationLogLine,
+  nativeWysiwygMutationProbeContent,
+  nativeWysiwygMutationProof,
+} from '../../qa/nativeWysiwygMutationProbe'
 
 type MobileWysiwygMarkdownEditorProps = {
   blocks: MobileEditorBlock[]
@@ -26,6 +31,7 @@ type MobileWysiwygMarkdownEditorProps = {
   note: MobileNote
   notes: MobileNote[]
   onUpdateContent: (noteId: string, content: string) => void
+  wysiwygMutationProbe?: boolean
 }
 
 type JsonReadableEditorBridge = EditorBridge & {
@@ -55,6 +61,10 @@ type NativeTentapEditorRefs = {
   saveTimerRef: MutableRefObject<TimerHandle | null>
 }
 
+type ContentSettableEditorBridge = EditorBridge & {
+  setContent: (content: unknown) => void
+}
+
 export function MobileWysiwygMarkdownEditor({
   blocks,
   bullets,
@@ -62,6 +72,7 @@ export function MobileWysiwygMarkdownEditor({
   layoutProbe,
   note,
   onUpdateContent,
+  wysiwygMutationProbe = false,
 }: MobileWysiwygMarkdownEditorProps) {
   const bridge = useNativeTentapEditorBridge({
     blocks,
@@ -70,6 +81,7 @@ export function MobileWysiwygMarkdownEditor({
     initialDocumentContent: initialNativeEditorContent({ blocks, bullets, note }),
     note,
     onUpdateContent,
+    wysiwygMutationProbe,
   })
 
   return <NativeTentapEditorSurface {...bridge} layoutProbe={layoutProbe} />
@@ -119,6 +131,7 @@ function useNativeTentapEditorBridge({
   initialDocumentContent,
   note,
   onUpdateContent,
+  wysiwygMutationProbe = false,
 }: NativeTentapEditorBridgeOptions) {
   const initialBody = mobileDocumentBody(initialDocumentContent)
   const initialBodyHasContent = initialBody.trim().length > 0
@@ -127,6 +140,7 @@ function useNativeTentapEditorBridge({
 
   const flushEditorDocument = useFlushEditorDocument({
     initialBodyHasContent,
+    mutationProbeEnabled: wysiwygMutationProbe,
     noteId: note.id,
     onUpdateContent,
     refs,
@@ -144,6 +158,7 @@ function useNativeTentapEditorBridge({
   useEditorBridgeRef(refs.editorRef, editor)
   useEditableContentRef({ blocks, bullets, note, refs })
   useResetEditorChangeGate({ initialContent, noteId: note.id, refs })
+  useNativeWysiwygMutationProbe({ enabled: wysiwygMutationProbe, flushEditorDocument, refs })
   useFlushOnUnmount(refs, flushEditorDocument)
 
   return { editor, injectEditorCss }
@@ -179,11 +194,13 @@ function useNativeTentapEditorRefs(initialDocumentContent: string): NativeTentap
 
 function useFlushEditorDocument({
   initialBodyHasContent,
+  mutationProbeEnabled,
   noteId,
   onUpdateContent,
   refs,
 }: {
   initialBodyHasContent: boolean
+  mutationProbeEnabled: boolean
   noteId: string
   onUpdateContent: (noteId: string, content: string) => void
   refs: NativeTentapEditorRefs
@@ -191,20 +208,23 @@ function useFlushEditorDocument({
   return useCallback(() => {
     flushEditorDocumentFromBridge({
       initialBodyHasContent,
+      mutationProbeEnabled,
       noteId,
       onUpdateContent,
       refs,
     })
-  }, [initialBodyHasContent, noteId, onUpdateContent, refs])
+  }, [initialBodyHasContent, mutationProbeEnabled, noteId, onUpdateContent, refs])
 }
 
 function flushEditorDocumentFromBridge({
   initialBodyHasContent,
+  mutationProbeEnabled,
   noteId,
   onUpdateContent,
   refs,
 }: {
   initialBodyHasContent: boolean
+  mutationProbeEnabled: boolean
   noteId: string
   onUpdateContent: (noteId: string, content: string) => void
   refs: NativeTentapEditorRefs
@@ -213,7 +233,14 @@ function flushEditorDocumentFromBridge({
   if (!isJsonReadableEditorBridge(editor)) return
 
   void editor.getJSON()
-    .then((json) => writeEditorJsonToMarkdown({ initialBodyHasContent, json, noteId, onUpdateContent, refs }))
+    .then((json) => writeEditorJsonToMarkdown({
+      initialBodyHasContent,
+      json,
+      mutationProbeEnabled,
+      noteId,
+      onUpdateContent,
+      refs,
+    }))
     .catch((error: unknown) => {
       console.warn('[mobile-editor] Failed to read TenTap JSON:', error)
     })
@@ -222,12 +249,14 @@ function flushEditorDocumentFromBridge({
 function writeEditorJsonToMarkdown({
   initialBodyHasContent,
   json,
+  mutationProbeEnabled,
   noteId,
   onUpdateContent,
   refs,
 }: {
   initialBodyHasContent: boolean
   json: unknown
+  mutationProbeEnabled: boolean
   noteId: string
   onUpdateContent: (noteId: string, content: string) => void
   refs: NativeTentapEditorRefs
@@ -241,7 +270,42 @@ function writeEditorJsonToMarkdown({
   refs.firstEditorSerializationRef.current = false
   if (!nextContent.skipped && nextContent.content !== refs.contentRef.current) {
     onUpdateContent(noteId, nextContent.content)
+    if (mutationProbeEnabled) publishNativeWysiwygMutationProof(noteId, nextContent.content)
   }
+}
+
+function useNativeWysiwygMutationProbe({
+  enabled,
+  flushEditorDocument,
+  refs,
+}: {
+  enabled: boolean
+  flushEditorDocument: () => void
+  refs: NativeTentapEditorRefs
+}) {
+  useEffect(() => {
+    if (!enabled) return undefined
+
+    const contentTimer = setTimeout(() => {
+      const editor = refs.editorRef.current
+      if (!isContentSettableEditorBridge(editor)) return
+
+      refs.hasAcceptedEditorChangeRef.current = true
+      editor.setContent(nativeWysiwygMutationProbeContent())
+      refs.saveTimerRef.current = setTimeout(flushEditorDocument, 500)
+    }, 1500)
+
+    return () => {
+      clearTimeout(contentTimer)
+      if (refs.saveTimerRef.current) clearTimeout(refs.saveTimerRef.current)
+    }
+  }, [enabled, flushEditorDocument, refs])
+}
+
+function publishNativeWysiwygMutationProof(noteId: string, content: string): void {
+  if (Platform.OS === 'web') return
+
+  console.info(nativeWysiwygMutationLogLine(nativeWysiwygMutationProof({ content, noteId })))
 }
 
 function useScheduleDocumentFlush(
@@ -344,6 +408,10 @@ function isJsonReadableEditorBridge(editor: EditorBridge | null): editor is Json
 
 function isCssInjectableEditorBridge(editor: EditorBridge | null): editor is CssInjectableEditorBridge {
   return typeof (editor as Partial<CssInjectableEditorBridge> | null)?.injectCSS === 'function'
+}
+
+function isContentSettableEditorBridge(editor: EditorBridge | null): editor is ContentSettableEditorBridge {
+  return typeof (editor as Partial<ContentSettableEditorBridge> | null)?.setContent === 'function'
 }
 
 const nativeEditorStyles = StyleSheet.create({
