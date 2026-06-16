@@ -3,10 +3,18 @@ export type MobileMarkdownListKind = 'bullet' | 'ordered' | 'task'
 export type MobileMarkdownListItem = {
   checked?: boolean
   depth: number
+  markerNumber?: number
   text: string
 }
 
 type InlineHtmlRenderer = (text: string) => string
+type ListRenderOptions = {
+  depth: number
+  index: number
+  inlineHtml: InlineHtmlRenderer
+  items: MobileMarkdownListItem[]
+  kind: MobileMarkdownListKind
+}
 type RenderListResult = { html: string; nextIndex: number }
 
 export function mobileMarkdownListHtml(
@@ -18,58 +26,49 @@ export function mobileMarkdownListHtml(
   return renderList({ depth: items[0]?.depth ?? 0, index: 0, inlineHtml, items, kind }).html
 }
 
-function renderList({
-  depth,
-  index,
-  inlineHtml,
-  items,
-  kind,
-}: {
-  depth: number
-  index: number
-  inlineHtml: InlineHtmlRenderer
-  items: MobileMarkdownListItem[]
-  kind: MobileMarkdownListKind
-}): RenderListResult {
-  const chunks = [listOpenTag(kind)]
+function renderList({ depth, index, inlineHtml, items, kind }: ListRenderOptions): RenderListResult {
+  const chunks = [listOpenTag(kind, items[index])]
   let cursor = index
 
   while (cursor < items.length) {
-    const item = items[cursor]
-    if (!item || item.depth < depth) break
-    if (item.depth > depth) {
-      const child = renderList({ depth: item.depth, index: cursor, inlineHtml, items, kind })
-      chunks.push(child.html)
-      cursor = child.nextIndex
-      continue
-    }
-
-    const child = renderChildList({ depth, index: cursor + 1, inlineHtml, items, kind })
-    chunks.push(listItemHtml(kind, item, inlineHtml(item.text), child.html))
-    cursor = child.nextIndex
+    const chunk = renderNextListChunk({ depth, index: cursor, inlineHtml, items, kind })
+    if (!chunk) break
+    chunks.push(chunk.html)
+    cursor = chunk.nextIndex
   }
 
   chunks.push(listCloseTag(kind))
   return { html: chunks.join(''), nextIndex: cursor }
 }
 
-function renderChildList(options: {
-  depth: number
-  index: number
-  inlineHtml: InlineHtmlRenderer
-  items: MobileMarkdownListItem[]
-  kind: MobileMarkdownListKind
-}): RenderListResult {
+function renderNextListChunk(options: ListRenderOptions): RenderListResult | null {
+  const item = options.items[options.index]
+  if (!item || item.depth < options.depth) return null
+  if (item.depth > options.depth) return renderList({ ...options, depth: item.depth })
+
+  const child = renderChildList({ ...options, index: options.index + 1 })
+  return {
+    html: listItemHtml(options.kind, item, options.inlineHtml(item.text), child.html),
+    nextIndex: child.nextIndex,
+  }
+}
+
+function renderChildList(options: ListRenderOptions): RenderListResult {
   const nextItem = options.items[options.index]
   return nextItem && nextItem.depth > options.depth
     ? renderList({ ...options, depth: nextItem.depth })
     : { html: '', nextIndex: options.index }
 }
 
-function listOpenTag(kind: MobileMarkdownListKind): string {
-  if (kind === 'ordered') return '<ol>'
+function listOpenTag(kind: MobileMarkdownListKind, firstItem?: MobileMarkdownListItem): string {
+  if (kind === 'ordered') return orderedListOpenTag(firstItem)
   if (kind === 'task') return '<ul data-type="taskList">'
   return '<ul>'
+}
+
+function orderedListOpenTag(firstItem?: MobileMarkdownListItem): string {
+  const start = firstItem?.markerNumber
+  return start && start > 1 ? `<ol start="${start}">` : '<ol>'
 }
 
 function listCloseTag(kind: MobileMarkdownListKind): string {

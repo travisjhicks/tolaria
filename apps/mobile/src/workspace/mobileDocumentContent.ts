@@ -397,8 +397,10 @@ function listLine(line: MarkdownLine): (MobileMarkdownListItem & { kind: ListKin
   const bullet = line.match(/^(\s*)[-*+](?:\s+(.*))?$/u)
   if (bullet) return { depth: listDepth(bullet[1]), kind: 'bullet', text: bullet[2] ?? '' }
 
-  const ordered = line.match(/^(\s*)\d+[.)](?:\s+(.*))?$/u)
-  if (ordered) return { depth: listDepth(ordered[1]), kind: 'ordered', text: ordered[2] ?? '' }
+  const ordered = line.match(/^(\s*)(\d+)[.)](?:\s+(.*))?$/u)
+  if (ordered) {
+    return { depth: listDepth(ordered[1]), kind: 'ordered', markerNumber: Number(ordered[2]), text: ordered[3] ?? '' }
+  }
 
   return null
 }
