@@ -626,9 +626,37 @@ function normalizedTimestamp(value: number): number {
 function yamlLines(content: string): YamlLine[] {
   return content
     .split(/\r?\n/u)
-    .map((rawLine) => rawLine.replace(/\s+#.*$/u, ''))
+    .map(stripYamlComment)
     .filter((line) => line.trim().length > 0)
     .map((line) => ({ indent: line.search(/\S/u), text: line.trim() }))
+}
+
+function stripYamlComment(line: YamlText): YamlText {
+  const commentIndex = yamlCommentIndex(line)
+  return commentIndex === -1 ? line : line.slice(0, commentIndex).trimEnd()
+}
+
+function yamlCommentIndex(line: YamlText): number {
+  let quote: '"' | '\'' | null = null
+
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index]
+    if (char === '\\' && quote === '"') {
+      index += 1
+      continue
+    }
+    if (isQuote(char)) {
+      quote = quote === char ? null : quote ?? char
+      continue
+    }
+    if (quote === null && isYamlCommentStart(line, index)) return index
+  }
+
+  return -1
+}
+
+function isYamlCommentStart(line: YamlText, index: number): boolean {
+  return line[index] === '#' && (index === 0 || /\s/u.test(line[index - 1] ?? ''))
 }
 
 function optionalTopLevelString(lines: YamlLine[], key: FieldKey) {

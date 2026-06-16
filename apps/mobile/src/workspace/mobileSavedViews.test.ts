@@ -51,8 +51,8 @@ filters:
     ]).map((candidate) => candidate.id)).toEqual(['active-project', 'draft-project'])
   })
 
-  it('parses quoted commas inside desktop saved-view inline YAML lists', () => {
-    const view = parseMobileSavedViewFile({
+  it('parses desktop saved-view inline YAML quoted scalars', () => {
+    const commaView = parseMobileSavedViewFile({
       relativePath: 'views/tagged.yml',
       content: `name: Tagged
 listPropertiesDisplay: ["AI, UX", Status]
@@ -64,12 +64,32 @@ filters:
 `,
     }, 0)
 
-    expect(view?.definition.listPropertiesDisplay).toEqual(['AI, UX', 'Status'])
-    expect(evaluateMobileSavedView(view!, [
+    expect(commaView?.definition.listPropertiesDisplay).toEqual(['AI, UX', 'Status'])
+    expect(evaluateMobileSavedView(commaView!, [
       note({ id: 'quoted-comma', tags: ['AI, UX'] }),
       note({ id: 'plain', tags: ['Design'] }),
       note({ id: 'split-would-be-wrong', tags: ['AI'] }),
     ]).map((candidate) => candidate.id)).toEqual(['quoted-comma', 'plain'])
+
+    const hashView = parseMobileSavedViewFile({
+      relativePath: 'views/hash-tags.yml',
+      content: `name: Hash Tags # regular comment
+listPropertiesDisplay: ["Topic #", Status]
+filters:
+  all:
+    - field: tags
+      op: any_of
+      value: ["AI # UX", Design] # regular comment
+`,
+    }, 0)
+
+    expect(hashView?.definition.name).toBe('Hash Tags')
+    expect(hashView?.definition.listPropertiesDisplay).toEqual(['Topic #', 'Status'])
+    expect(evaluateMobileSavedView(hashView!, [
+      note({ id: 'hash-content', tags: ['AI # UX'] }),
+      note({ id: 'plain', tags: ['Design'] }),
+      note({ id: 'hash-prefix-only', tags: ['AI'] }),
+    ]).map((candidate) => candidate.id)).toEqual(['hash-content', 'plain'])
   })
 
   it('sorts saved views with desktop custom-property sort strings', () => {
