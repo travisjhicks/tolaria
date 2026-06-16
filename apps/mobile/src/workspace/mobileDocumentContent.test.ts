@@ -197,6 +197,13 @@ Updated body.
     expect(html).not.toContain('<h3>')
   })
 
+  it('keeps detached indented list markers editable as source until nested block editing is supported', () => {
+    const html = mobileMarkdownBodyToTentapHtml('  1. Contextualize: Dump TOC into an LLM.\n  2. Summarize major sections.\n\nDone\n')
+
+    expect(html).toBe('<p>  1. Contextualize: Dump TOC into an LLM.<br>  2. Summarize major sections.</p>\n<p>Done</p>')
+    expect(html).not.toContain('<ol>')
+  })
+
   it('serializes TenTap JSON back to Tolaria markdown', () => {
     const document: TiptapJsonNode = {
       type: 'doc',
@@ -398,6 +405,27 @@ Updated body.
       'Made in Italy',
       '',
       '</details>',
+    ].join('\n'))
+  })
+
+  it('keeps detached indented list paragraphs as editable markdown source after native saves', () => {
+    const document: TiptapJsonNode = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            { text: '  1. Contextualize: Dump TOC into an LLM.', type: 'text' },
+            { type: 'hardBreak' },
+            { text: '  2. Summarize major sections.', type: 'text' },
+          ],
+        },
+      ],
+    }
+
+    expect(tiptapJsonToMobileMarkdown(document)).toBe([
+      '  1. Contextualize: Dump TOC into an LLM.',
+      '  2. Summarize major sections.',
     ].join('\n'))
   })
 

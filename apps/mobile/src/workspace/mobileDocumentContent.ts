@@ -148,6 +148,7 @@ const htmlBlockReaders = [
   readIndentedHeadingSourceBlock,
   readHeading,
   readQuote,
+  readIndentedListSourceBlock,
   readList,
 ]
 
@@ -236,6 +237,22 @@ function readQuote(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResul
   }
 }
 
+function readIndentedListSourceBlock(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
+  if (!isIndentedListSourceLine(lines[startIndex] ?? '')) return null
+
+  const sourceLines: string[] = []
+  let index = startIndex
+  while (index < lines.length && isIndentedListSourceLine(lines[index] ?? '')) {
+    sourceLines.push(lines[index] ?? '')
+    index += 1
+  }
+
+  return {
+    html: `<p>${sourceLines.map(escapeHtml).join('<br>')}</p>`,
+    nextIndex: index,
+  }
+}
+
 function readList(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
   const first = listLine(lines[startIndex] ?? '')
   if (!first) return null
@@ -308,6 +325,10 @@ function listLine(line: MarkdownLine): (MobileMarkdownListItem & { kind: ListKin
   if (ordered) return { depth: listDepth(ordered[1]), kind: 'ordered', text: ordered[2] }
 
   return null
+}
+
+function isIndentedListSourceLine(line: MarkdownLine): boolean {
+  return /^\s/u.test(line) && listLine(line) !== null
 }
 
 function listDepth(indent: MarkdownLine): number {
@@ -391,7 +412,17 @@ function normalizeMobileFallbackParagraphMarkdown(markdown: MarkdownBody): Markd
   const htmlBlockMarkdown = normalizeUnsupportedHtmlBlockMarkdown(markdown)
   if (htmlBlockMarkdown !== markdown) return htmlBlockMarkdown
 
+  const indentedListSourceMarkdown = normalizeIndentedListSourceMarkdown(markdown)
+  if (indentedListSourceMarkdown !== markdown) return indentedListSourceMarkdown
+
   return normalizeUnsupportedTableMarkdown(markdown)
+}
+
+function normalizeIndentedListSourceMarkdown(markdown: MarkdownBody): MarkdownBody {
+  const lines = markdown.split('\n').map(stripHardBreakMarker)
+  if (!lines.every(isIndentedListSourceLine)) return markdown
+
+  return lines.join('\n')
 }
 
 function normalizeUnsupportedTableMarkdown(markdown: MarkdownBody): MarkdownBody {
