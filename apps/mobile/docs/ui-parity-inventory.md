@@ -49,6 +49,7 @@ Saved-view filter fields named `created`, `modified`, `path`, or `organized` res
 Type-section navigation defaults to the desktop active/open sub-filter: archived notes stay out of the normal type note list and remain reachable through Archive-specific surfaces.
 Favorite navigation follows the desktop note-identity behavior: a favorite sidebar item opens that active favorite note only, not every favorite or title match.
 Favorite sidebar ordering follows the desktop `_favorite_index` metadata with unindexed favorites sorted after indexed favorites and archived favorites excluded.
+Create-note defaults follow desktop `createNoteRequestForSelection`: type sections inject the selected type, folder selections inject folder placement, Archive injects archived state, and favorite/entity selections do not make new notes favorites.
 Folder navigation defaults to the desktop active/open sub-filter while preserving descendant matching by stable folder path.
 Folder-derived saved views keep the desktop-shaped `path contains <folder>` YAML while mobile internal evaluation applies the same folder-boundary descendant matching as sidebar folder navigation, avoiding substring or duplicate-label matches.
 Inbox navigation follows the desktop capture semantics: only active, unorganized, non-Type notes appear, and an empty Inbox stays empty instead of falling back to all notes.

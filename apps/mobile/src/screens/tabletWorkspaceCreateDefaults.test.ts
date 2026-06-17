@@ -65,6 +65,17 @@ describe('tablet workspace create-note defaults', () => {
     }, [])).toEqual({ folderPath: 'Writing/Essays' })
   })
 
+  it('does not make new notes favorites when creating from a selected favorite note', () => {
+    const selection: TabletSidebarSelection = {
+      id: 'favorite-personal-journal.md',
+      kind: 'item',
+      label: 'Personal Journal',
+      sectionId: 'favorites',
+    }
+
+    expect(createNoteDefaultsForSelection(selection, [])).toEqual({})
+  })
+
   it('derives positive saved-view filters into note frontmatter defaults', () => {
     const view = workspaceScenarioForId('default').views?.[0]
     if (!view) throw new Error('fixture saved view is required')

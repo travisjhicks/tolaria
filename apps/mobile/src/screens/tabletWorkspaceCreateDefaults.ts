@@ -50,7 +50,6 @@ export function createNoteDefaultsForSelection(
   if (selection.sectionId === 'types') return defaultsForTypeSection(selection, typeDefinitions)
   if (selection.sectionId === 'views') return defaultsForSavedView(selection, views)
   if (selection.sectionId === 'primary' && selection.id === 'archive') return { archived: true }
-  if (selection.sectionId === 'favorites') return { favorite: true }
 
   return {}
 }
