@@ -204,7 +204,7 @@ export const mobileParityInventory = [
     surface: 'Read-only editor markdown blocks',
   },
   {
-    assertions: ['editor chrome computed styles', 'markdown formatting command user-flow checks'],
+    assertions: ['editor chrome computed styles', 'markdown formatting command user-flow checks', 'raw body-only notes do not synthesize an in-document H1 title'],
     contracts: ['desktopEditorParity', 'desktopPanelParity', 'desktopToolbarParity'],
     desktopSource: 'EditorTheme.css, theme.json, BreadcrumbBar, and BlockNote formatting commands',
     mobileFile: 'src/screens/TabletEditorPanel.tsx',

@@ -21,6 +21,7 @@ import { mobileColors, mobileSpace, mobileType } from '../ui/tokens'
 import { MobileLayoutProbeReadout } from '../qa/MobileLayoutProbeReadout'
 import { useMobileLayoutProbe, type MobileLayoutProbe } from '../qa/mobileLayoutProbe'
 import type { MobileEditorBlock, MobileNote } from '../workspace/mobileWorkspaceModel'
+import { shouldRenderEditorDocumentTitle } from './tabletEditorDocumentTitle'
 
 type TabletEditorPanelProps = {
   blocks: MobileEditorBlock[]
@@ -243,9 +244,11 @@ function EditorContent({
 
   return (
     <>
-      <View style={panelStyles.titleBlock} testID="editor-title-block">
-        <Text style={[panelStyles.title, compact ? panelStyles.titleCompact : null]} testID="editor-title">{note.title}</Text>
-      </View>
+      {shouldRenderEditorDocumentTitle(note) ? (
+        <View style={panelStyles.titleBlock} testID="editor-title-block">
+          <Text style={[panelStyles.title, compact ? panelStyles.titleCompact : null]} testID="editor-title">{note.title}</Text>
+        </View>
+      ) : null}
       <MobileEditorBlocks blocks={blocks} fallbackBullets={bullets} onNavigateWikilink={onNavigateWikilink} />
     </>
   )

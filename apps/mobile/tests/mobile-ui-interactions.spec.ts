@@ -325,7 +325,16 @@ async function createNote(page: PageLike, title: string, rowId: string) {
   await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { exact: true, name: 'Create' }).click()
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
   await expect(page.getByTestId(`note-row-${rowId}`)).toBeVisible()
-  await expect(page.getByTestId('editor-title')).toHaveText(title)
+  await expectSelectedBodyOnlyNoteTitle(page, title)
+}
+
+async function expectSelectedBodyOnlyNoteTitle(page: PageLike, title: string) {
+  await expect(page.getByTestId('editor-toolbar-title')).toHaveText(title)
+  await expect(page.getByTestId('editor-title')).toBeHidden()
+}
+
+async function expectSelectedChromeTitle(page: PageLike, title: string) {
+  await expect(page.getByTestId('editor-toolbar-title')).toHaveText(title)
 }
 
 async function changeSelectedNoteTypeTo(page: PageLike, type: string) {
@@ -694,7 +703,7 @@ async function addRelationshipFromSuggestion(page: PageLike) {
   await page.getByTestId('relationship-row-how-i-run-an-open-source-project-open').click()
   await expect(page.getByTestId('editor-title')).toHaveText('How I Run an Open Source Project')
   await page.getByTestId('note-row-mobile-qa-draft.md').click()
-  await expect(page.getByTestId('editor-title')).toHaveText('Mobile QA Draft')
+  await expectSelectedBodyOnlyNoteTitle(page, 'Mobile QA Draft')
   await page.getByTestId('relationship-row-how-i-run-an-open-source-project').getByLabel('Remove').click()
   await expect(page.getByTestId('relationship-row-how-i-run-an-open-source-project')).toBeHidden()
 
@@ -704,13 +713,13 @@ async function addRelationshipFromSuggestion(page: PageLike) {
   await expect(page.getByTestId('workspace-relationship-create-target')).toContainText('Brand New Target')
   await page.getByTestId('workspace-relationship-create-target').click()
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
-  await expect(page.getByTestId('editor-title')).toHaveText('Brand New Target')
+  await expectSelectedBodyOnlyNoteTitle(page, 'Brand New Target')
   await page.getByTestId('note-row-mobile-qa-draft.md').click()
   await expect(page.getByTestId('relationship-row-brand-new-target')).toBeVisible()
   await page.getByTestId('relationship-row-brand-new-target-open').click()
-  await expect(page.getByTestId('editor-title')).toHaveText('Brand New Target')
+  await expectSelectedBodyOnlyNoteTitle(page, 'Brand New Target')
   await page.getByTestId('note-row-mobile-qa-draft.md').click()
-  await expect(page.getByTestId('editor-title')).toHaveText('Mobile QA Draft')
+  await expectSelectedBodyOnlyNoteTitle(page, 'Mobile QA Draft')
 }
 
 async function editMarkdownWithWikilink(page: PageLike) {
@@ -963,7 +972,7 @@ async function assertHiddenNoteHydrationAndWrite(page: PageLike, state: LocalVau
   await page.getByTestId('note-list-search-action').click()
   await page.getByTestId('workspace-search-input').fill(hiddenNote.path)
   await page.getByTestId(`workspace-search-result-${hiddenNote.id}`).click()
-  await expect(page.getByTestId('editor-title')).toHaveText(hiddenNote.title)
+  await expectSelectedChromeTitle(page, hiddenNote.title)
   await expect(page.getByText(hiddenNote.snippet).first()).toBeVisible()
 
   await page.getByTestId('editor-edit-action').click()
