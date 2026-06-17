@@ -1010,7 +1010,7 @@ function deriveEditableNote({
       favoriteIndex: frontmatterNumber(document.frontmatter, ['_favorite_index', 'favorite_index', 'favorite index']),
       links: linkCount(document.body),
       modified: '0m ago',
-      organized: frontmatterFlag(document.frontmatter, ['_organized', 'organized']),
+      organized: frontmatterFlag(document.frontmatter, ['_organized']),
       path: fallback.path ?? fallback.id,
       properties,
       rawContent,
