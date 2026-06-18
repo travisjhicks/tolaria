@@ -145,7 +145,14 @@ export function useTabletWorkspaceController({
   repositoryRequest?: ReadOnlyWorkspaceRequest
   snapshot: MobileWorkspaceSnapshot
 }) {
-  const { applyWorkspaceEdit, workspaceSnapshot } = useWorkspaceEditPipeline({
+  const {
+    applyWorkspaceEdit,
+    canRedoWorkspaceEdit,
+    canUndoWorkspaceEdit,
+    redoWorkspaceEdit,
+    undoWorkspaceEdit,
+    workspaceSnapshot,
+  } = useWorkspaceEditPipeline({
     repository,
     repositoryRequest,
     snapshot,
@@ -218,11 +225,15 @@ export function useTabletWorkspaceController({
     searchQuery,
     snapshot: workspaceSnapshot,
     vaultRootUri: repositoryRequest?.vaultRootUri ?? null,
+    canRedoWorkspaceEdit,
+    canUndoWorkspaceEdit,
     onEnterNeighborhood: navigation.selectNeighborhoodNote,
+    onRedoWorkspaceEdit: redoWorkspaceEdit,
     onSelectFolder: navigation.selectFolder,
     onSelectNote: navigation.setSelectedNoteId,
     onSelectSidebarItem: navigation.selectSidebarItem,
     onSearchQueryChange: setSearchQuery,
+    onUndoWorkspaceEdit: undoWorkspaceEdit,
   }
 }
 

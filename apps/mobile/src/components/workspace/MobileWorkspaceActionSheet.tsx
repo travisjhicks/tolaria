@@ -80,6 +80,8 @@ type MobileWorkspaceActionSheetProps = {
   canMoveTypeUp: boolean
   canMoveViewDown: boolean
   canMoveViewUp: boolean
+  canRedoWorkspaceEdit: boolean
+  canUndoWorkspaceEdit: boolean
   canDeleteType: boolean
   createTitle: string
   editorBlocks: MobileEditorBlock[]
@@ -140,6 +142,7 @@ type MobileWorkspaceActionSheetProps = {
   onRenameFolder: () => void
   onRenameNoteFile: () => void
   onRenameNoteFileToTitle: () => void
+  onRedoWorkspaceEdit: () => void
   onRemoveNoteIcon: () => void
   onSaveView: () => void
   onSearchQueryChange: (value: string) => void
@@ -148,6 +151,7 @@ type MobileWorkspaceActionSheetProps = {
   onSetNoteIcon: () => void
   onSetOrganized: (organized: boolean) => void
   onToggleNoteWidth: () => void
+  onUndoWorkspaceEdit: () => void
   onUpdateNoteContent: (noteId: string, content: string) => void
   onViewIconChange: (value: MobileSidebarIcon) => void
   onViewDisplayPropertiesChange: (value: string[]) => void
@@ -905,6 +909,8 @@ function MoreActionsContent(props: MobileWorkspaceActionSheetProps) {
       {selectedNote ? (
         <NoteMoreActionRows
           note={selectedNote}
+          canRedoWorkspaceEdit={props.canRedoWorkspaceEdit}
+          canUndoWorkspaceEdit={props.canUndoWorkspaceEdit}
           onClose={props.onClose}
           onDeleteNote={props.onDeleteNote}
           onOpenChangeNoteType={props.onOpenChangeNoteType}
@@ -914,10 +920,12 @@ function MoreActionsContent(props: MobileWorkspaceActionSheetProps) {
           onOpenRenameNoteFile={props.onOpenRenameNoteFile}
           onOpenSetNoteIcon={props.onOpenSetNoteIcon}
           onRenameNoteFileToTitle={props.onRenameNoteFileToTitle}
+          onRedoWorkspaceEdit={props.onRedoWorkspaceEdit}
           onRemoveNoteIcon={props.onRemoveNoteIcon}
           onSetArchived={props.onSetArchived}
           onSetOrganized={props.onSetOrganized}
           onToggleNoteWidth={props.onToggleNoteWidth}
+          onUndoWorkspaceEdit={props.onUndoWorkspaceEdit}
         />
       ) : null}
       <ActionRow

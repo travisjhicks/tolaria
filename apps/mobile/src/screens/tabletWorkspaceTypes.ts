@@ -80,6 +80,8 @@ export type TabletWorkspaceChromeProps = {
   canMoveTypeUp: boolean
   canMoveViewDown: boolean
   canMoveViewUp: boolean
+  canRedoWorkspaceEdit: boolean
+  canUndoWorkspaceEdit: boolean
   canDeleteType: boolean
   compactTablet: boolean
   defaultPropertiesVisible: boolean
@@ -145,6 +147,7 @@ export type TabletWorkspaceChromeProps = {
   onRemoveRelationship: (noteId: NoteId, key: string, ref: string) => void
   onRenameFolder: () => void
   onSaveTypeDefinition: () => void
+  onRedoWorkspaceEdit: () => void
   onSavePrimaryNoteListProperties: () => void
   onSaveProperty: () => void
   onSaveRelationship: () => void
@@ -195,6 +198,7 @@ export type TabletWorkspaceChromeProps = {
   onSetOrganized: (organized: boolean) => void
   onToggleFavorite: () => void
   onToggleNoteWidth: () => void
+  onUndoWorkspaceEdit: () => void
   openAction: MobileWorkspaceAction | null
   readOnlyForm: TabletReadOnlyForm
   searchQuery: SearchQuery

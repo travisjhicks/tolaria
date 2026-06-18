@@ -19,7 +19,7 @@ test.describe('mobile editor find and replace', () => {
 })
 
 async function replaceLowerPriorityWithQuiet(page: Page) {
-  await page.getByTestId('editor-more-action').click()
+  await openMoreActions(page)
   await page.getByTestId('workspace-action-replace-in-note').click()
   await expect(page.getByTestId('workspace-action-sheet-replaceInNote')).toBeVisible()
   await page.getByTestId('workspace-find-input').fill('lower-priority')
@@ -31,4 +31,25 @@ async function replaceLowerPriorityWithQuiet(page: Page) {
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
   await expect(page.getByText('dates, and quiet chrome.')).toBeVisible()
   await expect(page.getByText('dates, and lower-priority chrome.')).toBeHidden()
+  await undoAndRedoLastEditorChange(page)
+}
+
+async function undoAndRedoLastEditorChange(page: Page) {
+  await openMoreActions(page)
+  await page.getByTestId('workspace-action-undo-edit').click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+  await expect(page.getByText('dates, and lower-priority chrome.')).toBeVisible()
+  await expect(page.getByText('dates, and quiet chrome.')).toBeHidden()
+
+  await openMoreActions(page)
+  await page.getByTestId('workspace-action-redo-edit').click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+  await expect(page.getByText('dates, and quiet chrome.')).toBeVisible()
+  await expect(page.getByText('dates, and lower-priority chrome.')).toBeHidden()
+}
+
+async function openMoreActions(page: Page) {
+  await expect(page.getByTestId('workspace-action-sheet')).toHaveCount(0)
+  await page.getByTestId('editor-more-action').click()
+  await expect(page.getByTestId('workspace-action-sheet-moreActions')).toBeVisible()
 }

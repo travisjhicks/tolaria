@@ -2,6 +2,8 @@ import type { ReactNode } from 'react'
 import { Pressable, StyleSheet, View } from 'react-native'
 import {
   Archive,
+  ArrowClockwise,
+  ArrowCounterClockwise,
   ArrowsInLineHorizontal,
   ArrowsOutLineHorizontal,
   CheckCircle,
@@ -20,6 +22,8 @@ import { mobileColors, mobileSpace, mobileType } from '../../ui/tokens'
 import type { MobileNote } from '../../workspace/mobileWorkspaceModel'
 
 export function NoteMoreActionRows(props: {
+  canRedoWorkspaceEdit: boolean
+  canUndoWorkspaceEdit: boolean
   note: MobileNote
   onClose: () => void
   onDeleteNote: () => void
@@ -30,10 +34,12 @@ export function NoteMoreActionRows(props: {
   onOpenRenameNoteFile: () => void
   onOpenSetNoteIcon: () => void
   onRenameNoteFileToTitle: () => void
+  onRedoWorkspaceEdit: () => void
   onRemoveNoteIcon: () => void
   onSetArchived: (archived: boolean) => void
   onSetOrganized: (organized: boolean) => void
   onToggleNoteWidth: () => void
+  onUndoWorkspaceEdit: () => void
 }) {
   const { note } = props
   const wideNote = note.noteWidth === 'wide'
@@ -42,10 +48,52 @@ export function NoteMoreActionRows(props: {
     <>
       <NoteStateActionRows {...props} />
       <NoteEditorActionRows {...props} />
+      <NoteHistoryActionRows {...props} />
       <NoteIconActionRows {...props} />
       <NoteFileActionRows {...props} />
       <NoteWidthActionRow noteWide={wideNote} onClose={props.onClose} onToggleNoteWidth={props.onToggleNoteWidth} />
       <DeleteActionRow onClose={props.onClose} onDeleteNote={props.onDeleteNote} />
+    </>
+  )
+}
+
+function NoteHistoryActionRows({
+  canRedoWorkspaceEdit,
+  canUndoWorkspaceEdit,
+  onClose,
+  onRedoWorkspaceEdit,
+  onUndoWorkspaceEdit,
+}: {
+  canRedoWorkspaceEdit: boolean
+  canUndoWorkspaceEdit: boolean
+  onClose: () => void
+  onRedoWorkspaceEdit: () => void
+  onUndoWorkspaceEdit: () => void
+}) {
+  return (
+    <>
+      {canUndoWorkspaceEdit ? (
+        <ActionRow
+          icon={<ArrowCounterClockwise color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
+          label={mobileText('command.note.undo')}
+          testID="workspace-action-undo-edit"
+          onPress={() => {
+            onUndoWorkspaceEdit()
+            onClose()
+          }}
+        />
+      ) : null}
+      {canRedoWorkspaceEdit ? (
+        <ActionRow
+          icon={<ArrowClockwise color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
+          label={mobileText('command.note.redo')}
+          testID="workspace-action-redo-edit"
+          onPress={() => {
+            onRedoWorkspaceEdit()
+            onClose()
+          }}
+        />
+      ) : null}
     </>
   )
 }

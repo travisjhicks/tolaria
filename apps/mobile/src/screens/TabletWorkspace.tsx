@@ -307,6 +307,8 @@ export function WorkspaceActionSheetHost(props: ActionSheetHostProps) {
 
 function actionSheetValues(props: ActionSheetHostProps) {
   const {
+    canRedoWorkspaceEdit,
+    canUndoWorkspaceEdit,
     canMoveViewDown,
     canMoveViewUp,
     readOnlyForm,
@@ -325,6 +327,8 @@ function actionSheetValues(props: ActionSheetHostProps) {
     canDeleteType: props.canDeleteType,
     canMoveViewDown,
     canMoveViewUp,
+    canRedoWorkspaceEdit,
+    canUndoWorkspaceEdit,
     canMoveTypeDown: props.canMoveTypeDown,
     canMoveTypeUp: props.canMoveTypeUp,
     editorBlocks: props.editorBlocks,
@@ -428,6 +432,7 @@ function actionSheetHandlers(props: ActionSheetHostProps) {
     onRenameFolder: props.onRenameFolder,
     onRenameNoteFile: props.onRenameNoteFile,
     onRenameNoteFileToTitle: props.onRenameNoteFileToTitle,
+    onRedoWorkspaceEdit: props.onRedoWorkspaceEdit,
     onRemoveNoteIcon: props.onRemoveNoteIcon,
     onSavePrimaryNoteListProperties: props.onSavePrimaryNoteListProperties,
     onSaveProperty: props.onSaveProperty,
@@ -440,6 +445,7 @@ function actionSheetHandlers(props: ActionSheetHostProps) {
     onSetNoteIcon: props.onSetNoteIcon,
     onSetOrganized: props.onSetOrganized,
     onToggleNoteWidth: props.onToggleNoteWidth,
+    onUndoWorkspaceEdit: props.onUndoWorkspaceEdit,
     onTypeDisplayPropertiesChange: props.onTypeDisplayPropertiesChange,
     onTypeNameChange: props.onTypeNameChange,
     onTypePropertyQueryChange: props.onTypePropertyQueryChange,
