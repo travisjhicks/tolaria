@@ -24,9 +24,11 @@ import {
 import { TabletEditorPanel } from './TabletEditorPanel'
 import type { EditorEditingMode } from './TabletEditorPanel'
 import { WorkspaceActionSheetHost } from './TabletWorkspace'
+import { PhoneWorkspaceTransition } from './PhoneWorkspaceTransition'
 import { useTabletWorkspaceController } from './useTabletWorkspaceController'
+import type { PhoneWorkspaceState } from './phoneWorkspaceTransitions'
 
-export type PhoneWorkspaceState = 'editor' | 'list' | 'properties' | 'sidebar'
+export type { PhoneWorkspaceState } from './phoneWorkspaceTransitions'
 
 export function PhoneWorkspace({
   initialEditorEditing = false,
@@ -46,29 +48,42 @@ export function PhoneWorkspace({
   snapshot: MobileWorkspaceSnapshot
 }) {
   const controller = useTabletWorkspaceController({ repository, repositoryRequest, snapshot })
-  const [phoneState, setPhoneState] = useState(initialState)
-  const openList = useCallback(() => setPhoneState('list'), [])
-  const openSidebar = useCallback(() => setPhoneState('sidebar'), [])
-  const openProperties = useCallback(() => setPhoneState('properties'), [])
+  const { phoneState, previousPhoneState, setPhoneState } = usePhoneState(initialState)
+  const openList = useCallback(() => setPhoneState('list'), [setPhoneState])
+  const openSidebar = useCallback(() => setPhoneState('sidebar'), [setPhoneState])
+  const openProperties = useCallback(() => setPhoneState('properties'), [setPhoneState])
   const openEditor = useCallback((noteId?: string) => {
     if (noteId) controller.onSelectNote(noteId)
     setPhoneState('editor')
-  }, [controller])
+  }, [controller, setPhoneState])
+  const transitionSwipeHandlers = usePhoneSwipeHandlers({
+    openEditor,
+    openList,
+    openProperties,
+    openSidebar,
+    phoneState,
+  })
   const suggestionNotes = controller.snapshot.allNotes ?? controller.snapshot.notes
 
   return (
     <View style={styles.root}>
-      <PhoneWorkspaceStateView
-        controller={controller}
-        initialEditorEditing={initialEditorEditing}
-        initialEditorEditingMode={initialEditorEditingMode}
-        openEditor={openEditor}
-        openList={openList}
-        openProperties={openProperties}
-        openSidebar={openSidebar}
-        phoneState={phoneState}
-        suggestionNotes={suggestionNotes}
-      />
+      <PhoneWorkspaceTransition
+        previousState={previousPhoneState}
+        state={phoneState}
+        swipeHandlers={transitionSwipeHandlers}
+      >
+        <PhoneWorkspaceStateView
+          controller={controller}
+          initialEditorEditing={initialEditorEditing}
+          initialEditorEditingMode={initialEditorEditingMode}
+          openEditor={openEditor}
+          openList={openList}
+          openProperties={openProperties}
+          openSidebar={openSidebar}
+          phoneState={phoneState}
+          suggestionNotes={suggestionNotes}
+        />
+      </PhoneWorkspaceTransition>
       <WorkspaceActionSheetHost
         {...controller}
         compactTablet
@@ -80,6 +95,49 @@ export function PhoneWorkspace({
       <MobileSyncStatusBar sync={controller.snapshot.sync} onOpenLocalVault={onOpenNativeVault} />
     </View>
   )
+}
+
+function usePhoneState(initialState: PhoneWorkspaceState) {
+  const [state, setState] = useState({
+    current: initialState,
+    previous: initialState,
+  })
+  const setPhoneState = useCallback((nextState: PhoneWorkspaceState) => {
+    setState((currentState) => {
+      if (currentState.current === nextState) return currentState
+      return { current: nextState, previous: currentState.current }
+    })
+  }, [])
+
+  return {
+    phoneState: state.current,
+    previousPhoneState: state.previous,
+    setPhoneState,
+  }
+}
+
+function usePhoneSwipeHandlers({
+  openEditor,
+  openList,
+  openProperties,
+  openSidebar,
+  phoneState,
+}: {
+  openEditor: () => void
+  openList: () => void
+  openProperties: () => void
+  openSidebar: () => void
+  phoneState: PhoneWorkspaceState
+}) {
+  const editorSwipe = useHorizontalSwipe({ onSwipeLeft: openProperties, onSwipeRight: openList })
+  const listSwipe = useHorizontalSwipe({ onSwipeRight: openSidebar })
+  const propertiesSwipe = useHorizontalSwipe({ onSwipeRight: openEditor })
+  const sidebarSwipe = useHorizontalSwipe({ onSwipeLeft: openList })
+
+  if (phoneState === 'editor') return editorSwipe
+  if (phoneState === 'properties') return propertiesSwipe
+  if (phoneState === 'sidebar') return sidebarSwipe
+  return listSwipe
 }
 
 type PhoneWorkspaceController = ReturnType<typeof useTabletWorkspaceController>
