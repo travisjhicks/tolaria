@@ -21,9 +21,10 @@ export function mobileWysiwygWikilinkPickerSuggestions(
 
 export function mobileWysiwygWikilinkPayloadForNote(
   note: MobileNote,
+  sourceNote?: MobileNote | null,
 ): NativeWysiwygWikilinkPayload {
   return {
     label: note.title,
-    target: mobileWikilinkAutocompleteTarget(note),
+    target: mobileWikilinkAutocompleteTarget(note, sourceNote),
   }
 }

@@ -94,6 +94,7 @@ type NativeTentapEditorSurfaceProps = {
   onImportAttachment?: () => Promise<NativeWysiwygAttachmentPayload | null>
   onOpenToolbarWikilinkPicker: () => void
   pickerState: NativeWysiwygPickerState | null
+  sourceNote: MobileNote
 }
 type NativeTentapEditorRefs = {
   acceptsEditorChangesRef: MutableRefObject<boolean>
@@ -179,6 +180,7 @@ export function MobileWysiwygMarkdownEditor({
       notes={notes}
       onImportAttachment={onImportAttachment}
       pickerState={pickerState}
+      sourceNote={note}
       onCloseWikilinkPicker={handleCloseWikilinkPicker}
       onOpenToolbarWikilinkPicker={handleOpenToolbarWikilinkPicker}
     />
@@ -196,6 +198,7 @@ function NativeTentapEditorSurface({
   onImportAttachment,
   onOpenToolbarWikilinkPicker,
   pickerState,
+  sourceNote,
 }: NativeTentapEditorSurfaceProps) {
   const handleFormat = useCallback(async (action: Parameters<typeof applyNativeWysiwygFormat>[1]) => {
     if (action === 'attachment') {
@@ -244,6 +247,7 @@ function NativeTentapEditorSurface({
           key={wikilinkPickerKey(pickerState)}
           kind={pickerState.kind}
           notes={notes}
+          sourceNote={sourceNote}
           onClose={onCloseWikilinkPicker}
           onSelect={handleInsertWikilink}
         />

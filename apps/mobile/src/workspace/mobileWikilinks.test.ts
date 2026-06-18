@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { MobileNote } from './mobileWorkspaceModel'
-import { mobileNoteIdForWikilinkTarget, mobileWikilinkHref, parseMobileWikilink } from './mobileWikilinks'
+import {
+  mobileNoteIdForWikilinkTarget,
+  mobileWikilinkHref,
+  mobileWikilinkTargetForNote,
+  parseMobileWikilink,
+} from './mobileWikilinks'
 
 describe('mobile wikilink resolution', () => {
   it('parses desktop wikilink frontmatter values with surrounding whitespace', () => {
@@ -73,6 +78,27 @@ describe('mobile wikilink resolution', () => {
         title: 'Alice',
       }),
     ], 'person/alice')).toBe('alice.md')
+  })
+
+  it('resolves and formats cross-workspace targets with the stable workspace alias', () => {
+    const source = note({
+      id: 'source.md',
+      path: 'source.md',
+      title: 'Source',
+      workspace: 'Personal',
+      workspaceAlias: 'personal',
+    })
+    const target = note({
+      id: 'projects/alpha.md',
+      path: 'projects/alpha.md',
+      title: 'Alpha',
+      workspace: 'Team',
+      workspaceAlias: 'team',
+    })
+
+    expect(mobileWikilinkTargetForNote(target, source)).toBe('team/projects/alpha')
+    expect(mobileNoteIdForWikilinkTarget([source, target], 'team/projects/alpha')).toBe('projects/alpha.md')
+    expect(mobileNoteIdForWikilinkTarget([source, target], 'personal/projects/alpha')).toBeNull()
   })
 
   it('resolves desktop kebab-case targets through humanized titles', () => {

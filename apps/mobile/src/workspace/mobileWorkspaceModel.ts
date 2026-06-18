@@ -32,6 +32,7 @@ export type MobileNote = {
   type: string
   typeTone: MobileTone
   workspace: string
+  workspaceAlias?: string | null
 }
 
 export type MobileRelationshipKind = 'belongsTo' | 'has' | 'relatedTo' | 'custom'

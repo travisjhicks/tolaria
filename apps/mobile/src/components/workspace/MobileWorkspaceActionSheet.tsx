@@ -773,7 +773,7 @@ function AddRelationshipContent({
               key={note.id}
               style={({ pressed }) => [styles.suggestionRow, pressed ? styles.suggestionRowPressed : null]}
               testID={`workspace-relationship-note-suggestion-${note.id}`}
-              onPress={() => onRelationshipNoteSelect(note.title, `[[${mobileWikilinkTargetForNote(note)}]]`)}
+              onPress={() => onRelationshipNoteSelect(note.title, `[[${mobileWikilinkTargetForNote(note, selectedNote)}]]`)}
             >
               <MobileTypeIcon size={16} tone={note.typeTone} type={note.type} />
               <Text numberOfLines={1} style={styles.suggestionTitle}>{note.title}</Text>

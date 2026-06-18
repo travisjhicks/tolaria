@@ -38,6 +38,24 @@ describe('native WYSIWYG wikilink picker model', () => {
       target: 'Tolaria/Mobile UI/How I Run an Open Source Project',
     })
   })
+
+  it('builds cross-workspace insertion payloads with the target workspace alias', () => {
+    const source = note({
+      path: 'source.md',
+      title: 'Source',
+      workspaceAlias: 'personal',
+    })
+    const target = note({
+      path: 'projects/alpha.md',
+      title: 'Alpha',
+      workspaceAlias: 'team',
+    })
+
+    expect(mobileWysiwygWikilinkPayloadForNote(target, source)).toEqual({
+      label: 'Alpha',
+      target: 'team/projects/alpha',
+    })
+  })
 })
 
 function note(overrides: Partial<MobileNote>): MobileNote {

@@ -122,6 +122,7 @@ function MarkdownSourceEditor(props: Omit<MobileMarkdownSourceEditorProps, 'plai
     noteId: note.id,
     notes,
     onImportAttachment,
+    sourceNote: note,
     onUpdateContent: editorDraft.updateContent,
   })
   useNativeSourceSelectionProbe(sourceSelectionProbe === true)
@@ -273,12 +274,14 @@ function useMarkdownInlineAutocomplete({
   noteId,
   notes,
   onImportAttachment,
+  sourceNote,
   onUpdateContent,
 }: {
   content: string
   noteId: string
   notes: MobileNote[]
   onImportAttachment?: () => Promise<MobileAttachmentImport | null>
+  sourceNote: MobileNote
   onUpdateContent: (noteId: string, content: string) => void
 }) {
   const [selection, setSelection] = useState<MobileMarkdownTextSelection>(textStartSelection())
@@ -318,14 +321,20 @@ function useMarkdownInlineAutocomplete({
     setControlledSelection(result.selection)
   }, [content, noteId, onImportAttachment, onUpdateContent, selection])
   const insertSuggestion = useCallback((suggestion: MobileNote) => {
-    const replacement = markdownInlineAutocompleteReplacement(content, selection.start, state.kind, suggestion)
+    const replacement = markdownInlineAutocompleteReplacement({
+      content,
+      cursor: selection.start,
+      kind: state.kind,
+      sourceNote,
+      suggestion,
+    })
     if (!replacement) return
 
     const nextSelection = { end: replacement.cursor, start: replacement.cursor }
     onUpdateContent(noteId, replacement.text)
     setSelection(nextSelection)
     setControlledSelection(nextSelection)
-  }, [content, noteId, onUpdateContent, selection.start, state.kind])
+  }, [content, noteId, onUpdateContent, selection.start, sourceNote, state.kind])
 
   return {
     applyFormat,
@@ -359,15 +368,22 @@ function markdownInlineAutocompleteState(
   }
 }
 
-function markdownInlineAutocompleteReplacement(
-  content: string,
-  cursor: number,
-  kind: InlineAutocompleteKind | null,
-  suggestion: MobileNote,
-) {
+function markdownInlineAutocompleteReplacement({
+  content,
+  cursor,
+  kind,
+  sourceNote,
+  suggestion,
+}: {
+  content: string
+  cursor: number
+  kind: InlineAutocompleteKind | null
+  sourceNote: MobileNote
+  suggestion: MobileNote
+}) {
   if (kind === null) return null
 
-  const target = mobileWikilinkAutocompleteTarget(suggestion)
+  const target = mobileWikilinkAutocompleteTarget(suggestion, sourceNote)
   return kind === 'personMention'
     ? replaceActiveMobilePersonMentionQuery(content, cursor, target)
     : replaceActiveMobileWikilinkQuery(content, cursor, target)

@@ -65,7 +65,10 @@ import {
 } from './mobileWorkspacePathRewrites'
 import { writeMobileFrontmatterValue } from './mobileFrontmatterWrites'
 import { normalizeMobileNoteWidth } from './mobileNoteWidth'
-import { mobileNoteForWikilinkTarget } from './mobileWikilinks'
+import {
+  mobileNoteForWikilinkTarget,
+  mobileWikilinkTargetForNote,
+} from './mobileWikilinks'
 import type { MobileTypeDefinitionPatch } from './mobileTypeDefinitions'
 import { applyMobileTypeEdit } from './mobileWorkspaceTypeEditing'
 import { applyMobileRestorationEdit } from './mobileWorkspaceRestoration'
@@ -536,7 +539,7 @@ function addRelationship({
   const trimmedTitle = targetTitle.trim()
   if (!trimmedKey || !trimmedTitle) return note
 
-  const ref = normalizedRelationshipRef(targetRef) ?? relationshipRefForTitle(trimmedTitle, notes)
+  const ref = normalizedRelationshipRef(targetRef) ?? relationshipRefForTitle(trimmedTitle, notes, note)
   return addRelationshipRef(note, trimmedKey, ref)
 }
 
@@ -1271,10 +1274,10 @@ function resolveRelationshipTarget(notes: MobileNote[], target: WikilinkTarget):
   return mobileNoteForWikilinkTarget(notes, target)
 }
 
-function relationshipRefForTitle(title: NoteTitle, notes: MobileNote[]): WikilinkRef {
+function relationshipRefForTitle(title: NoteTitle, notes: MobileNote[], sourceNote: MobileNote): WikilinkRef {
   if (/^\[\[[^\]]+\]\]$/.test(title)) return title
   const targetNote = resolveRelationshipTarget(notes, title)
-  const target = targetNote ? wikilinkTargetForNote(targetNote) : slugifyTitle(title)
+  const target = targetNote ? wikilinkTargetForNote(targetNote, sourceNote) : slugifyTitle(title)
   return `[[${target}]]`
 }
 
@@ -1285,8 +1288,8 @@ function normalizedRelationshipRef(ref: WikilinkRef | undefined): WikilinkRef | 
   return `[[${trimmed}]]`
 }
 
-function wikilinkTargetForNote(note: MobileNote): WikilinkTarget {
-  return (note.path ?? note.id).replace(/\.[^.]+$/, '')
+function wikilinkTargetForNote(note: MobileNote, sourceNote?: MobileNote | null): WikilinkTarget {
+  return mobileWikilinkTargetForNote(note, sourceNote)
 }
 
 function wikilinkTarget(value: WikilinkRef): WikilinkTarget {

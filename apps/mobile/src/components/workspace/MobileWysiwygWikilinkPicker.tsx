@@ -25,6 +25,7 @@ type MobileWysiwygWikilinkPickerProps = {
   notes: MobileNote[]
   onClose: () => void
   onSelect: (payload: NativeWysiwygWikilinkPayload) => void
+  sourceNote?: MobileNote | null
 }
 
 export function MobileWysiwygWikilinkPicker({
@@ -33,6 +34,7 @@ export function MobileWysiwygWikilinkPicker({
   notes,
   onClose,
   onSelect,
+  sourceNote = null,
 }: MobileWysiwygWikilinkPickerProps) {
   const [query, setQuery] = useState(initialQuery)
   const suggestions = useMemo(
@@ -70,7 +72,7 @@ export function MobileWysiwygWikilinkPicker({
                 testID={`editor-wysiwyg-wikilink-suggestion-${testIdSegment(note.id)}`}
                 title={note.title}
                 trailing={<MobileTypeIcon size={16} tone={note.typeTone} type={note.type} />}
-                onPress={() => onSelect(mobileWysiwygWikilinkPayloadForNote(note))}
+                onPress={() => onSelect(mobileWysiwygWikilinkPayloadForNote(note, sourceNote))}
               />
             ))}
           </ScrollView>

@@ -32,6 +32,39 @@ describe('mobile workspace relationship editing', () => {
       }),
     )
   })
+
+  it('prefixes typed cross-workspace relationship targets with the target workspace alias', () => {
+    const base = workspaceScenarioForId('default')
+    const source = {
+      ...base.notes[0],
+      workspace: 'Personal',
+      workspaceAlias: 'personal',
+    }
+    const remote = {
+      ...base.notes[1],
+      id: 'team/projects/remote.md',
+      path: 'projects/remote.md',
+      title: 'Remote',
+      workspace: 'Team',
+      workspaceAlias: 'team',
+    }
+    const snapshot = {
+      ...base,
+      allNotes: [source, remote, ...base.notes.slice(2)],
+      notes: [source, remote, ...base.notes.slice(2)],
+    }
+
+    const withRelationship = applyMobileWorkspaceEdit(snapshot, {
+      key: 'Mentions',
+      noteId: source.id,
+      targetTitle: 'Remote',
+      type: 'addRelationship',
+    })
+
+    expect(withRelationship.notes.find((candidate) => candidate.id === source.id)?.rawContent).toContain(
+      '  - "[[team/projects/remote]]"',
+    )
+  })
 })
 
 function duplicateReference(
