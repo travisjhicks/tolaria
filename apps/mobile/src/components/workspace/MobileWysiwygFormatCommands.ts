@@ -21,6 +21,7 @@ type NativeWysiwygFormatCommandSpec = {
 }
 
 export const nativeWysiwygFormattingActions = [
+  'attachment',
   'bold',
   'italic',
   'strike',

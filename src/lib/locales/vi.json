@@ -614,6 +614,7 @@
   "editor.formatting.highlight": "Đánh dấu",
   "editor.formatting.highlightTooltip": "Đánh dấu (duy trì trong markdown)",
   "editor.formatting.toolbar": "Định dạng",
+  "editor.formatting.attachment": "Chèn tệp đính kèm",
   "editor.formatting.bold": "In đậm",
   "editor.formatting.italic": "Nghiêng",
   "editor.formatting.strikethrough": "Gạch ngang",

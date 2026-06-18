@@ -614,6 +614,7 @@
   "editor.formatting.highlight": "高亮",
   "editor.formatting.highlightTooltip": "高亮（在 Markdown 中保留）",
   "editor.formatting.toolbar": "格式",
+  "editor.formatting.attachment": "插入附件",
   "editor.formatting.bold": "粗体",
   "editor.formatting.italic": "斜体",
   "editor.formatting.strikethrough": "删除线",

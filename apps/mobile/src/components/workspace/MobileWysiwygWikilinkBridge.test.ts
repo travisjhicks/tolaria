@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { tiptapJsonToMobileMarkdown, type TiptapJsonNode } from '../../workspace/mobileDocumentContent'
 import {
   nativeWysiwygDocumentWithInsertedWikilink,
+  nativeWysiwygDocumentWithInsertedAttachment,
   nativeWysiwygInlineAutocompleteAtSelection,
+  nativeWysiwygAttachmentContent,
   nativeWysiwygWikilinkContent,
   type NativeWysiwygSelection,
   type NativeWysiwygWikilinkPayload,
@@ -34,6 +36,49 @@ describe('native WYSIWYG wikilink bridge', () => {
 
   it('ignores blank targets', () => {
     expect(nativeWysiwygWikilinkContent({ label: 'Empty', target: '  ' })).toBeNull()
+  })
+
+  it('builds TenTap attachment links that serialize as portable vault attachment markdown', () => {
+    expect(nativeWysiwygAttachmentContent({
+      mimeType: 'application/pdf',
+      name: 'project brief.pdf',
+      path: 'attachments/project brief.pdf',
+    })).toEqual([
+      {
+        marks: [{ attrs: { href: 'attachments/project brief.pdf' }, type: 'link' }],
+        text: 'project brief.pdf',
+        type: 'text',
+      },
+      { text: ' ', type: 'text' },
+    ])
+  })
+
+  it('inserts non-image attachments at the current native editor selection', () => {
+    const nextDocument = nativeWysiwygDocumentWithInsertedAttachment({
+      json: documentNode(paragraphNode('See  today.')),
+      payload: {
+        mimeType: 'application/pdf',
+        name: 'project brief.pdf',
+        path: 'attachments/project brief.pdf',
+      },
+      selection: { from: 5, to: 5 },
+    })
+
+    expect(tiptapJsonToMobileMarkdown(nextDocument)).toBe('See [project brief.pdf](<attachments/project brief.pdf>) today.')
+  })
+
+  it('inserts image attachments as portable image blocks after the active block', () => {
+    const nextDocument = nativeWysiwygDocumentWithInsertedAttachment({
+      json: documentNode(paragraphNode('Intro'), paragraphNode('Tail')),
+      payload: {
+        mimeType: 'image/png',
+        name: 'mobile diagram.png',
+        path: 'attachments/mobile diagram.png',
+      },
+      selection: { from: 3, to: 3 },
+    })
+
+    expect(tiptapJsonToMobileMarkdown(nextDocument)).toBe('Intro\n\n![mobile diagram.png](<attachments/mobile diagram.png>)\n\nTail')
   })
 
   it('inserts the wikilink at the current native editor selection', () => {

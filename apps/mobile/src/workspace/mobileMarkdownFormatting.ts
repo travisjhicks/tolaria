@@ -1,4 +1,5 @@
 export type MobileMarkdownFormatAction =
+  | 'attachment'
   | 'bold'
   | 'bulletList'
   | 'code'
@@ -33,6 +34,12 @@ type MarkdownEditRequest = {
   action: MobileMarkdownFormatAction
   selection: MobileMarkdownSelection
   text: string
+}
+
+type MarkdownInsertionRequest = {
+  selection: MobileMarkdownSelection
+  text: string
+  value: string
 }
 
 type InlineFormat = {
@@ -91,6 +98,14 @@ export function applyMobileMarkdownFormat(
   return new MarkdownEditSession({ action, selection, text }).apply()
 }
 
+export function insertMobileMarkdownText({
+  selection,
+  text,
+  value,
+}: MarkdownInsertionRequest): MobileMarkdownFormatResult {
+  return new MarkdownEditSession({ action: 'attachment', selection, text }).insertText(value)
+}
+
 class MarkdownEditSession {
   private readonly action: MobileMarkdownFormatAction
   private readonly range: MobileMarkdownSelection
@@ -116,6 +131,14 @@ class MarkdownEditSession {
     if (this.action === 'wikilink') return this.applyWikilinkFormat()
 
     return { selection: this.range, text: this.text }
+  }
+
+  insertText(value: string): MobileMarkdownFormatResult {
+    const replacement = `${this.blockPrefix()}${value}${this.blockSuffix()}`
+    return {
+      selection: collapsedSelection(this.range.start + replacement.length),
+      text: this.replaceRange({ value: replacement }),
+    }
   }
 
   private applyInlineFormat(format: InlineFormat): MobileMarkdownFormatResult {

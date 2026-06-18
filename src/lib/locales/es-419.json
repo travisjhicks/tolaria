@@ -614,6 +614,7 @@
   "editor.formatting.highlight": "Resaltar",
   "editor.formatting.highlightTooltip": "Resaltado (persiste en Markdown)",
   "editor.formatting.toolbar": "Formato",
+  "editor.formatting.attachment": "Insertar archivo adjunto",
   "editor.formatting.bold": "Negrita",
   "editor.formatting.italic": "Cursiva",
   "editor.formatting.strikethrough": "Tachado",

@@ -6,6 +6,7 @@ import {
   ListChecks,
   ListNumbers,
   Minus,
+  Paperclip,
   Quotes,
   Table,
   TextB,
@@ -19,7 +20,7 @@ import {
   TextStrikethrough,
 } from 'phosphor-react-native'
 import type { ReactNode } from 'react'
-import { StyleSheet, View } from 'react-native'
+import { ScrollView, StyleSheet, View } from 'react-native'
 import { mobileText } from '../../i18n/mobileText'
 import { MobileIconButton } from '../../ui/MobileIconButton'
 import { desktopToolbarActionParity } from '../../ui/desktopParity'
@@ -35,6 +36,12 @@ type FormattingCommand = {
 }
 
 const formattingCommands: FormattingCommand[] = [
+  {
+    action: 'attachment',
+    icon: (color) => <Paperclip color={color} size={desktopToolbarActionParity.iconSize} />,
+    label: mobileText('editor.formatting.attachment'),
+    testID: 'editor-format-attachment',
+  },
   {
     action: 'bold',
     icon: (color) => <TextB color={color} size={desktopToolbarActionParity.iconSize} />,
@@ -165,10 +172,15 @@ export function MobileMarkdownFormattingToolbar({
   const visibleActions = new Set(actions ?? formattingCommands.map((command) => command.action))
 
   return (
-    <View
+    <ScrollView
       accessibilityLabel={mobileText('editor.formatting.toolbar')}
+      alwaysBounceHorizontal={false}
+      contentContainerStyle={styles.toolbarContent}
+      horizontal
+      keyboardShouldPersistTaps="handled"
       {...formattingProbeProps(layoutProbe, metricId)}
-      style={styles.toolbar}
+      showsHorizontalScrollIndicator={false}
+      style={styles.toolbarViewport}
       testID="editor-formatting-toolbar"
     >
       {formattingCommands.filter((command) => visibleActions.has(command.action)).map((command) => (
@@ -186,7 +198,7 @@ export function MobileMarkdownFormattingToolbar({
           </MobileIconButton>
         </View>
       ))}
-    </View>
+    </ScrollView>
   )
 }
 
@@ -204,10 +216,12 @@ const styles = StyleSheet.create({
     height: desktopToolbarActionParity.iconButtonSize,
     width: desktopToolbarActionParity.iconButtonSize,
   },
-  toolbar: {
+  toolbarContent: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: mobileSpace.xs,
     paddingBottom: mobileSpace.xs,
+  },
+  toolbarViewport: {
+    flexGrow: 0,
   },
 })

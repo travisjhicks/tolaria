@@ -614,6 +614,7 @@
   "editor.formatting.highlight": "Highlight",
   "editor.formatting.highlightTooltip": "Highlight (persists in markdown)",
   "editor.formatting.toolbar": "Formatting",
+  "editor.formatting.attachment": "Insert attachment",
   "editor.formatting.bold": "Bold",
   "editor.formatting.italic": "Italic",
   "editor.formatting.strikethrough": "Strikethrough",

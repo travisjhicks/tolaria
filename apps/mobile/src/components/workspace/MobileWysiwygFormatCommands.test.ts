@@ -48,6 +48,15 @@ describe('native WYSIWYG format commands', () => {
   it('keeps wikilink visible as a native picker action', () => {
     expect(nativeWysiwygFormattingActions).toContain('wikilink')
   })
+
+  it('keeps attachment visible as a native picker action without mapping it to a TenTap command', () => {
+    const editor = fakeEditor()
+
+    applyNativeWysiwygFormat(editor, 'attachment')
+
+    expect(nativeWysiwygFormattingActions).toContain('attachment')
+    expect(calledMethods(editor)).toEqual([])
+  })
 })
 
 type FakeEditor = Required<NativeWysiwygCommandBridge>

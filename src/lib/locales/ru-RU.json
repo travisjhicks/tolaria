@@ -614,6 +614,7 @@
   "editor.formatting.highlight": "Выделение",
   "editor.formatting.highlightTooltip": "Выделение (сохраняется в Markdown)",
   "editor.formatting.toolbar": "Форматирование",
+  "editor.formatting.attachment": "Вставить вложение",
   "editor.formatting.bold": "Жирный",
   "editor.formatting.italic": "Курсив",
   "editor.formatting.strikethrough": "Зачеркивание",

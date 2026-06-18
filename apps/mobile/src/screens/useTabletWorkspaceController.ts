@@ -211,6 +211,7 @@ export function useTabletWorkspaceController({
     readOnlyForm,
     searchQuery,
     snapshot: workspaceSnapshot,
+    vaultRootUri: repositoryRequest?.vaultRootUri ?? null,
     onSelectFolder: navigation.selectFolder,
     onSelectNote: navigation.setSelectedNoteId,
     onSelectSidebarItem: navigation.selectSidebarItem,

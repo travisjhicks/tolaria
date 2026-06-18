@@ -22,6 +22,10 @@ import { mobileColors, mobileSpace, mobileType } from '../ui/tokens'
 import { MobileLayoutProbeReadout } from '../qa/MobileLayoutProbeReadout'
 import { useMobileLayoutProbe, type MobileLayoutProbe } from '../qa/mobileLayoutProbe'
 import type { MobileEditorBlock, MobileNote } from '../workspace/mobileWorkspaceModel'
+import {
+  useMobileAttachmentImporter,
+  type MobileAttachmentImporter,
+} from '../workspace/mobileAttachmentImport'
 import { shouldRenderEditorDocumentTitle } from './tabletEditorDocumentTitle'
 
 type TabletEditorPanelProps = {
@@ -38,6 +42,7 @@ type TabletEditorPanelProps = {
   onToggleFavorite: () => void
   onUpdateContent: (noteId: string, content: string) => void
   sourceSelectionProbe?: boolean
+  vaultRootUri?: string | null
   wysiwygAutocompleteProbe?: boolean
   wysiwygWikilinkInsertProbe?: boolean
   wysiwygMutationProbe?: boolean
@@ -63,6 +68,7 @@ type EditorContentProps = {
   notes: MobileNote[]
   layoutProbe: MobileLayoutProbe
   onNavigateWikilink: (target: string) => void
+  onImportAttachment?: MobileAttachmentImporter
   onUpdateContent: (noteId: string, content: string) => void
   sourceSelectionProbe?: boolean
   wysiwygAutocompleteProbe?: boolean
@@ -87,12 +93,14 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
     onToggleFavorite,
     onUpdateContent,
     sourceSelectionProbe = false,
+    vaultRootUri = null,
     wysiwygAutocompleteProbe = false,
     wysiwygWikilinkInsertProbe = false,
     wysiwygMutationProbe = false,
   } = props
   const [editing, setEditing] = useState(initialEditing)
   const [editingMode, setEditingMode] = useState<EditorEditingMode>(initialEditingMode)
+  const importAttachment = useMobileAttachmentImporter(vaultRootUri)
   const layoutProbe = useMobileLayoutProbe(layoutProbeEnabled)
   const toggleEditing = useCallback(() => {
     setEditing((current) => {
@@ -135,6 +143,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
             layoutProbe={layoutProbe.probe}
             note={note}
             notes={notes}
+            onImportAttachment={importAttachment}
             onNavigateWikilink={onNavigateWikilink}
             onUpdateContent={onUpdateContent}
             sourceSelectionProbe={sourceSelectionProbe}
@@ -158,6 +167,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
             layoutProbe={layoutProbe.probe}
             note={note}
             notes={notes}
+            onImportAttachment={importAttachment}
             onNavigateWikilink={onNavigateWikilink}
             onUpdateContent={onUpdateContent}
             sourceSelectionProbe={sourceSelectionProbe}
@@ -229,6 +239,7 @@ function EditorContent({
   layoutProbe,
   note,
   notes,
+  onImportAttachment,
   onNavigateWikilink,
   onUpdateContent,
   sourceSelectionProbe = false,
@@ -246,6 +257,7 @@ function EditorContent({
           compact={compact}
           note={note}
           notes={notes}
+          onImportAttachment={onImportAttachment}
           onUpdateContent={onUpdateContent}
           sourceSelectionProbe={sourceSelectionProbe}
         />
@@ -261,6 +273,7 @@ function EditorContent({
         layoutProbe={layoutProbe}
         note={note}
         notes={notes}
+        onImportAttachment={onImportAttachment}
         onUpdateContent={onUpdateContent}
         wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
         wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}

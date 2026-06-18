@@ -258,6 +258,7 @@ function PhoneEditorBody({
       onOpenMoreActions={controller.onOpenMoreActions}
       onToggleFavorite={controller.onToggleFavorite}
       onUpdateContent={controller.onUpdateNoteContent}
+      vaultRootUri={controller.vaultRootUri}
     />
   )
 }

@@ -92,6 +92,7 @@ const metricPrefix = 'TOLARIA_MOBILE_LAYOUT_METRIC'
 const layoutTolerance = 1.5
 const sidebarSectionOrder = ['primary', 'favorites', 'views', 'types', 'folders']
 const wysiwygToolbarActionMetricIds = [
+  'editor.wysiwyg.toolbar.action.attachment',
   'editor.wysiwyg.toolbar.action.bold',
   'editor.wysiwyg.toolbar.action.italic',
   'editor.wysiwyg.toolbar.action.strike',

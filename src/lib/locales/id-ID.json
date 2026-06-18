@@ -614,6 +614,7 @@
   "editor.formatting.highlight": "Sorot",
   "editor.formatting.highlightTooltip": "Sorot (bertahan dalam markdown)",
   "editor.formatting.toolbar": "Pemformatan",
+  "editor.formatting.attachment": "Sisipkan lampiran",
   "editor.formatting.bold": "Tebal",
   "editor.formatting.italic": "Miring",
   "editor.formatting.strikethrough": "Coretan",

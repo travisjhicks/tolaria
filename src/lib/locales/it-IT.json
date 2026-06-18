@@ -614,6 +614,7 @@
   "editor.formatting.highlight": "Evidenzia",
   "editor.formatting.highlightTooltip": "Evidenziazione (persiste in markdown)",
   "editor.formatting.toolbar": "Formattazione",
+  "editor.formatting.attachment": "Inserisci allegato",
   "editor.formatting.bold": "Grassetto",
   "editor.formatting.italic": "Corsivo",
   "editor.formatting.strikethrough": "Barrato",

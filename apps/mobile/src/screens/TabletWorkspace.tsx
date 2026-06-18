@@ -190,6 +190,7 @@ type TabletEditorPanelHostProps = Pick<
   | 'onUpdateNoteContent'
   | 'selectedNote'
   | 'sourceSelectionProbe'
+  | 'vaultRootUri'
   | 'wysiwygAutocompleteProbe'
   | 'wysiwygWikilinkInsertProbe'
   | 'wysiwygMutationProbe'
@@ -212,6 +213,7 @@ function TabletEditorPanelHost({
   selectedNote,
   sourceSelectionProbe,
   suggestionNotes,
+  vaultRootUri,
   wysiwygAutocompleteProbe,
   wysiwygWikilinkInsertProbe,
   wysiwygMutationProbe,
@@ -231,6 +233,7 @@ function TabletEditorPanelHost({
       onToggleFavorite={onToggleFavorite}
       onUpdateContent={onUpdateNoteContent}
       sourceSelectionProbe={sourceSelectionProbe}
+      vaultRootUri={vaultRootUri}
       wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
       wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
       wysiwygMutationProbe={wysiwygMutationProbe}

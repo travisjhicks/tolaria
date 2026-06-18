@@ -614,6 +614,7 @@
   "editor.formatting.highlight": "강조",
   "editor.formatting.highlightTooltip": "강조 표시(마크다운에 유지)",
   "editor.formatting.toolbar": "서식",
+  "editor.formatting.attachment": "첨부 파일 삽입",
   "editor.formatting.bold": "굵게",
   "editor.formatting.italic": "이탤릭체",
   "editor.formatting.strikethrough": "취소선",

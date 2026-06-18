@@ -187,6 +187,7 @@ export type TabletWorkspaceChromeProps = {
   selectedNoteId: string | null
   sourceSelectionProbe?: boolean
   snapshot: MobileWorkspaceSnapshot
+  vaultRootUri: string | null
   wysiwygAutocompleteProbe?: boolean
   wysiwygWikilinkInsertProbe?: boolean
   typePropertyOptions: string[]

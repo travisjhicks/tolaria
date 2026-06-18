@@ -48,7 +48,7 @@ describe('native layout metrics', () => {
     })
     expect(nativeWysiwygEditorMetricContract).toEqual({
       minFormHeight: 320,
-      toolbarActionCount: 16,
+      toolbarActionCount: 17,
       toolbarActionGap: mobileSpace.xs,
       toolbarActionSize: desktopToolbarActionParity.iconButtonSize,
       toolbarHostPaddingHorizontal: mobileSpace.md,
@@ -214,6 +214,7 @@ describe('native layout metrics', () => {
 })
 
 const wysiwygToolbarActions = [
+  'attachment',
   'bold',
   'italic',
   'strike',

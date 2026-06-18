@@ -16,8 +16,13 @@ import {
 } from '../../workspace/mobileWikilinkAutocomplete'
 import {
   applyMobileMarkdownFormat,
+  insertMobileMarkdownText,
   type MobileMarkdownFormatAction,
 } from '../../workspace/mobileMarkdownFormatting'
+import {
+  mobileAttachmentMarkdown,
+  type MobileAttachmentImport,
+} from '../../workspace/mobileAttachments'
 import {
   mobileMarkdownSelectionAfterTextChange,
   type MobileMarkdownTextSelection,
@@ -34,6 +39,7 @@ export type MobileMarkdownSourceEditorProps = {
   compact: boolean
   note: MobileNote
   notes: MobileNote[]
+  onImportAttachment?: () => Promise<MobileAttachmentImport | null>
   onUpdateContent: (noteId: string, content: string) => void
   sourceSelectionProbe?: boolean
 }
@@ -46,6 +52,7 @@ export function MobileMarkdownSourceEditor({
   compact,
   note,
   notes,
+  onImportAttachment,
   onUpdateContent,
   sourceSelectionProbe = false,
 }: MobileMarkdownSourceEditorProps) {
@@ -58,6 +65,7 @@ export function MobileMarkdownSourceEditor({
     content,
     noteId: note.id,
     notes,
+    onImportAttachment,
     onUpdateContent,
   })
   useNativeSourceSelectionProbe(sourceSelectionProbe)
@@ -114,11 +122,13 @@ function useMarkdownInlineAutocomplete({
   content,
   noteId,
   notes,
+  onImportAttachment,
   onUpdateContent,
 }: {
   content: string
   noteId: string
   notes: MobileNote[]
+  onImportAttachment?: () => Promise<MobileAttachmentImport | null>
   onUpdateContent: (noteId: string, content: string) => void
 }) {
   const [selection, setSelection] = useState<MobileMarkdownTextSelection>(textStartSelection())
@@ -136,12 +146,27 @@ function useMarkdownInlineAutocomplete({
     setSelection(nextSelection)
     setControlledSelection(activeAutocomplete ? nextSelection : undefined)
   }, [content, noteId, onUpdateContent, selection])
-  const applyFormat = useCallback((action: MobileMarkdownFormatAction) => {
+  const applyFormat = useCallback(async (action: MobileMarkdownFormatAction) => {
+    if (action === 'attachment') {
+      const attachment = await onImportAttachment?.()
+      if (!attachment) return
+
+      const result = insertMobileMarkdownText({
+        selection,
+        text: content,
+        value: mobileAttachmentMarkdown(attachment),
+      })
+      onUpdateContent(noteId, result.text)
+      setSelection(result.selection)
+      setControlledSelection(result.selection)
+      return
+    }
+
     const result = applyMobileMarkdownFormat(content, selection, action)
     onUpdateContent(noteId, result.text)
     setSelection(result.selection)
     setControlledSelection(result.selection)
-  }, [content, noteId, onUpdateContent, selection])
+  }, [content, noteId, onImportAttachment, onUpdateContent, selection])
   const insertSuggestion = useCallback((suggestion: MobileNote) => {
     const replacement = markdownInlineAutocompleteReplacement(content, selection.start, state.kind, suggestion)
     if (!replacement) return

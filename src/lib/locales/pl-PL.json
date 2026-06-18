@@ -614,6 +614,7 @@
   "editor.formatting.highlight": "Wyróżnienie",
   "editor.formatting.highlightTooltip": "Wyróżnienie (zachowuje się w Markdownie)",
   "editor.formatting.toolbar": "Formatowanie",
+  "editor.formatting.attachment": "Wstaw załącznik",
   "editor.formatting.bold": "Pogrubienie",
   "editor.formatting.italic": "Kursywa",
   "editor.formatting.strikethrough": "Przekreślenie",

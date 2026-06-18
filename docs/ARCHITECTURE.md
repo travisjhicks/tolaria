@@ -166,6 +166,8 @@ Mobile note deep-link copy mirrors the desktop URL contract without importing de
 
 Mobile note PDF export follows that same boundary. `apps/mobile/src/workspace/mobilePdfExport.ts` strips YAML frontmatter through the mobile document-content helper, renders the note body to Tolaria-styled HTML, and uses `expo-print` plus `expo-sharing` only when running in the native Expo app. Browser-based UI lab checks record deterministic export attempts instead of opening a print dialog, and the generated PDF is treated as a temporary share artifact rather than a new vault file.
 
+Mobile attachment import also follows the controller/editor callback boundary. `apps/mobile/src/workspace/mobileAttachmentImport.native.ts` uses `expo-document-picker` plus the Expo FileSystem object API to copy selected files into the active vault's `attachments/` directory, while `mobileAttachments.ts` owns safe filenames and portable Markdown image/link serialization. Source and WYSIWYG editor surfaces receive an importer callback and attachment payloads instead of importing native picker modules directly.
+
 ## System Overview
 
 ```mermaid

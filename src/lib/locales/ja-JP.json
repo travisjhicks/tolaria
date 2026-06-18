@@ -614,6 +614,7 @@
   "editor.formatting.highlight": "ハイライト",
   "editor.formatting.highlightTooltip": "ハイライト（Markdownで保持）",
   "editor.formatting.toolbar": "書式設定",
+  "editor.formatting.attachment": "添付ファイルを挿入",
   "editor.formatting.bold": "太字",
   "editor.formatting.italic": "イタリック",
   "editor.formatting.strikethrough": "取り消し線",

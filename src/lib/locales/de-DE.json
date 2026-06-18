@@ -614,6 +614,7 @@
   "editor.formatting.highlight": "Hervorheben",
   "editor.formatting.highlightTooltip": "Hervorhebung (bleibt in Markdown erhalten)",
   "editor.formatting.toolbar": "Formatierung",
+  "editor.formatting.attachment": "Anhang einfügen",
   "editor.formatting.bold": "Fett",
   "editor.formatting.italic": "Kursiv",
   "editor.formatting.strikethrough": "Durchgestrichen",

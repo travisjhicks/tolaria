@@ -614,6 +614,7 @@
   "editor.formatting.highlight": "Surligner",
   "editor.formatting.highlightTooltip": "Surlignage (persiste dans le Markdown)",
   "editor.formatting.toolbar": "Mise en forme",
+  "editor.formatting.attachment": "Insérer une pièce jointe",
   "editor.formatting.bold": "Gras",
   "editor.formatting.italic": "Italique",
   "editor.formatting.strikethrough": "Barré",

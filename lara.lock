@@ -616,6 +616,7 @@ files:
     editor.formatting.highlight: 0b90582f4589d84be89f5b847d4d1ed1
     editor.formatting.highlightTooltip: c27173fea9ec1718030c5fa8440b2c78
     editor.formatting.toolbar: 767042e4dbdd6d8f737786f122d66d4f
+    editor.formatting.attachment: c9c26afac313ee59c05f3e4cd68b64d6
     editor.formatting.bold: 114c3050111d8b8ddd830b99ccebd246
     editor.formatting.italic: 1d874710ccdcd46b95397049d2e7500c
     editor.formatting.strikethrough: 926a51baad949d12035107e5d06e2fdb

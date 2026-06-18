@@ -1,5 +1,9 @@
 import { mobileWikilinkHref } from '../../workspace/mobileWikilinks'
 import {
+  isMobileImageAttachment,
+  type MobileAttachmentImport,
+} from '../../workspace/mobileAttachments'
+import {
   activeMobilePersonMentionQuery,
   activeMobileWikilinkQuery,
 } from '../../workspace/mobileWikilinkAutocomplete'
@@ -40,6 +44,8 @@ export type NativeWysiwygInlineAutocomplete = {
   range: NativeWysiwygSelection
 }
 
+export type NativeWysiwygAttachmentPayload = MobileAttachmentImport
+
 export function nativeWysiwygWikilinkContent(
   payload: NativeWysiwygWikilinkPayload,
 ): NativeWysiwygWikilinkTextNode[] | null {
@@ -57,6 +63,14 @@ export function nativeWysiwygWikilinkContent(
   ]
 }
 
+export function nativeWysiwygAttachmentContent(
+  payload: NativeWysiwygAttachmentPayload,
+): NativeWysiwygWikilinkTextNode[] | TiptapJsonNode[] | null {
+  return isMobileImageAttachment(payload)
+    ? nativeWysiwygImageAttachmentContent(payload)
+    : nativeWysiwygLinkAttachmentContent(payload)
+}
+
 export function nativeWysiwygDocumentWithInsertedWikilink({
   json,
   payload,
@@ -70,12 +84,84 @@ export function nativeWysiwygDocumentWithInsertedWikilink({
   const content = nativeWysiwygWikilinkContent(payload)
   if (!content) return null
 
+  return insertInlineContentWithFallback(json, content, selection)
+}
+
+export function nativeWysiwygDocumentWithInsertedAttachment({
+  json,
+  payload,
+  selection,
+}: {
+  json: unknown
+  payload: NativeWysiwygAttachmentPayload
+  selection?: NativeWysiwygSelection
+}): TiptapJsonNode | null {
+  if (!isTiptapDocument(json)) return null
+
+  return isMobileImageAttachment(payload)
+    ? insertImageAttachment(json, payload, selection)
+    : insertLinkAttachment(json, payload, selection)
+}
+
+function nativeWysiwygImageAttachmentContent(payload: NativeWysiwygAttachmentPayload): TiptapJsonNode[] | null {
+  const path = payload.path.trim()
+  if (!path) return null
+
+  return [{
+    attrs: { alt: payload.name.trim() || 'attachment', src: path },
+    type: 'image',
+  }]
+}
+
+function nativeWysiwygLinkAttachmentContent(
+  payload: NativeWysiwygAttachmentPayload,
+): NativeWysiwygWikilinkTextNode[] | null {
+  const path = payload.path.trim()
+  if (!path) return null
+
+  return [
+    {
+      marks: [{ attrs: { href: path }, type: 'link' }],
+      text: payload.name.trim() || path,
+      type: 'text',
+    },
+    { text: ' ', type: 'text' },
+  ]
+}
+
+function insertImageAttachment(
+  node: TiptapJsonNode,
+  payload: NativeWysiwygAttachmentPayload,
+  selection?: NativeWysiwygSelection,
+): TiptapJsonNode | null {
+  const content = nativeWysiwygImageAttachmentContent(payload)
+  if (!content) return null
+
+  return insertBlockAfterSelection(node, content[0], selection)?.node ?? null
+}
+
+function insertLinkAttachment(
+  node: TiptapJsonNode,
+  payload: NativeWysiwygAttachmentPayload,
+  selection?: NativeWysiwygSelection,
+): TiptapJsonNode | null {
+  const content = nativeWysiwygLinkAttachmentContent(payload)
+  if (!content) return null
+
+  return insertInlineContentWithFallback(node, content, selection)
+}
+
+function insertInlineContentWithFallback(
+  node: TiptapJsonNode,
+  content: TiptapJsonNode[],
+  selection?: NativeWysiwygSelection,
+): TiptapJsonNode | null {
   const selectedDocument = selection
-    ? insertWikilinkAtSelection(json, content, normalizedSelection(selection))
+    ? insertWikilinkAtSelection(node, content, normalizedSelection(selection))
     : null
   if (selectedDocument?.inserted) return selectedDocument.node
 
-  return appendWikilinkToFirstParagraph(json, content)?.node ?? null
+  return appendWikilinkToFirstParagraph(node, content)?.node ?? null
 }
 
 export function nativeWysiwygInlineAutocompleteAtSelection({
@@ -223,6 +309,41 @@ function appendWikilinkToFirstParagraph(
 ): NativeWysiwygInsertionResult | null {
   return appendWikilinkToNodeType(node, wikilinkContent, 'paragraph')
     ?? appendWikilinkToNodeType(node, wikilinkContent, 'heading')
+}
+
+function insertBlockAfterSelection(
+  node: TiptapJsonNode,
+  block: TiptapJsonNode,
+  selection?: NativeWysiwygSelection,
+): NativeWysiwygInsertionResult {
+  const children = node.content ?? []
+  const insertionIndex = selection ? blockInsertionIndex(children, normalizedSelection(selection)) : children.length
+
+  return {
+    inserted: true,
+    node: {
+      ...node,
+      content: [
+        ...children.slice(0, insertionIndex).map(cloneNode),
+        cloneNode(block),
+        ...children.slice(insertionIndex).map(cloneNode),
+      ],
+    },
+  }
+}
+
+function blockInsertionIndex(
+  children: TiptapJsonNode[],
+  selection: NativeWysiwygSelection,
+): number {
+  let childStart = 0
+  for (const [index, child] of children.entries()) {
+    const childEnd = childStart + tiptapNodeSize(child)
+    if (selection.from >= childStart && selection.from <= childEnd) return index + 1
+    childStart = childEnd
+  }
+
+  return children.length
 }
 
 function appendWikilinkToNodeType(

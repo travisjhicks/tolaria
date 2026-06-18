@@ -614,6 +614,7 @@
   "editor.formatting.highlight": "Destaque",
   "editor.formatting.highlightTooltip": "Destaque (persiste no markdown)",
   "editor.formatting.toolbar": "Formatação",
+  "editor.formatting.attachment": "Inserir anexo",
   "editor.formatting.bold": "Negrito",
   "editor.formatting.italic": "Itálico",
   "editor.formatting.strikethrough": "Rasurado",

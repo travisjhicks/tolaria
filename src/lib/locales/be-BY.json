@@ -614,6 +614,7 @@
   "editor.formatting.highlight": "Вылучэнне",
   "editor.formatting.highlightTooltip": "Вылучэнне (захоўваецца ў Markdown)",
   "editor.formatting.toolbar": "Фарматаванне",
+  "editor.formatting.attachment": "Уставіць укладанне",
   "editor.formatting.bold": "Тоўсты шрыфт",
   "editor.formatting.italic": "Курсіў",
   "editor.formatting.strikethrough": "Перакрэслены тэкст",

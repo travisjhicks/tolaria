@@ -20,7 +20,9 @@ import { nativeWysiwygDocumentContentFromJson } from './MobileWysiwygDocumentSer
 import { MobileWysiwygWikilinkPicker } from './MobileWysiwygWikilinkPicker'
 import {
   nativeWysiwygDocumentWithInsertedWikilink,
+  nativeWysiwygDocumentWithInsertedAttachment,
   nativeWysiwygInlineAutocompleteAtSelection,
+  type NativeWysiwygAttachmentPayload,
   type NativeWysiwygInlineAutocomplete,
   type NativeWysiwygInlineAutocompleteKind,
   type NativeWysiwygSelection,
@@ -50,6 +52,7 @@ type MobileWysiwygMarkdownEditorProps = {
   layoutProbe?: MobileLayoutProbe
   note: MobileNote
   notes: MobileNote[]
+  onImportAttachment?: () => Promise<NativeWysiwygAttachmentPayload | null>
   onUpdateContent: (noteId: string, content: string) => void
   wysiwygAutocompleteProbe?: boolean
   wysiwygWikilinkInsertProbe?: boolean
@@ -82,9 +85,11 @@ type NativeTentapEditorSurfaceProps = {
   editor: EditorBridge
   injectEditorCss: () => void
   insertWikilink: (payload: NativeWysiwygWikilinkPayload, selection?: NativeWysiwygSelection) => void
+  insertAttachment: (payload: NativeWysiwygAttachmentPayload, selection?: NativeWysiwygSelection) => void
   layoutProbe?: MobileLayoutProbe
   notes: MobileNote[]
   onCloseWikilinkPicker: () => void
+  onImportAttachment?: () => Promise<NativeWysiwygAttachmentPayload | null>
   onOpenToolbarWikilinkPicker: () => void
   pickerState: NativeWysiwygPickerState | null
 }
@@ -105,6 +110,16 @@ type NativeWysiwygPickerState = {
   replacementRange?: NativeWysiwygSelection
   source: 'inline' | 'toolbar'
 }
+type NativeWysiwygDocumentBuilder<Payload> = (request: {
+  json: unknown
+  payload: Payload
+  selection?: NativeWysiwygSelection
+}) => unknown | null
+type NativeWysiwygEditorMutation<Payload> = (
+  editor: EditorBridge | null,
+  payload: Payload,
+  selection?: NativeWysiwygSelection,
+) => Promise<boolean>
 
 type ContentSettableEditorBridge = EditorBridge & {
   setContent: (content: unknown) => void
@@ -120,6 +135,7 @@ export function MobileWysiwygMarkdownEditor({
   layoutProbe,
   note,
   notes,
+  onImportAttachment,
   onUpdateContent,
   wysiwygAutocompleteProbe = false,
   wysiwygWikilinkInsertProbe = false,
@@ -157,6 +173,7 @@ export function MobileWysiwygMarkdownEditor({
       {...bridge}
       layoutProbe={layoutProbe}
       notes={notes}
+      onImportAttachment={onImportAttachment}
       pickerState={pickerState}
       onCloseWikilinkPicker={handleCloseWikilinkPicker}
       onOpenToolbarWikilinkPicker={handleOpenToolbarWikilinkPicker}
@@ -167,20 +184,30 @@ export function MobileWysiwygMarkdownEditor({
 function NativeTentapEditorSurface({
   editor,
   injectEditorCss,
+  insertAttachment,
   insertWikilink,
   layoutProbe,
   notes,
   onCloseWikilinkPicker,
+  onImportAttachment,
   onOpenToolbarWikilinkPicker,
   pickerState,
 }: NativeTentapEditorSurfaceProps) {
-  const handleFormat = useCallback((action: Parameters<typeof applyNativeWysiwygFormat>[1]) => {
+  const handleFormat = useCallback(async (action: Parameters<typeof applyNativeWysiwygFormat>[1]) => {
+    if (action === 'attachment') {
+      const attachment = await onImportAttachment?.()
+      if (!attachment) return
+
+      insertAttachment(attachment)
+      return
+    }
+
     if (action === 'wikilink') {
       onOpenToolbarWikilinkPicker()
       return
     }
     applyNativeWysiwygFormat(editor as NativeWysiwygCommandBridge, action)
-  }, [editor, onOpenToolbarWikilinkPicker])
+  }, [editor, insertAttachment, onImportAttachment, onOpenToolbarWikilinkPicker])
   const handleInsertWikilink = useCallback((payload: NativeWysiwygWikilinkPayload) => {
     insertWikilink(payload, pickerState?.replacementRange)
     onCloseWikilinkPicker()
@@ -260,6 +287,7 @@ function useNativeTentapEditorBridge({
   const scheduleEditorChange = useScheduleEditorChange(refs, flushEditorDocument, onInlineAutocomplete)
   const injectEditorCss = useEditorCssInjection({ compact, noteWidth: note.noteWidth, refs })
   const insertWikilink = useNativeWysiwygWikilinkInserter({ flushEditorDocument, refs })
+  const insertAttachment = useNativeWysiwygAttachmentInserter({ flushEditorDocument, refs })
 
   const editor = useEditorBridge({
     avoidIosKeyboard: true,
@@ -276,7 +304,7 @@ function useNativeTentapEditorBridge({
   useNativeWysiwygMutationProbe({ enabled: wysiwygMutationProbe, flushEditorDocument, refs })
   useFlushOnUnmount(refs, flushEditorDocument)
 
-  return { editor, injectEditorCss, insertWikilink }
+  return { editor, injectEditorCss, insertAttachment, insertWikilink }
 }
 
 function useNativeTentapEditorRefs(initialDocumentContent: string): NativeTentapEditorRefs {
@@ -492,10 +520,44 @@ function useNativeWysiwygWikilinkInserter({
   flushEditorDocument: () => void
   refs: NativeTentapEditorRefs
 }) {
+  return useNativeWysiwygInserter({
+    flushEditorDocument,
+    insertIntoEditor: insertWikilinkIntoNativeEditor,
+    refs,
+    warning: '[mobile-editor] Failed to insert native WYSIWYG wikilink:',
+  })
+}
+
+function useNativeWysiwygAttachmentInserter({
+  flushEditorDocument,
+  refs,
+}: {
+  flushEditorDocument: () => void
+  refs: NativeTentapEditorRefs
+}) {
+  return useNativeWysiwygInserter({
+    flushEditorDocument,
+    insertIntoEditor: insertAttachmentIntoNativeEditor,
+    refs,
+    warning: '[mobile-editor] Failed to insert native WYSIWYG attachment:',
+  })
+}
+
+function useNativeWysiwygInserter<Payload>({
+  flushEditorDocument,
+  insertIntoEditor,
+  refs,
+  warning,
+}: {
+  flushEditorDocument: () => void
+  insertIntoEditor: NativeWysiwygEditorMutation<Payload>
+  refs: NativeTentapEditorRefs
+  warning: string
+}) {
   const { editorRef, hasAcceptedEditorChangeRef, saveTimerRef } = refs
 
-  return useCallback((payload: NativeWysiwygWikilinkPayload, selection?: NativeWysiwygSelection) => {
-    void insertWikilinkIntoNativeEditor(editorRef.current, payload, selection)
+  return useCallback((payload: Payload, selection?: NativeWysiwygSelection) => {
+    void insertIntoEditor(editorRef.current, payload, selection)
       .then((inserted) => {
         if (!inserted) return
 
@@ -504,9 +566,9 @@ function useNativeWysiwygWikilinkInserter({
         saveTimerRef.current = setTimeout(flushEditorDocument, 250)
       })
       .catch((error: unknown) => {
-        console.warn('[mobile-editor] Failed to insert native WYSIWYG wikilink:', error)
+        console.warn(warning, error)
       })
-  }, [editorRef, flushEditorDocument, hasAcceptedEditorChangeRef, saveTimerRef])
+  }, [editorRef, flushEditorDocument, hasAcceptedEditorChangeRef, insertIntoEditor, saveTimerRef, warning])
 }
 
 async function insertWikilinkIntoNativeEditor(
@@ -514,10 +576,27 @@ async function insertWikilinkIntoNativeEditor(
   payload: NativeWysiwygWikilinkPayload,
   selection?: NativeWysiwygSelection,
 ): Promise<boolean> {
+  return insertPayloadIntoNativeEditor(editor, payload, selection, nativeWysiwygDocumentWithInsertedWikilink)
+}
+
+async function insertAttachmentIntoNativeEditor(
+  editor: EditorBridge | null,
+  payload: NativeWysiwygAttachmentPayload,
+  selection?: NativeWysiwygSelection,
+): Promise<boolean> {
+  return insertPayloadIntoNativeEditor(editor, payload, selection, nativeWysiwygDocumentWithInsertedAttachment)
+}
+
+async function insertPayloadIntoNativeEditor<Payload>(
+  editor: EditorBridge | null,
+  payload: Payload,
+  selection: NativeWysiwygSelection | undefined,
+  buildDocument: NativeWysiwygDocumentBuilder<Payload>,
+): Promise<boolean> {
   if (!isJsonReadableEditorBridge(editor) || !isContentSettableEditorBridge(editor)) return false
 
   const json = await editor.getJSON()
-  const nextJson = nativeWysiwygDocumentWithInsertedWikilink({
+  const nextJson = buildDocument({
     json,
     payload,
     selection: selection ?? nativeWysiwygEditorSelection(editor),
