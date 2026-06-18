@@ -45,8 +45,15 @@ export function rewriteMovedNoteWikilinks(
 ): MobileNote {
   if (note.rawContent === undefined) return note
 
-  const rawContent = replaceMovedWikilinks(note.rawContent, rewrite)
+  const rawContent = rewriteMovedWikilinkContent(note.rawContent, rewrite)
   return rawContent === note.rawContent ? note : { ...note, rawContent }
+}
+
+export function rewriteMovedWikilinkContent(
+  content: MarkdownContent,
+  rewrite: MovedNoteWikilinkRewrite,
+): MarkdownContent {
+  return replaceMovedWikilinks(content, rewrite)
 }
 
 export function noteFilename(path: NotePath): string {

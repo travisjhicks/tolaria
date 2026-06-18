@@ -17,7 +17,12 @@ import {
   noteWithWritePath,
   noteWritePath,
   rewriteMovedNoteWikilinks,
+  type MovedNoteWikilinkRewrite,
 } from './mobileWorkspacePathRewrites'
+import {
+  mobileTypeDefinitionWikilinkWritesForWorkspaceWrites,
+  rewriteMobileTypeDefinitionWikilinks,
+} from './mobileTypeDefinitionPathRewrites'
 import type {
   MobileWorkspaceEdit,
   MobileWorkspaceEditResult,
@@ -94,15 +99,29 @@ function renameFolderSubtree(
   rebuildSnapshot: RebuildMobileWorkspaceSnapshot,
 ): MobileWorkspaceEditResult {
   const previousPool = workspaceNotePool(snapshot)
-  const nextPool = renameFolderWorkspaceNotes(previousPool, previousPath, nextPath)
-  const nextNotes = renameFolderWorkspaceNotes(snapshot.notes, previousPath, nextPath)
+  const rewrites = folderMoveWikilinkRewrites(previousPool, previousPath, nextPath)
+  const nextPool = renameFolderWorkspaceNotes(previousPool, previousPath, nextPath, rewrites)
+  const nextNotes = renameFolderWorkspaceNotes(snapshot.notes, previousPath, nextPath, rewrites)
   const nextAllNotes = snapshot.allNotes ? nextPool : undefined
   const folderPaths = folderPathsWithRenamed(workspaceFolderPaths(snapshot), previousPath, nextPath)
-  const nextSnapshot = rebuildSnapshot({ ...snapshot, allNotes: nextAllNotes, folderPaths }, nextNotes, nextAllNotes)
+  const nextTypeDefinitions = rewriteMobileTypeDefinitionWikilinks(snapshot.typeDefinitions, rewrites)
+  const nextSnapshot = rebuildSnapshot(
+    { ...snapshot, allNotes: nextAllNotes, folderPaths, typeDefinitions: nextTypeDefinitions },
+    nextNotes,
+    nextAllNotes,
+  )
+  const writes = renameFolderWrites(previousPool, nextPool, previousPath, nextPath)
 
   return {
     snapshot: nextSnapshot,
-    writes: renameFolderWrites(previousPool, nextPool, previousPath, nextPath),
+    writes: [
+      ...writes,
+      ...mobileTypeDefinitionWikilinkWritesForWorkspaceWrites(
+        snapshot.typeDefinitions,
+        nextTypeDefinitions,
+        writes,
+      ),
+    ],
   }
 }
 
@@ -110,16 +129,24 @@ function renameFolderWorkspaceNotes(
   notes: MobileNote[],
   previousPath: FolderPath,
   nextPath: FolderPath,
+  rewrites: MovedNoteWikilinkRewrite[],
 ): MobileNote[] {
-  const movedNotes = notes
-    .filter((note) => noteBelongsToFolder(note, previousPath))
-    .map((note) => [note, renamedFolderNote(note, previousPath, nextPath)] as const)
-  const rewrites = movedNotes.map(([previousNote, nextNote]) => movedNoteWikilinkRewrite(previousNote, nextNote))
-
   return notes.map((note) => {
-    const movedNote = movedNotes.find(([previousNote]) => previousNote.id === note.id)?.[1] ?? note
+    const movedNote = noteBelongsToFolder(note, previousPath)
+      ? renamedFolderNote(note, previousPath, nextPath)
+      : note
     return rewrites.reduce(rewriteMovedNoteWikilinks, movedNote)
   })
+}
+
+function folderMoveWikilinkRewrites(
+  notes: MobileNote[],
+  previousPath: FolderPath,
+  nextPath: FolderPath,
+): MovedNoteWikilinkRewrite[] {
+  return notes
+    .filter((note) => noteBelongsToFolder(note, previousPath))
+    .map((note) => movedNoteWikilinkRewrite(note, renamedFolderNote(note, previousPath, nextPath)))
 }
 
 function renamedFolderNote(note: MobileNote, previousPath: FolderPath, nextPath: FolderPath): MobileNote {

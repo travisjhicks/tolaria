@@ -50,19 +50,25 @@ import { isMobileInboxNote } from './mobileNoteFilters'
 import { normalizedMobileFolderPath } from './mobileWorkspaceFolders'
 import { applyMobileFolderEdit } from './mobileWorkspaceFolderEditing'
 import {
-  movedMobileNoteFilePath,
   mobileFilenameStemForTitle,
-  renamedMobileNoteFilePath,
   uniqueMobileNotePath,
   validateMobileMoveNoteFolderPath,
   validateMobileRenameNoteFilePath,
 } from './mobileNotePaths'
 import {
   movedNoteWikilinkRewrite,
-  noteWithWritePath,
   noteWritePath,
-  rewriteMovedNoteWikilinks,
 } from './mobileWorkspacePathRewrites'
+import {
+  movedWorkspaceNote,
+  moveNoteWrites,
+  moveWorkspaceNotes,
+  renamedWorkspaceNoteFile,
+} from './mobileWorkspaceNoteMoves'
+import {
+  mobileTypeDefinitionWikilinkWritesForWorkspaceWrites,
+  rewriteMobileTypeDefinitionWikilinks,
+} from './mobileTypeDefinitionPathRewrites'
 import { writeMobileFrontmatterValue } from './mobileFrontmatterWrites'
 import { normalizeMobileNoteWidth } from './mobileNoteWidth'
 import {
@@ -357,7 +363,7 @@ function renameNoteFileAfterTitlePropertyUpdate(
   const movedNoteResult = moveNoteToPath(
     result.snapshot,
     previousNote,
-    renamedNoteFile(nextNote, filenameStem),
+    renamedWorkspaceNoteFile(nextNote, filenameStem),
   )
 
   return {
@@ -637,7 +643,7 @@ function moveNoteToFolder(
     notes: workspaceNotePool(snapshot),
   }) !== 'ok') return { snapshot, writes: [] }
 
-  return moveNoteToPath(snapshot, previousNote, movedNote(previousNote, edit.folderPath))
+  return moveNoteToPath(snapshot, previousNote, movedWorkspaceNote(previousNote, edit.folderPath))
 }
 
 function renameNoteFile(
@@ -652,7 +658,7 @@ function renameNoteFile(
     notes: workspaceNotePool(snapshot),
   }) !== 'ok') return { snapshot, writes: [] }
 
-  return moveNoteToPath(snapshot, previousNote, renamedNoteFile(previousNote, edit.filenameStem))
+  return moveNoteToPath(snapshot, previousNote, renamedWorkspaceNoteFile(previousNote, edit.filenameStem))
 }
 
 function moveNoteToPath(
@@ -664,72 +670,30 @@ function moveNoteToPath(
   const nextPath = noteWritePath(nextNote)
   if (noteWritePath(previousNote) === nextPath) return { snapshot, writes: [] }
 
-  const nextPool = moveWorkspaceNotes(previousPool, previousNote, nextNote)
-  const nextNotes = moveWorkspaceNotes(snapshot.notes, previousNote, nextNote)
+  const rewrite = movedNoteWikilinkRewrite(previousNote, nextNote)
+  const nextPool = moveWorkspaceNotes(previousPool, previousNote, nextNote, rewrite)
+  const nextNotes = moveWorkspaceNotes(snapshot.notes, previousNote, nextNote, rewrite)
   const nextAllNotes = snapshot.allNotes ? nextPool : undefined
   const nextSelectedNoteId = snapshot.selectedNoteId === previousNote.id ? nextNote.id : snapshot.selectedNoteId
+  const nextTypeDefinitions = rewriteMobileTypeDefinitionWikilinks(snapshot.typeDefinitions, [rewrite])
   const nextSnapshot = rebuildSnapshot(
-    { ...snapshot, allNotes: nextAllNotes, selectedNoteId: nextSelectedNoteId },
+    { ...snapshot, allNotes: nextAllNotes, selectedNoteId: nextSelectedNoteId, typeDefinitions: nextTypeDefinitions },
     nextNotes,
     nextAllNotes,
   )
+  const writes = moveNoteWrites(previousNote, nextNote, previousPool, nextPool)
 
   return {
     snapshot: nextSnapshot,
-    writes: moveNoteWrites(previousNote, nextNote, previousPool, nextPool),
+    writes: [
+      ...writes,
+      ...mobileTypeDefinitionWikilinkWritesForWorkspaceWrites(
+        snapshot.typeDefinitions,
+        nextTypeDefinitions,
+        writes,
+      ),
+    ],
   }
-}
-
-function moveWorkspaceNotes(
-  notes: MobileNote[],
-  previousNote: MobileNote,
-  nextNote: MobileNote,
-): MobileNote[] {
-  const rewrite = movedNoteWikilinkRewrite(previousNote, nextNote)
-  return notes.map((note) => {
-    if (note.id === previousNote.id) return nextNote
-    return rewriteMovedNoteWikilinks(note, rewrite)
-  })
-}
-
-function movedNote(note: MobileNote, folderPath: FolderPath): MobileNote {
-  const nextPath = movedMobileNoteFilePath(note, folderPath) ?? noteWritePath(note)
-  return noteWithWritePath(note, nextPath)
-}
-
-function renamedNoteFile(note: MobileNote, filenameStem: FilenameStem): MobileNote {
-  const nextPath = renamedMobileNoteFilePath(note, filenameStem) ?? noteWritePath(note)
-  return noteWithWritePath(note, nextPath)
-}
-
-function moveNoteWrites(
-  previousNote: MobileNote,
-  nextNote: MobileNote,
-  previousPool: MobileNote[],
-  nextPool: MobileNote[],
-): MobileWorkspaceWrite[] {
-  const previousPath = noteWritePath(previousNote)
-  const nextPath = noteWritePath(nextNote)
-  if (previousPath === nextPath) return []
-
-  return [
-    { kind: 'moveNote', path: previousPath, toPath: nextPath },
-    ...movedWikilinkWrites(previousPool, nextPool, nextPath),
-  ]
-}
-
-function movedWikilinkWrites(
-  previousPool: MobileNote[],
-  nextPool: MobileNote[],
-  movedPath: string,
-): MobileWorkspaceWrite[] {
-  const previousRawContent = new Map(previousPool.map((note) => [noteWritePath(note), note.rawContent]))
-  return nextPool.flatMap((note) => {
-    const path = noteWritePath(note)
-    if (path === movedPath || note.rawContent === undefined) return []
-    if (previousRawContent.get(path) === note.rawContent) return []
-    return [{ content: note.rawContent, kind: 'saveNote', path }]
-  })
 }
 
 function rebuildSnapshot(
