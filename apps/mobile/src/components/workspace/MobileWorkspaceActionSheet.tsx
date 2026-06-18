@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Pressable, ScrollView, StyleSheet, View, type NativeSyntheticEvent, type TextInputKeyPressEventData } from 'react-native'
-import { Archive, ArrowsInLineHorizontal, ArrowsOutLineHorizontal, CheckCircle, FilePlus, FolderOpen, LinkSimple, PencilSimple, Smiley, Star, Tag, Trash } from 'phosphor-react-native'
+import { FilePlus, FolderOpen, LinkSimple, Star, Trash } from 'phosphor-react-native'
 import { Text } from '../ui/text'
 import { mobileText } from '../../i18n/mobileText'
 import { MobileButton } from '../../ui/MobileButton'
@@ -10,7 +10,7 @@ import { MobilePanel, MobileToolbar, MobileToolbarSpacer, MobileToolbarTitle } f
 import { MobileTextInput } from '../../ui/MobileTextInput'
 import { desktopPanelParity, desktopToolbarActionParity } from '../../ui/desktopParity'
 import { mobileColors, mobileSpace, mobileType } from '../../ui/tokens'
-import type { MobileNote, MobileSidebarIcon, MobileTone, MobileTypeDefinitions, MobileViewFilterGroup } from '../../workspace/mobileWorkspaceModel'
+import type { MobileEditorBlock, MobileNote, MobileSidebarIcon, MobileTone, MobileTypeDefinitions, MobileViewFilterGroup } from '../../workspace/mobileWorkspaceModel'
 import type {
   MobileTypeSchemaProperty,
   MobileTypeSchemaRelationship,
@@ -46,6 +46,8 @@ import { MobilePropertyValueEditor } from './MobilePropertyValueEditor'
 import { MobileTypeSectionEditor } from './MobileTypeSectionEditor'
 import { MobileViewDisplayPropertiesPicker } from './MobileViewDisplayPropertiesPicker'
 import { MobileViewFilterBuilder } from './MobileViewFilterBuilder'
+import { MobileEditorFindSheet } from './MobileEditorFindSheet'
+import { NoteMoreActionRows } from './MobileNoteMoreActions'
 import { MobileSavedViewActions, MobileTypeSectionActions } from './MobileWorkspaceMoveActions'
 import { MobileWorkspaceSuggestionList } from './MobileWorkspaceSuggestionList'
 import type { MobileWorkspaceSuggestionItem } from './MobileWorkspaceSuggestionList'
@@ -64,9 +66,11 @@ export type MobileWorkspaceAction =
   | 'editPrimaryListProperties'
   | 'editTypeSection'
   | 'editView'
+  | 'findInNote'
   | 'moreActions'
   | 'moveNoteToFolder'
   | 'renameNoteFile'
+  | 'replaceInNote'
   | 'search'
   | 'setNoteIcon'
 
@@ -78,6 +82,8 @@ type MobileWorkspaceActionSheetProps = {
   canMoveViewUp: boolean
   canDeleteType: boolean
   createTitle: string
+  editorBlocks: MobileEditorBlock[]
+  editorBullets: string[]
   filenameStem: string
   folderPaths?: string[]
   folderName: string
@@ -114,7 +120,9 @@ type MobileWorkspaceActionSheetProps = {
   onNoteIconChange: (value: string) => void
   onOpenChangeNoteType: () => void
   onOpenCreateChildFolder: () => void
+  onOpenFindInNote: () => void
   onOpenMoveNoteToFolder: () => void
+  onOpenReplaceInNote: () => void
   onOpenRenameNoteFile: () => void
   onOpenSetNoteIcon: () => void
   onPrimaryDisplayPropertiesChange: (value: string[]) => void
@@ -140,6 +148,7 @@ type MobileWorkspaceActionSheetProps = {
   onSetNoteIcon: () => void
   onSetOrganized: (organized: boolean) => void
   onToggleNoteWidth: () => void
+  onUpdateNoteContent: (noteId: string, content: string) => void
   onViewIconChange: (value: MobileSidebarIcon) => void
   onViewDisplayPropertiesChange: (value: string[]) => void
   onViewFiltersChange: (value: MobileViewFilterGroup) => void
@@ -265,9 +274,11 @@ const actionContentByAction: Record<MobileWorkspaceAction, (props: MobileWorkspa
   editPrimaryListProperties: (props) => <PrimaryListPropertiesContent {...props} />,
   editTypeSection: (props) => <TypeSectionContent {...props} />,
   editView: (props) => <SingleTextFieldContent config={singleTextFieldConfig(props)} />,
+  findInNote: (props) => <MobileEditorFindSheet editorBlocks={props.editorBlocks} editorBullets={props.editorBullets} note={props.selectedNote} replace={false} onClose={props.onClose} onUpdateContent={props.onUpdateNoteContent} />,
   moreActions: (props) => <MoreActionsContent {...props} />,
   moveNoteToFolder: (props) => <RetargetNoteContent {...props} retargetAction="moveFolder" />,
   renameNoteFile: (props) => <SingleTextFieldContent config={singleTextFieldConfig(props)} />,
+  replaceInNote: (props) => <MobileEditorFindSheet editorBlocks={props.editorBlocks} editorBullets={props.editorBullets} note={props.selectedNote} replace onClose={props.onClose} onUpdateContent={props.onUpdateNoteContent} />,
   search: (props) => <SearchContent {...props} />,
   setNoteIcon: (props) => <SingleTextFieldContent config={singleTextFieldConfig(props)} />,
 }
@@ -897,7 +908,9 @@ function MoreActionsContent(props: MobileWorkspaceActionSheetProps) {
           onClose={props.onClose}
           onDeleteNote={props.onDeleteNote}
           onOpenChangeNoteType={props.onOpenChangeNoteType}
+          onOpenFindInNote={props.onOpenFindInNote}
           onOpenMoveNoteToFolder={props.onOpenMoveNoteToFolder}
+          onOpenReplaceInNote={props.onOpenReplaceInNote}
           onOpenRenameNoteFile={props.onOpenRenameNoteFile}
           onOpenSetNoteIcon={props.onOpenSetNoteIcon}
           onRenameNoteFileToTitle={props.onRenameNoteFileToTitle}
@@ -926,163 +939,6 @@ function MoreActionsContent(props: MobileWorkspaceActionSheetProps) {
         }}
       />
     </View>
-  )
-}
-
-function NoteMoreActionRows(props: {
-  note: MobileNote
-  onClose: () => void
-  onDeleteNote: () => void
-  onOpenChangeNoteType: () => void
-  onOpenMoveNoteToFolder: () => void
-  onOpenRenameNoteFile: () => void
-  onOpenSetNoteIcon: () => void
-  onRenameNoteFileToTitle: () => void
-  onRemoveNoteIcon: () => void
-  onSetArchived: (archived: boolean) => void
-  onSetOrganized: (organized: boolean) => void
-  onToggleNoteWidth: () => void
-}) {
-  const {
-    note,
-    onClose,
-    onDeleteNote,
-    onOpenChangeNoteType,
-    onOpenMoveNoteToFolder,
-    onOpenRenameNoteFile,
-    onOpenSetNoteIcon,
-    onRenameNoteFileToTitle,
-    onRemoveNoteIcon,
-    onSetArchived,
-    onSetOrganized,
-    onToggleNoteWidth,
-  } = props
-  const wideNote = note.noteWidth === 'wide'
-
-  return (
-    <>
-      <NoteFlagActionRow
-        active={note.organized === true}
-        activeLabelKey="command.note.markUnorganized"
-        icon={<CheckCircle color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} weight={note.organized ? 'fill' : 'regular'} />}
-        inactiveLabelKey="command.note.markOrganized"
-        testID="workspace-action-organize-note"
-        onPress={() => {
-          onSetOrganized(!note.organized)
-          onClose()
-        }}
-      />
-      <NoteFlagActionRow
-        active={note.archived === true}
-        activeLabelKey="command.note.unarchiveNote"
-        icon={<Archive color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
-        inactiveLabelKey="command.note.archiveNote"
-        testID="workspace-action-archive-note"
-        onPress={() => {
-          onSetArchived(!note.archived)
-          onClose()
-        }}
-      />
-      <ActionRow
-        icon={<Smiley color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
-        label={mobileText('command.note.setIcon')}
-        testID="workspace-action-set-note-icon"
-        onPress={onOpenSetNoteIcon}
-      />
-      {note.icon ? (
-        <ActionRow
-          icon={<Smiley color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
-          label={mobileText('command.note.removeIcon')}
-          testID="workspace-action-remove-note-icon"
-          onPress={onRemoveNoteIcon}
-        />
-      ) : null}
-      <ActionRow
-        icon={<Tag color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
-        label={mobileText('command.note.changeType')}
-        testID="workspace-action-change-note-type"
-        onPress={onOpenChangeNoteType}
-      />
-      <ActionRow
-        icon={<PencilSimple color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
-        label={mobileText('editor.filename.rename')}
-        testID="workspace-action-rename-file"
-        onPress={onOpenRenameNoteFile}
-      />
-      <ActionRow
-        icon={<PencilSimple color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
-        label={mobileText('editor.filename.renameToTitle')}
-        testID="workspace-action-rename-file-to-title"
-        onPress={() => {
-          onRenameNoteFileToTitle()
-          onClose()
-        }}
-      />
-      <ActionRow
-        icon={<FolderOpen color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
-        label={mobileText('command.note.moveToFolder')}
-        testID="workspace-action-move-note-folder"
-        onPress={onOpenMoveNoteToFolder}
-      />
-      <ActionRow
-        icon={wideNote
-          ? <ArrowsInLineHorizontal color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />
-          : <ArrowsOutLineHorizontal color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
-        label={mobileText(wideNote ? 'editor.toolbar.noteWidthNormal' : 'editor.toolbar.noteWidthWide')}
-        testID="workspace-action-toggle-note-width"
-        onPress={() => {
-          onToggleNoteWidth()
-          onClose()
-        }}
-      />
-      <DeleteActionRow onClose={onClose} onDeleteNote={onDeleteNote} />
-    </>
-  )
-}
-
-function NoteFlagActionRow({
-  active,
-  activeLabelKey,
-  icon,
-  inactiveLabelKey,
-  onPress,
-  testID,
-}: {
-  active: boolean
-  activeLabelKey: Parameters<typeof mobileText>[0]
-  icon: ReactNode
-  inactiveLabelKey: Parameters<typeof mobileText>[0]
-  onPress: () => void
-  testID: string
-}) {
-  return (
-    <ActionRow
-      icon={icon}
-      label={mobileText(active ? activeLabelKey : inactiveLabelKey)}
-      testID={testID}
-      onPress={onPress}
-    />
-  )
-}
-
-function DeleteActionRow({
-  onClose,
-  onDeleteNote,
-}: {
-  onClose: () => void
-  onDeleteNote: () => void
-}) {
-  return (
-    <ActionRow
-      destructive
-      icon={<Trash color={mobileColors.red} size={desktopToolbarActionParity.iconSize} />}
-      label={mobileText('command.note.deleteNote')}
-      testID="workspace-action-delete-note"
-      onPress={() => {
-        onDeleteNote()
-        onClose()
-      }}
-    />
   )
 }
 
@@ -1164,9 +1020,11 @@ const actionTitleByAction: Record<MobileWorkspaceAction, () => string> = {
   editPrimaryListProperties: () => mobileText('noteList.properties.customizeColumns'),
   editTypeSection: () => mobileText('sidebar.section.name'),
   editView: () => mobileText('viewDialog.title.edit'),
+  findInNote: () => mobileText('command.note.findInNote'),
   moreActions: () => mobileText('editor.toolbar.moreActions'),
   moveNoteToFolder: () => mobileText('command.note.moveToFolder'),
   renameNoteFile: () => mobileText('editor.filename.rename'),
+  replaceInNote: () => mobileText('command.note.replaceInNote'),
   search: () => mobileText('noteList.searchAction'),
   setNoteIcon: () => mobileText('command.note.setIcon'),
 }

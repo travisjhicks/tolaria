@@ -25,10 +25,7 @@ import type {
   ReadOnlyWorkspaceRepository,
   ReadOnlyWorkspaceRequest,
 } from '../workspace/readOnlyWorkspaceRepository'
-import { writeMobileClipboardText } from '../workspace/mobileClipboard'
-import { buildMobileDeepLinkForNote } from '../workspace/mobileDeepLinks'
 import { isMobileMarkdownNote } from '../workspace/mobileNoteFilters'
-import { exportMobileNoteAsPdf } from '../workspace/mobilePdfExport'
 import { canMoveMobileSavedView, evaluateMobileSavedView } from '../workspace/mobileSavedViews'
 import {
   addTypeSchemaProperty,
@@ -54,7 +51,6 @@ import {
   type MobilePropertyValueKind,
 } from '../workspace/mobilePropertyValues'
 import { mobileFilenameStemForTitle } from '../workspace/mobileNotePaths'
-import { toggleMobileNoteWidth } from '../workspace/mobileNoteWidth'
 import {
   mobileSidebarIconFromValue,
   mobileToneFromValue,
@@ -62,7 +58,7 @@ import {
 import { useTabletWorkspaceNavigation } from './tabletWorkspaceNavigation'
 import type { TabletReadOnlyForm } from './tabletWorkspaceTypes'
 import { createNoteDefaultsForSelection } from './tabletWorkspaceCreateDefaults'
-import { tabletWorkspaceBulkNoteActions } from './tabletWorkspaceBulkActions'
+import { editorWorkspaceActions } from './tabletWorkspaceEditorActions'
 import { selectAfterWorkspaceEdit } from './tabletWorkspaceEditSelection'
 import { useWorkspaceEditPipeline } from './tabletWorkspacePersistence'
 import {
@@ -338,9 +334,27 @@ function actionSheetWorkspaceActions({
   const openAction = workspaceActionOpener({ setOpenAction, updateReadOnlyForm })
 
   return {
+    onCloseAction: closeAction,
+    ...coreWorkspaceActionOpeners({ navigation, openAction, setOpenAction, updateReadOnlyForm }),
+    ...noteWorkspaceActionOpeners({ openAction, selectedNote, setOpenAction }),
+    ...sidebarWorkspaceActionOpeners({ setOpenAction, updateReadOnlyForm, workspaceSnapshot }),
+  }
+}
+
+function coreWorkspaceActionOpeners({
+  navigation,
+  openAction,
+  setOpenAction,
+  updateReadOnlyForm,
+}: {
+  navigation: TabletWorkspaceNavigation
+  openAction: ReturnType<typeof workspaceActionOpener>
+  setOpenAction: SetOpenAction
+  updateReadOnlyForm: ReadOnlyFormUpdater
+}) {
+  return {
     onAddProperty: (key?: string) => openAction('addProperty', addPropertyFields(key)),
     onAddRelationship: (key?: string) => openAction('addRelationship', addRelationshipFields(key)),
-    onCloseAction: closeAction,
     onOpenCreateFolder: () => openWorkspaceAction({
       action: 'createFolder',
       fields: createFolderFields(folderParentPathForSelection(navigation.sidebarSelection)),
@@ -349,20 +363,45 @@ function actionSheetWorkspaceActions({
     }),
     onOpenCreateNote: () => setOpenAction('createNote'),
     onOpenCreateType: () => openAction('createType', [{ key: 'typeName', value: '' }]),
-    onOpenCreateView: () => openCreateView({
-      setOpenAction,
-      updateReadOnlyForm,
-    }),
-    onOpenMoreActions: () => setOpenAction('moreActions'),
+    onOpenCreateView: () => openCreateView({ setOpenAction, updateReadOnlyForm }),
+    onOpenSearch: () => setOpenAction('search'),
+  }
+}
+
+function noteWorkspaceActionOpeners({
+  openAction,
+  selectedNote,
+  setOpenAction,
+}: {
+  openAction: ReturnType<typeof workspaceActionOpener>
+  selectedNote: MobileNote | null
+  setOpenAction: SetOpenAction
+}) {
+  return {
     onOpenChangeNoteType: () => openAction('changeNoteType', [{ key: 'noteType', value: selectedNote?.type ?? '' }]),
+    onOpenFindInNote: () => setOpenAction('findInNote'),
+    onOpenMoreActions: () => setOpenAction('moreActions'),
     onOpenMoveNoteToFolder: () => openAction('moveNoteToFolder', [{ key: 'folderPath', value: '' }]),
     onOpenRenameNoteFile: () => openAction('renameNoteFile', [
       { key: 'filenameStem', value: filenameStemForNote(selectedNote) },
     ]),
+    onOpenReplaceInNote: () => setOpenAction('replaceInNote'),
     onOpenSetNoteIcon: () => openAction('setNoteIcon', [
       { key: 'noteIcon', value: selectedNote?.icon ?? '' },
     ]),
-    onOpenSearch: () => setOpenAction('search'),
+  }
+}
+
+function sidebarWorkspaceActionOpeners({
+  setOpenAction,
+  updateReadOnlyForm,
+  workspaceSnapshot,
+}: {
+  setOpenAction: SetOpenAction
+  updateReadOnlyForm: ReadOnlyFormUpdater
+  workspaceSnapshot: MobileWorkspaceSnapshot
+}) {
+  return {
     onOpenFolderActions: (selection: MobileSidebarFolderSelection) => openWorkspaceAction({
       action: 'editFolder',
       fields: folderActionFields(selection),
@@ -708,73 +747,6 @@ function noteIconWorkspaceActions({
       value: readOnlyForm.noteIcon.trim(),
     })),
   }
-}
-
-function editorWorkspaceActions({
-  applyEdit,
-  repositoryRequest,
-  selectedNote,
-  workspaceSnapshot,
-}: {
-  applyEdit: ApplyWorkspaceEdit
-  repositoryRequest?: ReadOnlyWorkspaceRequest
-  selectedNote: MobileNote | null
-  workspaceSnapshot: MobileWorkspaceSnapshot
-}) {
-  return {
-    onCopyDeepLink: () => {
-      const result = buildMobileDeepLinkForNote({
-        note: selectedNote,
-        source: workspaceSnapshot.source,
-        vaultRootUri: repositoryRequest?.vaultRootUri,
-      })
-      if (!result.ok) return
-
-      void writeMobileClipboardText(result.url).catch((error) => {
-        console.warn('[mobile-deep-link] Failed to copy deep link:', error)
-      })
-    },
-    onExportNoteAsPdf: () => {
-      void exportMobileNoteAsPdf(selectedNote).catch((error) => {
-        console.warn('[mobile-pdf-export] Failed to export PDF:', error)
-      })
-    },
-    onSetArchived: (archived: boolean) => {
-      if (selectedNote) applyEdit({ archived, noteId: selectedNote.id, type: 'setArchived' })
-    },
-    onDeleteNote: () => {
-      if (selectedNote) applyEdit({ noteId: selectedNote.id, type: 'deleteNote' })
-    },
-    ...tabletWorkspaceBulkNoteActions(applyEdit),
-    onSetOrganized: (organized: boolean) => {
-      if (selectedNote) applyEdit({ noteId: selectedNote.id, organized, type: 'setOrganized' })
-    },
-    onToggleNoteWidth: () => {
-      if (selectedNote) applyEdit({
-        key: '_width',
-        noteId: selectedNote.id,
-        type: 'updateProperty',
-        value: toggleMobileNoteWidth(selectedNote.noteWidth),
-      })
-    },
-    onToggleFavorite: () => {
-      if (selectedNote) applyEdit({ noteId: selectedNote.id, type: 'toggleFavorite' })
-    },
-    onUpdateNoteContent: (noteId: string, content: string) => {
-      applyEdit(editorContentUpdate(workspaceSnapshot, noteId, content))
-    },
-  }
-}
-
-function editorContentUpdate(
-  snapshot: MobileWorkspaceSnapshot,
-  noteId: string,
-  content: string,
-): MobileWorkspaceEdit {
-  const note = workspaceNotes(snapshot).find((candidate) => candidate.id === noteId)
-  return note?.fileKind === 'text'
-    ? { content, noteId, type: 'updateTextFileContent' }
-    : { content, noteId, type: 'updateNoteContent' }
 }
 
 function filenameStemForNote(note: MobileNote | null): string {

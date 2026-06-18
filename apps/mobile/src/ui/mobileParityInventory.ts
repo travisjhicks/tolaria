@@ -120,6 +120,20 @@ export const mobileParityInventory = [
     surface: 'Read-only workspace action sheets',
   },
   {
+    assertions: ['note-more action user-flow checks'],
+    contracts: ['desktopPanelParity', 'desktopToolbarActionParity'],
+    desktopSource: 'Desktop note context menu, BreadcrumbBar note actions, and editor command actions',
+    mobileFile: 'src/components/workspace/MobileNoteMoreActions.tsx',
+    surface: 'Note more actions',
+  },
+  {
+    assertions: ['editor find/replace unit tests', 'editor find/replace user-flow checks'],
+    contracts: ['desktopEditorParity', 'desktopToolbarActionParity'],
+    desktopSource: 'RawEditorFindBar and shared editorFind utilities',
+    mobileFile: 'src/components/workspace/MobileEditorFindSheet.tsx',
+    surface: 'Editor find and replace sheet',
+  },
+  {
     assertions: ['saved-view reorder user-flow checks', 'type-section reorder user-flow checks'],
     contracts: ['desktopSidebarParity', 'desktopToolbarActionParity'],
     desktopSource: 'Sidebar saved-view and type-section context actions',
