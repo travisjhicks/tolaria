@@ -1,5 +1,5 @@
 import { buildLocalVaultWorkspaceSnapshot, type LocalVaultFile } from './localVaultSnapshot'
-import type { MobileNote, MobileWorkspaceSnapshot } from './mobileWorkspaceModel'
+import type { MobileNote, MobileVaultConfig, MobileWorkspaceSnapshot } from './mobileWorkspaceModel'
 import type { MobileWorkspaceWrite } from './mobileWorkspaceEditing'
 import type { ReadOnlyWorkspaceRepository, ReadOnlyWorkspaceRequest } from './readOnlyWorkspaceRepository'
 
@@ -10,9 +10,11 @@ export type WorkspaceFileSystem = {
   deleteTextFile: (rootUri: string, relativePath: string) => void
   moveDirectory: (rootUri: string, fromRelativePath: string, toRelativePath: string) => void
   moveTextFile: (rootUri: string, fromRelativePath: string, toRelativePath: string) => void
+  readVaultConfig?: (rootUri: string) => MobileVaultConfig | null
   readVaultDirectories: (rootUri: string) => string[]
   readTextFile: (rootUri: string, relativePath: string) => string | null
   readVaultFiles: (rootUri: string) => LocalVaultFile[]
+  writeVaultConfig?: (rootUri: string, config: MobileVaultConfig) => void
   writeTextFile: (rootUri: string, relativePath: string, content: string) => void
 }
 
@@ -42,6 +44,7 @@ export function createFileSystemWorkspaceRepository(fileSystem: WorkspaceFileSys
       return buildLocalVaultWorkspaceSnapshot({
         files: fileSystem.readVaultFiles(rootUri),
         folderPaths: fileSystem.readVaultDirectories(rootUri),
+        vaultConfig: fileSystem.readVaultConfig?.(rootUri) ?? null,
         vaultAlias: request?.vaultAlias,
         vaultLabel: workspaceLabel(rootUri, request),
         vaultPath: rootUri,
@@ -55,6 +58,11 @@ function persistWorkspaceWrite(
   rootUri: string,
   write: MobileWorkspaceWrite,
 ) {
+  if (write.kind === 'saveVaultConfig') {
+    if (write.config) fileSystem.writeVaultConfig?.(rootUri, write.config)
+    return
+  }
+
   const relativePath = normalizedWorkspaceRelativePath(write.path)
   if (!relativePath) return
 

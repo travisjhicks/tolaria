@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createFileSystemWorkspaceRepository, normalizedWorkspaceRelativePath, type WorkspaceFileSystem } from './fileSystemWorkspaceRepository'
 import { mobileFileKindForPath, type LocalVaultFile } from './localVaultSnapshot'
+import type { MobileVaultConfig } from './mobileWorkspaceModel'
 
 type RelativePath = string
 type MovePathInput = {
@@ -58,6 +59,42 @@ type: Project
       fileKind: 'text',
       title: 'Active Essays',
       type: 'File',
+    })
+  })
+
+  it('persists vault-scoped note-list config outside the vault file list', async () => {
+    const fileSystem = fakeWorkspaceFileSystem({
+      'Writing/Workflow.md': '# Workflow\n\n',
+    })
+    const repository = createFileSystemWorkspaceRepository(fileSystem)
+    const request = { source: 'native' as const, vaultLabel: 'Laputa', vaultRootUri: 'file:///vault' }
+
+    await repository.persistWrites([{
+      config: {
+        allNotes: { noteListProperties: ['status', 'belongs_to'] },
+        inbox: { explicitOrganization: true, noteListProperties: ['tags'] },
+      },
+      kind: 'saveVaultConfig',
+    }], request)
+
+    expect(fileSystem.files()).toEqual({
+      'Writing/Workflow.md': '# Workflow\n\n',
+    })
+    expect(fileSystem.vaultConfigs()).toEqual({
+      'file:///vault': {
+        allNotes: { noteListProperties: ['status', 'belongs_to'] },
+        inbox: { explicitOrganization: true, noteListProperties: ['tags'] },
+      },
+    })
+    expect(repository.readSnapshot(request)).toMatchObject({
+      noteListPropertyOverrides: {
+        allNotes: ['status', 'belongs_to'],
+        inbox: ['tags'],
+      },
+      vaultConfig: {
+        allNotes: { noteListProperties: ['status', 'belongs_to'] },
+        inbox: { explicitOrganization: true, noteListProperties: ['tags'] },
+      },
     })
   })
 
@@ -230,9 +267,11 @@ type: Project
 function fakeWorkspaceFileSystem(initialFiles: Record<string, string>): WorkspaceFileSystem & {
   directories: () => string[]
   files: () => Record<string, string>
+  vaultConfigs: () => Record<string, MobileVaultConfig>
 } {
   const files = new Map(Object.entries(initialFiles))
   const directories = new Set<string>(folderPathsForFiles(Object.keys(initialFiles)))
+  const vaultConfigs = new Map<string, MobileVaultConfig>()
 
   return {
     createDirectory: (_rootUri, relativePath) => {
@@ -276,9 +315,14 @@ function fakeWorkspaceFileSystem(initialFiles: Record<string, string>): Workspac
       for (const path of folderPathsForFiles([toRelativePath])) directories.add(path)
       files.set(toRelativePath, content)
     },
+    readVaultConfig: (rootUri) => vaultConfigs.get(rootUri) ?? null,
     readTextFile: (_rootUri, relativePath) => files.get(relativePath) ?? null,
     readVaultDirectories: () => [...directories],
     readVaultFiles: (rootUri) => [...files.entries()].map(([relativePath, content], index) => localVaultFile(rootUri, relativePath, content, index)),
+    vaultConfigs: () => Object.fromEntries(vaultConfigs),
+    writeVaultConfig: (rootUri, config) => {
+      vaultConfigs.set(rootUri, config)
+    },
     writeTextFile: (_rootUri, relativePath, content) => {
       for (const path of folderPathsForFiles([relativePath])) directories.add(path)
       files.set(relativePath, content)

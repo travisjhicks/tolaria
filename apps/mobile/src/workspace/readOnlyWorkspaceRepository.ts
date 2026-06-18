@@ -1,6 +1,7 @@
 import { workspaceScenarioForId } from '../fixtures/workspaceFixtures'
-import type { MobileNote, MobileWorkspaceSnapshot } from './mobileWorkspaceModel'
+import type { MobileNote, MobileVaultConfig, MobileWorkspaceSnapshot } from './mobileWorkspaceModel'
 import type { MobileWorkspaceWrite } from './mobileWorkspaceEditing'
+import { snapshotWithMobileVaultConfig } from './mobileVaultConfig'
 import { expoWorkspaceFileSystem } from './expoWorkspaceFileSystem'
 import { createFileSystemWorkspaceRepository } from './fileSystemWorkspaceRepository'
 
@@ -27,10 +28,12 @@ export const fixtureReadOnlyWorkspaceRepository: ReadOnlyWorkspaceRepository = {
 export const HOST_WORKSPACE_SNAPSHOT_STORAGE_KEY = 'tolaria:mobile-workspace-snapshot'
 export const HOST_WORKSPACE_SNAPSHOT_GLOBAL_KEY = '__TOLARIA_MOBILE_WORKSPACE_SNAPSHOT__'
 export const HOST_WORKSPACE_NOTE_CONTENTS_GLOBAL_KEY = '__TOLARIA_MOBILE_WORKSPACE_NOTE_CONTENTS__'
+export const HOST_WORKSPACE_VAULT_CONFIG_GLOBAL_KEY = '__TOLARIA_MOBILE_WORKSPACE_VAULT_CONFIG__'
 export const HOST_WORKSPACE_WRITES_GLOBAL_KEY = '__TOLARIA_MOBILE_WORKSPACE_WRITES__'
 export const HOST_WORKSPACE_WRITE_FAILURE_GLOBAL_KEY = '__TOLARIA_MOBILE_WORKSPACE_WRITE_FAILURE__'
 
 const nativeWorkspaceRepository = createFileSystemWorkspaceRepository(expoWorkspaceFileSystem)
+const hostTextWriteKinds = new Set<MobileWorkspaceWrite['kind']>(['createNote', 'saveNote', 'saveView'])
 
 export const readOnlyWorkspaceRepository: ReadOnlyWorkspaceRepository = {
   persistWrites: async (writes, request) => {
@@ -67,21 +70,63 @@ function persistHostWrites(writes: MobileWorkspaceWrite[]) {
   const writeLog = ensureHostWriteLog()
 
   for (const write of writes) {
-    if (write.kind === 'deleteFolder') {
-      deleteHostFolder(contents, write.path)
-    } else if (write.kind === 'renameFolder') {
-      renameHostFolder(contents, write.path, write.toPath)
-    } else if (write.kind === 'moveNote') {
-      moveHostContent(contents, write.path, write.toPath)
-    } else if (write.kind === 'deleteNote' || write.kind === 'deleteView') {
-      Reflect.deleteProperty(contents, write.path)
-    } else if (write.kind === 'createFolder') {
-      // Host mode keeps folder structure in the in-memory snapshot; there is no file content to mirror.
-    } else {
-      contents[write.path] = write.content
-    }
+    persistHostWrite(contents, write)
     writeLog.push(write)
   }
+}
+
+function persistHostWrite(contents: Record<string, string>, write: MobileWorkspaceWrite) {
+  if (persistHostConfigWrite(write)) return
+  if (persistHostFolderWrite(contents, write)) return
+  if (persistHostMoveWrite(contents, write)) return
+  if (persistHostDeletedTextWrite(contents, write)) return
+  persistHostTextWrite(contents, write)
+}
+
+function persistHostConfigWrite(write: MobileWorkspaceWrite): boolean {
+  if (write.kind !== 'saveVaultConfig') return false
+
+  persistHostVaultConfig(write.config)
+  return true
+}
+
+function persistHostFolderWrite(contents: Record<string, string>, write: MobileWorkspaceWrite): boolean {
+  if (write.kind === 'createFolder') return true
+  if (write.kind === 'deleteFolder') {
+    deleteHostFolder(contents, write.path)
+    return true
+  }
+  if (write.kind === 'renameFolder') {
+    renameHostFolder(contents, write.path, write.toPath)
+    return true
+  }
+
+  return false
+}
+
+function persistHostMoveWrite(contents: Record<string, string>, write: MobileWorkspaceWrite): boolean {
+  if (write.kind !== 'moveNote') return false
+
+  moveHostContent(contents, write.path, write.toPath)
+  return true
+}
+
+function persistHostDeletedTextWrite(contents: Record<string, string>, write: MobileWorkspaceWrite): boolean {
+  if (write.kind !== 'deleteNote' && write.kind !== 'deleteView') return false
+
+  Reflect.deleteProperty(contents, write.path)
+  return true
+}
+
+function persistHostTextWrite(contents: Record<string, string>, write: MobileWorkspaceWrite) {
+  if (!isHostTextWrite(write)) return
+  contents[write.path] = write.content
+}
+
+function isHostTextWrite(
+  write: MobileWorkspaceWrite,
+): write is Extract<MobileWorkspaceWrite, { kind: 'createNote' | 'saveNote' | 'saveView' }> {
+  return hostTextWriteKinds.has(write.kind)
 }
 
 function moveHostContent(contents: Record<string, string>, previousPath: string, nextPath: string) {
@@ -113,7 +158,7 @@ function hostPathInFolder(folderPath: string, candidatePath: string): boolean {
 
 function readHostWorkspaceSnapshot(): MobileWorkspaceSnapshot | null {
   const injectedSnapshot = hostGlobalSnapshot()
-  if (injectedSnapshot) return injectedSnapshot
+  if (injectedSnapshot) return snapshotWithHostVaultConfig(injectedSnapshot)
 
   const storage = hostStorage()
   if (!storage) return null
@@ -123,7 +168,7 @@ function readHostWorkspaceSnapshot(): MobileWorkspaceSnapshot | null {
 
   try {
     const parsed: unknown = JSON.parse(serialized)
-    return isMobileWorkspaceSnapshot(parsed) ? parsed : null
+    return isMobileWorkspaceSnapshot(parsed) ? snapshotWithHostVaultConfig(parsed) : null
   } catch {
     return null
   }
@@ -158,6 +203,20 @@ function ensureHostNoteContents(): Record<string, string> {
   const contents: Record<string, string> = {}
   Reflect.set(globalThis, HOST_WORKSPACE_NOTE_CONTENTS_GLOBAL_KEY, contents)
   return contents
+}
+
+function persistHostVaultConfig(config: MobileVaultConfig | undefined) {
+  if (config) Reflect.set(globalThis, HOST_WORKSPACE_VAULT_CONFIG_GLOBAL_KEY, config)
+}
+
+function snapshotWithHostVaultConfig(snapshot: MobileWorkspaceSnapshot): MobileWorkspaceSnapshot {
+  const config = hostVaultConfig()
+  return config ? snapshotWithMobileVaultConfig(snapshot, config) : snapshot
+}
+
+function hostVaultConfig(): MobileVaultConfig | null {
+  const maybeConfig = (globalThis as Record<string, unknown>)[HOST_WORKSPACE_VAULT_CONFIG_GLOBAL_KEY]
+  return isRecord(maybeConfig) ? maybeConfig : null
 }
 
 function ensureHostWriteLog(): MobileWorkspaceWrite[] {

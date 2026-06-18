@@ -75,6 +75,10 @@ import {
   mobileNoteForWikilinkTarget,
   mobileWikilinkTargetForNote,
 } from './mobileWikilinks'
+import {
+  mobileNoteListPropertyOverridesFromVaultConfig,
+  mobileVaultConfigWithPrimaryNoteListProperties,
+} from './mobileVaultConfig'
 import type { MobileTypeDefinitionPatch } from './mobileTypeDefinitions'
 import { applyMobileTypeEdit } from './mobileWorkspaceTypeEditing'
 import { applyMobileRestorationEdit } from './mobileWorkspaceRestoration'
@@ -156,7 +160,10 @@ export type MobileWorkspaceWrite =
   | { kind: 'renameFolder'; path: string; toPath: string }
   | { content: MarkdownContent; kind: 'saveNote'; path: string }
   | { content: MarkdownContent; kind: 'saveView'; path: string }
+  | { config: MobileWorkspaceSnapshot['vaultConfig']; kind: 'saveVaultConfig' }
   | { kind: 'deleteView'; path: string }
+
+export { normalizedDisplayProperties } from './mobileVaultConfig'
 
 export type MobileWorkspaceEditResult = {
   snapshot: MobileWorkspaceSnapshot
@@ -978,31 +985,20 @@ function updatePrimaryNoteListProperties(
   snapshot: MobileWorkspaceSnapshot,
   edit: Extract<MobileWorkspaceEdit, { type: 'updatePrimaryNoteListProperties' }>,
 ): MobileWorkspaceEditResult {
-  const nextOverrides = { ...snapshot.noteListPropertyOverrides }
-  const displayProperties = normalizedDisplayProperties(edit.listPropertiesDisplay)
-
-  if (displayProperties.length > 0) nextOverrides[edit.target] = displayProperties
-  else Reflect.deleteProperty(nextOverrides, edit.target)
+  const vaultConfig = mobileVaultConfigWithPrimaryNoteListProperties(
+    snapshot.vaultConfig,
+    edit.target,
+    edit.listPropertiesDisplay,
+  )
 
   return {
     snapshot: {
       ...snapshot,
-      noteListPropertyOverrides: Object.keys(nextOverrides).length > 0 ? nextOverrides : undefined,
+      noteListPropertyOverrides: mobileNoteListPropertyOverridesFromVaultConfig(vaultConfig),
+      vaultConfig,
     },
-    writes: [],
+    writes: [{ config: vaultConfig, kind: 'saveVaultConfig' }],
   }
-}
-
-export function normalizedDisplayProperties(displayProperties: string[]) {
-  const seen = new Set<string>()
-  return displayProperties
-    .map((key) => key.trim())
-    .filter((key) => {
-      const normalized = key.toLowerCase()
-      if (!normalized || seen.has(normalized)) return false
-      seen.add(normalized)
-      return true
-    })
 }
 
 function findMobileView(views: MobileSavedView[] | undefined, viewId: string): MobileSavedView | null {

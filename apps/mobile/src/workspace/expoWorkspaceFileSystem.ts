@@ -1,5 +1,9 @@
 import type { Directory, File, Paths } from 'expo-file-system'
 import { mobileFileKindForPath, type LocalVaultFile } from './localVaultSnapshot'
+import {
+  parseMobileVaultConfig,
+  serializeMobileVaultConfig,
+} from './mobileVaultConfig'
 import { normalizedWorkspaceRelativePath, type WorkspaceFileSystem } from './fileSystemWorkspaceRepository'
 
 type ExpoFileSystemModule = {
@@ -47,6 +51,10 @@ export const expoWorkspaceFileSystem: WorkspaceFileSystem = {
   moveTextFile: (rootUri, fromRelativePath, toRelativePath) => {
     moveWorkspaceEntry(rootUri, fromRelativePath, toRelativePath, workspaceFile)
   },
+  readVaultConfig: (rootUri) => {
+    const file = vaultConfigFile(expoFileSystem(), rootUri)
+    return file.exists ? parseMobileVaultConfig(file.textSync()) : null
+  },
   readTextFile: (rootUri, relativePath) => {
     const normalizedPath = normalizedWorkspaceRelativePath(relativePath)
     if (!normalizedPath) return null
@@ -76,6 +84,12 @@ export const expoWorkspaceFileSystem: WorkspaceFileSystem = {
     file.parentDirectory.create({ idempotent: true, intermediates: true })
     if (!file.exists) file.create({ intermediates: true })
     file.write(content, { encoding: 'utf8' })
+  },
+  writeVaultConfig: (rootUri, config) => {
+    const file = vaultConfigFile(expoFileSystem(), rootUri)
+    file.parentDirectory.create({ idempotent: true, intermediates: true })
+    if (!file.exists) file.create({ intermediates: true })
+    file.write(serializeMobileVaultConfig(config), { encoding: 'utf8' })
   },
 }
 
@@ -161,6 +175,21 @@ function workspaceFile(module: ExpoFileSystemModule, rootUri: RootUri, relativeP
 
 function workspaceDirectory(module: ExpoFileSystemModule, rootUri: RootUri, relativePath: RelativeVaultPath): Directory {
   return new module.Directory(rootUri, ...relativePath.split('/'))
+}
+
+function vaultConfigFile(module: ExpoFileSystemModule, rootUri: RootUri): File {
+  const directory = new module.Directory(module.Paths.document, '.tolaria-mobile-config')
+  return new module.File(directory.uri, `${stableVaultConfigName(rootUri)}.json`)
+}
+
+function stableVaultConfigName(rootUri: RootUri): string {
+  let hash = 2_166_136_261
+  for (let index = 0; index < rootUri.length; index += 1) {
+    hash ^= rootUri.charCodeAt(index)
+    hash = Math.imul(hash, 16_777_619)
+  }
+
+  return `vault-${(hash >>> 0).toString(36)}`
 }
 
 function joinedRelativePath(parent: RelativeVaultPath, name: DirectoryName): RelativeVaultPath {

@@ -196,3 +196,4 @@ proposed → active → superseded
 | [0143](0143-mobile-folder-mutation-write-contract.md) | Mobile folder mutation write contract | active |
 | [0144](0144-mobile-note-move-write-contract.md) | Mobile note move write contract | active |
 | [0145](0145-tentap-mobile-wysiwyg-editor.md) | TenTap mobile WYSIWYG editor | active |
+| [0148](0148-mobile-vault-config-persistence.md) | Mobile vault-scoped config persistence | active |

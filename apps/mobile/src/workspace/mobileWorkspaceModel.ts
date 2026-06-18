@@ -203,6 +203,16 @@ export type MobilePrimaryNoteListPropertyOverrides = {
   inbox?: string[]
 }
 
+export type MobileVaultPrimaryNoteListConfig = {
+  explicitOrganization?: boolean
+  noteListProperties?: string[] | null
+}
+
+export type MobileVaultConfig = {
+  allNotes?: MobileVaultPrimaryNoteListConfig | null
+  inbox?: MobileVaultPrimaryNoteListConfig | null
+}
+
 export type MobileWorkspaceSnapshot = {
   allNotes?: MobileNote[]
   editorBlocks: MobileEditorBlock[]
@@ -217,6 +227,7 @@ export type MobileWorkspaceSnapshot = {
   source?: MobileWorkspaceSource
   sync: MobileSyncStatus
   typeDefinitions?: MobileTypeDefinitions
+  vaultConfig?: MobileVaultConfig
   views?: MobileSavedView[]
 }
 

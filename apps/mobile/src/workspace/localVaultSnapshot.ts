@@ -24,6 +24,10 @@ import { isMobileInboxNote } from './mobileNoteFilters'
 import { normalizeMobileNoteWidth } from './mobileNoteWidth'
 import { normalizeMobileWikilinkTarget } from './mobileWikilinks'
 import { mobileWorkspaceAlias } from './mobileWorkspaceAlias'
+import {
+  mobileNoteListPropertyOverridesFromVaultConfig,
+  normalizeMobileVaultConfig,
+} from './mobileVaultConfig'
 import type {
   MobileFileKind,
   MobileNote,
@@ -37,6 +41,7 @@ import type {
   MobileTone,
   MobileTypeDefinition,
   MobileTypeDefinitions,
+  MobileVaultConfig,
   MobileWorkspaceSnapshot,
 } from './mobileWorkspaceModel'
 
@@ -65,6 +70,7 @@ export type LocalVaultSnapshotOptions = {
   folderPaths?: RelativeVaultPath[]
   files: LocalVaultFile[]
   maxNotes?: number
+  vaultConfig?: MobileVaultConfig | null
   vaultAlias?: string | null
   vaultLabel: LocalVaultLabel
   vaultPath: VaultRootPath
@@ -188,6 +194,7 @@ export function buildLocalVaultWorkspaceSnapshot({
   files,
   maxNotes = DEFAULT_MAX_NOTES,
   vaultAlias,
+  vaultConfig,
   vaultLabel,
   vaultPath,
 }: LocalVaultSnapshotOptions): MobileWorkspaceSnapshot {
@@ -203,12 +210,14 @@ export function buildLocalVaultWorkspaceSnapshot({
   const notes = selectedEntries.map((entry) => localEntryToMobileNote(entry, resolveRelationship, workspaceIdentity, 'editable'))
   const selectedNoteId = notes[0]?.id
   const views = orderedMobileSavedViews(files.map(parseViewFile).filter(isMobileSavedView))
+  const normalizedVaultConfig = normalizeMobileVaultConfig(vaultConfig)
 
   return {
     allNotes,
     editorBlocks: notes[0]?.editorBlocks ?? [],
     editorBullets: notes[0]?.editorBullets ?? [],
     noteListSubtitle: noteListSubtitle(notes.length, visibleEntries.length),
+    noteListPropertyOverrides: mobileNoteListPropertyOverridesFromVaultConfig(normalizedVaultConfig),
     notes,
     selectedNoteId,
     folderPaths,
@@ -223,6 +232,7 @@ export function buildLocalVaultWorkspaceSnapshot({
     },
     sync: { kind: 'synced', minutesAgo: 0 },
     typeDefinitions,
+    vaultConfig: normalizedVaultConfig,
     views,
   }
 }
