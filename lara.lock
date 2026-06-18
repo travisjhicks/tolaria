@@ -621,8 +621,12 @@ files:
     editor.formatting.strikethrough: 926a51baad949d12035107e5d06e2fdb
     editor.formatting.code: ca0dbad92a874b2f69b549293387925e
     editor.formatting.wikilink: e0ee5416c95077b05ea46d40dee513a7
+    editor.formatting.heading1: fd7500ca2aba5ce6ba82e8dee1ffe5f4
     editor.formatting.heading2: ea59935a58010a876f94374fb2f41d51
     editor.formatting.heading3: 652864eb81a28bd7164f1605ab52a26a
+    editor.formatting.heading4: 553ddd7695ba37dc6f821067d9f5da30
+    editor.formatting.heading5: 8c08de90796fbc4c4aae36014c40eec4
+    editor.formatting.heading6: a24b3f7226370522c2a0e7ffd542a031
     editor.formatting.bulletList: 7e0df159e037db49a0ce97098f05b5ac
     editor.formatting.orderedList: 4b985b57aabbd3110aac1d53b1a921c1
     editor.formatting.taskList: a5d727df2ce2d168bae39c78df4b9054

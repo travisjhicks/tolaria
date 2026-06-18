@@ -9,6 +9,10 @@ import {
   Quotes,
   Table,
   TextB,
+  TextHFive,
+  TextHFour,
+  TextHOne,
+  TextHSix,
   TextHThree,
   TextHTwo,
   TextItalic,
@@ -68,6 +72,12 @@ const formattingCommands: FormattingCommand[] = [
     testID: 'editor-format-wikilink',
   },
   {
+    action: 'heading1',
+    icon: (color) => <TextHOne color={color} size={desktopToolbarActionParity.iconSize} />,
+    label: mobileText('editor.formatting.heading1'),
+    testID: 'editor-format-heading-1',
+  },
+  {
     action: 'heading2',
     icon: (color) => <TextHTwo color={color} size={desktopToolbarActionParity.iconSize} />,
     label: mobileText('editor.formatting.heading2'),
@@ -78,6 +88,24 @@ const formattingCommands: FormattingCommand[] = [
     icon: (color) => <TextHThree color={color} size={desktopToolbarActionParity.iconSize} />,
     label: mobileText('editor.formatting.heading3'),
     testID: 'editor-format-heading-3',
+  },
+  {
+    action: 'heading4',
+    icon: (color) => <TextHFour color={color} size={desktopToolbarActionParity.iconSize} />,
+    label: mobileText('editor.formatting.heading4'),
+    testID: 'editor-format-heading-4',
+  },
+  {
+    action: 'heading5',
+    icon: (color) => <TextHFive color={color} size={desktopToolbarActionParity.iconSize} />,
+    label: mobileText('editor.formatting.heading5'),
+    testID: 'editor-format-heading-5',
+  },
+  {
+    action: 'heading6',
+    icon: (color) => <TextHSix color={color} size={desktopToolbarActionParity.iconSize} />,
+    label: mobileText('editor.formatting.heading6'),
+    testID: 'editor-format-heading-6',
   },
   {
     action: 'bulletList',

@@ -17,8 +17,12 @@ describe('native WYSIWYG format commands', () => {
     ['orderedList', 'toggleOrderedList', []],
     ['taskList', 'toggleTaskList', []],
     ['quote', 'toggleBlockquote', []],
+    ['heading1', 'toggleHeading', [1]],
     ['heading2', 'toggleHeading', [2]],
     ['heading3', 'toggleHeading', [3]],
+    ['heading4', 'toggleHeading', [4]],
+    ['heading5', 'toggleHeading', [5]],
+    ['heading6', 'toggleHeading', [6]],
     ['highlight', 'toggleHighlight', [mobileColors.yellowSoft]],
   ] as const)('maps %s to the TenTap %s command', (action, method, args) => {
     const editor = fakeEditor()

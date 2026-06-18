@@ -41,10 +41,17 @@ describe('mobile markdown formatting', () => {
     })
   })
 
-  it('normalizes heading markers on the selected line', () => {
-    expect(applyMobileMarkdownFormat('# Old heading\nBody', { start: 2, end: 2 }, 'heading2')).toEqual({
-      selection: { start: 14, end: 14 },
-      text: '## Old heading\nBody',
+  it.each([
+    ['heading1', '# Old heading\nBody', 13],
+    ['heading2', '## Old heading\nBody', 14],
+    ['heading3', '### Old heading\nBody', 15],
+    ['heading4', '#### Old heading\nBody', 16],
+    ['heading5', '##### Old heading\nBody', 17],
+    ['heading6', '###### Old heading\nBody', 18],
+  ] as const)('normalizes selected lines with the %s command', (action, text, cursor) => {
+    expect(applyMobileMarkdownFormat('# Old heading\nBody', { start: 2, end: 2 }, action)).toEqual({
+      selection: { start: cursor, end: cursor },
+      text,
     })
   })
 

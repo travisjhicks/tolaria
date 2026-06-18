@@ -4,8 +4,12 @@ export type MobileMarkdownFormatAction =
   | 'code'
   | 'codeBlock'
   | 'divider'
+  | 'heading1'
   | 'heading2'
   | 'heading3'
+  | 'heading4'
+  | 'heading5'
+  | 'heading6'
   | 'highlight'
   | 'italic'
   | 'orderedList'
@@ -42,7 +46,7 @@ type MarkdownLine = {
 }
 
 type LineMarker = {
-  value: '- ' | '- [ ] ' | '> ' | '## ' | '### '
+  value: '- ' | '- [ ] ' | '> ' | '# ' | '## ' | '### ' | '#### ' | '##### ' | '###### '
 }
 
 type MarkdownReplacement = {
@@ -63,8 +67,12 @@ const inlineFormats: Partial<Record<MobileMarkdownFormatAction, InlineFormat>> =
 
 const lineMarkers: Partial<Record<MobileMarkdownFormatAction, LineMarker>> = {
   bulletList: { value: '- ' },
+  heading1: { value: '# ' },
   heading2: { value: '## ' },
   heading3: { value: '### ' },
+  heading4: { value: '#### ' },
+  heading5: { value: '##### ' },
+  heading6: { value: '###### ' },
   quote: { value: '> ' },
   taskList: { value: '- [ ] ' },
 }
