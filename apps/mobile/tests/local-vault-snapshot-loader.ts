@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test'
 import { access, readdir, readFile, stat } from 'node:fs/promises'
 import { basename, join, relative } from 'node:path'
 import { performance } from 'node:perf_hooks'
-import { buildLocalVaultWorkspaceSnapshot, type LocalVaultFile } from '../src/workspace/localVaultSnapshot'
+import { buildLocalVaultWorkspaceSnapshot, mobileFileKindForPath, type LocalVaultFile } from '../src/workspace/localVaultSnapshot'
 import type { MobileNote, MobileSidebarFolder, MobileWorkspaceSnapshot } from '../src/workspace/mobileWorkspaceModel'
 import {
   HOST_WORKSPACE_NOTE_CONTENTS_GLOBAL_KEY,
@@ -189,7 +189,7 @@ async function listWorkspaceDirectories(vaultPath: VaultPath, currentPath: Absol
 }
 
 function shouldReadFile(relativePath: RelativePath): boolean {
-  return relativePath.endsWith('.md') || /^views\/[^/]+\.ya?ml$/u.test(relativePath)
+  return Boolean(relativePath.split('/').at(-1))
 }
 
 function shouldReadDirectory(name: DirectoryName): boolean {
@@ -197,8 +197,10 @@ function shouldReadDirectory(name: DirectoryName): boolean {
 }
 
 async function readLocalVaultFile(vaultPath: VaultPath, absolutePath: AbsolutePath): Promise<LocalVaultFile> {
+  const relativePath = relative(vaultPath, absolutePath).replaceAll('\\', '/')
+  const fileKind = mobileFileKindForPath(relativePath)
   const [content, metadata] = await Promise.all([
-    readFile(absolutePath, 'utf8'),
+    fileKind === 'binary' ? Promise.resolve('') : readTextFile(absolutePath),
     stat(absolutePath),
   ])
 
@@ -206,8 +208,17 @@ async function readLocalVaultFile(vaultPath: VaultPath, absolutePath: AbsolutePa
     absolutePath,
     content,
     createdAt: metadata.birthtimeMs,
+    fileKind,
     modifiedAt: metadata.mtimeMs,
-    relativePath: relative(vaultPath, absolutePath).replaceAll('\\', '/'),
+    relativePath,
     size: metadata.size,
+  }
+}
+
+async function readTextFile(absolutePath: AbsolutePath): Promise<string> {
+  try {
+    return await readFile(absolutePath, 'utf8')
+  } catch {
+    return ''
   }
 }

@@ -123,6 +123,35 @@ describe('tablet workspace navigation', () => {
     ]), inboxSelection).map((candidate) => candidate.id)).toEqual(['capture'])
   })
 
+  it('keeps primary filters markdown-only while folder navigation can show file entries', () => {
+    const snapshot = workspaceSnapshot([
+      note({ id: 'root', path: 'Root.md', title: 'Root' }),
+      note({ fileKind: 'text', id: 'docs/config.yml', path: 'docs/config.yml', title: 'config.yml', type: 'File' }),
+      note({ fileKind: 'binary', id: 'docs/logo.png', path: 'docs/logo.png', title: 'logo.png', type: 'File' }),
+      note({ id: 'attachments/reference.md', path: 'attachments/reference.md', title: 'Reference' }),
+      note({ archived: true, id: 'archive/old.md', path: 'archive/old.md', title: 'Old' }),
+      note({ archived: true, fileKind: 'binary', id: 'archive/old.zip', path: 'archive/old.zip', title: 'old.zip', type: 'File' }),
+    ])
+
+    expect(notesForSidebarSelection(snapshot, {
+      id: 'all-notes',
+      kind: 'item',
+      label: 'All Notes',
+      sectionId: 'primary',
+    }).map((candidate) => candidate.id)).toEqual(['root'])
+    expect(notesForSidebarSelection(snapshot, {
+      id: 'archive',
+      kind: 'item',
+      label: 'Archive',
+      sectionId: 'primary',
+    }).map((candidate) => candidate.id)).toEqual(['archive/old.md'])
+    expect(notesForSidebarSelection(snapshot, {
+      id: 'docs',
+      kind: 'folder',
+      label: 'docs',
+    }).map((candidate) => candidate.id)).toEqual(['docs/config.yml', 'docs/logo.png'])
+  })
+
   it('selects folders by path and includes descendants without matching duplicate labels', () => {
     const snapshot = workspaceSnapshot([
       note({ id: 'writing-root', path: 'Writing/Root.md', title: 'Root' }),

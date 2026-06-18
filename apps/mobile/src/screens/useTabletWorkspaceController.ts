@@ -27,6 +27,7 @@ import type {
 } from '../workspace/readOnlyWorkspaceRepository'
 import { writeMobileClipboardText } from '../workspace/mobileClipboard'
 import { buildMobileDeepLinkForNote } from '../workspace/mobileDeepLinks'
+import { isMobileMarkdownNote } from '../workspace/mobileNoteFilters'
 import { exportMobileNoteAsPdf } from '../workspace/mobilePdfExport'
 import { canMoveMobileSavedView, evaluateMobileSavedView } from '../workspace/mobileSavedViews'
 import {
@@ -297,7 +298,7 @@ function useHydrateSelectedNote({
   selectedNote: MobileNote | null
 }) {
   useEffect(() => {
-    if (!selectedNote || selectedNote.rawContent !== undefined) return
+    if (!selectedNote || !isMobileMarkdownNote(selectedNote) || selectedNote.rawContent !== undefined) return
 
     let cancelled = false
     void repository.readNoteContent(selectedNote, repositoryRequest).then((rawContent) => {

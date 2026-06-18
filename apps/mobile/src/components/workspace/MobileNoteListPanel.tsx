@@ -220,7 +220,7 @@ function noteRow({
       subtitle={note.snippet}
       testID={`note-row-${note.id}`}
       title={note.title}
-      trailing={<MobileTypeIcon size={16} tone={note.typeTone} type={note.type} />}
+      trailing={<MobileTypeIcon fileKind={note.fileKind} size={16} tone={note.typeTone} type={note.type} />}
       onPress={() => onSelectNote(note.id)}
     />
   )

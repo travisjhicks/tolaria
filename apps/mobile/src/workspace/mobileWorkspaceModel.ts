@@ -1,5 +1,6 @@
 export type MobileTone = 'blue' | 'gray' | 'green' | 'orange' | 'purple' | 'red' | 'yellow'
 export type MobileNoteWidth = 'normal' | 'wide'
+export type MobileFileKind = 'binary' | 'markdown' | 'text'
 
 export type MobileNote = {
   aliases?: string[]
@@ -11,6 +12,7 @@ export type MobileNote = {
   editorBullets?: string[]
   favorite: boolean
   favoriteIndex?: number | null
+  fileKind?: MobileFileKind
   id: string
   links: number
   modified: string

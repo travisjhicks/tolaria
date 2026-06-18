@@ -24,6 +24,7 @@ import { isMobileInboxNote } from './mobileNoteFilters'
 import { normalizeMobileNoteWidth } from './mobileNoteWidth'
 import { normalizeMobileWikilinkTarget } from './mobileWikilinks'
 import type {
+  MobileFileKind,
   MobileNote,
   MobileNoteWidth,
   MobileProperty,
@@ -53,6 +54,7 @@ export type LocalVaultFile = {
   absolutePath: AbsoluteVaultPath
   content: string
   createdAt: TimestampMs | null
+  fileKind?: MobileFileKind
   modifiedAt: TimestampMs | null
   relativePath: RelativeVaultPath
   size: number
@@ -73,6 +75,7 @@ type LocalVaultEntry = {
   createdAt: TimestampMs | null
   favorite: boolean
   favoriteIndex: number | null
+  fileKind: MobileFileKind
   filename: string
   id: NoteId
   icon: string | null
@@ -99,6 +102,84 @@ type MobileNoteDetailLevel = 'editable' | 'summary'
 
 const DEFAULT_MAX_NOTES = 80
 const absoluteDateFormatter = new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short', year: 'numeric' })
+const textFileExtensions = new Set([
+  'bash',
+  'bat',
+  'c',
+  'cfg',
+  'clj',
+  'cmd',
+  'conf',
+  'cpp',
+  'css',
+  'csv',
+  'dockerfile',
+  'editorconfig',
+  'el',
+  'env',
+  'erl',
+  'ex',
+  'exs',
+  'fish',
+  'gitignore',
+  'go',
+  'graphql',
+  'h',
+  'hcl',
+  'hpp',
+  'hs',
+  'htm',
+  'html',
+  'ini',
+  'java',
+  'jl',
+  'js',
+  'json',
+  'jsx',
+  'kt',
+  'less',
+  'lisp',
+  'lua',
+  'makefile',
+  'mdx',
+  'ml',
+  'nix',
+  'properties',
+  'ps1',
+  'py',
+  'r',
+  'rb',
+  'rs',
+  'scss',
+  'sh',
+  'sql',
+  'svelte',
+  'swift',
+  'tf',
+  'toml',
+  'ts',
+  'tsx',
+  'txt',
+  'vim',
+  'vue',
+  'xml',
+  'yaml',
+  'yml',
+  'zig',
+  'zsh',
+])
+const extensionlessTextFilenames = new Set([
+  '.editorconfig',
+  '.env',
+  '.gitattributes',
+  '.gitignore',
+  'brewfile',
+  'dockerfile',
+  'gemfile',
+  'makefile',
+  'procfile',
+  'rakefile',
+])
 
 export function buildLocalVaultWorkspaceSnapshot({
   folderPaths = [],
@@ -107,7 +188,7 @@ export function buildLocalVaultWorkspaceSnapshot({
   vaultLabel,
   vaultPath,
 }: LocalVaultSnapshotOptions): MobileWorkspaceSnapshot {
-  const entries = applyTypeDefinitionTones(files.filter(isMarkdownFile).map(parseLocalVaultEntry))
+  const entries = applyTypeDefinitionTones(files.map(parseLocalVaultEntry))
   const typeDefinitions = localTypeDefinitions(entries)
   const allNoteEntries = [...entries].sort(compareByModifiedDate)
   const visibleEntries = visibleNoteEntries(entries)
@@ -157,6 +238,13 @@ function applyTypeDefinitionTones(entries: LocalVaultEntry[]): LocalVaultEntry[]
 }
 
 function parseLocalVaultEntry(file: LocalVaultFile): LocalVaultEntry {
+  const fileKind = localVaultFileKind(file)
+  return fileKind === 'markdown'
+    ? parseMarkdownVaultEntry(file, fileKind)
+    : parseNonMarkdownVaultEntry(file, fileKind)
+}
+
+function parseMarkdownVaultEntry(file: LocalVaultFile, fileKind: MobileFileKind): LocalVaultEntry {
   const document = parseLocalVaultDocument(file.content)
   const filename = file.relativePath.split('/').at(-1) ?? file.relativePath
   const type = cleanTypeName(frontmatterScalar(document.frontmatter, ['type', 'Is A', 'is_a']) ?? 'Note')
@@ -174,6 +262,7 @@ function parseLocalVaultEntry(file: LocalVaultFile): LocalVaultEntry {
     createdAt: file.createdAt,
     favorite: frontmatterFlag(document.frontmatter, ['_favorite', 'favorite']),
     favoriteIndex: frontmatterNumber(document.frontmatter, ['_favorite_index']),
+    fileKind,
     filename,
     id: file.relativePath,
     icon: frontmatterText(document.frontmatter, ['_icon', 'icon']),
@@ -193,6 +282,40 @@ function parseLocalVaultEntry(file: LocalVaultFile): LocalVaultEntry {
     typeDefinition: typeDefinitionFromFrontmatter(document.frontmatter),
     typeDefinitionTone: toneFromDesktopColor(color, title),
     typeTone: toneFromDesktopColor(null, type),
+  }
+}
+
+function parseNonMarkdownVaultEntry(file: LocalVaultFile, fileKind: MobileFileKind): LocalVaultEntry {
+  const filename = file.relativePath.split('/').at(-1) ?? file.relativePath
+  const title = nonMarkdownTitle(file, filename)
+
+  return {
+    archived: false,
+    aliases: [],
+    body: fileKind === 'text' ? file.content : '',
+    createdAt: file.createdAt,
+    favorite: false,
+    favoriteIndex: null,
+    fileKind,
+    filename,
+    id: file.relativePath,
+    icon: null,
+    links: 0,
+    modifiedAt: file.modifiedAt,
+    noteWidth: null,
+    organized: false,
+    outgoingLinks: [],
+    path: file.relativePath,
+    properties: [],
+    rawContent: file.content,
+    relationships: {},
+    status: '',
+    tags: [],
+    title,
+    type: 'File',
+    typeDefinition: {},
+    typeDefinitionTone: 'gray',
+    typeTone: 'gray',
   }
 }
 
@@ -274,8 +397,52 @@ function parseViewFile(file: LocalVaultFile, index: number): MobileSavedView | n
   return parseMobileSavedViewFile(file, index)
 }
 
-function isMarkdownFile(file: LocalVaultFile): boolean {
-  return file.relativePath.endsWith('.md')
+function localVaultFileKind(file: LocalVaultFile): MobileFileKind {
+  return file.fileKind ?? mobileFileKindForPath(file.relativePath)
+}
+
+export function mobileFileKindForPath(path: RelativeVaultPath): MobileFileKind {
+  const filename = path.split('/').at(-1)?.toLowerCase() ?? path.toLowerCase()
+  const dotIndex = filename.lastIndexOf('.')
+  if (dotIndex <= 0 || dotIndex === filename.length - 1) {
+    return extensionlessTextFilenames.has(filename) ? 'text' : 'binary'
+  }
+
+  const extension = filename.slice(dotIndex + 1)
+  if (extension === 'md' || extension === 'markdown') return 'markdown'
+  if (textFileExtensions.has(extension)) return 'text'
+  return 'binary'
+}
+
+function nonMarkdownTitle(file: LocalVaultFile, filename: string): NoteTitle {
+  return yamlName(file) ?? filename
+}
+
+function yamlName(file: LocalVaultFile): NoteTitle | null {
+  const extension = file.relativePath.split('.').at(-1)?.toLowerCase()
+  if (extension !== 'yml' && extension !== 'yaml') return null
+
+  const match = file.content.match(/^name:\s*(.+?)\s*$/m)
+  if (!match) return null
+
+  return unquoteYamlScalar(match[1])
+}
+
+function unquoteYamlScalar(value: string): string {
+  const trimmed = value.trim()
+  if (isQuotedYamlScalar(trimmed)) {
+    return trimmed.slice(1, -1)
+  }
+
+  return trimmed
+}
+
+function isQuotedYamlScalar(value: string): boolean {
+  return isWrappedBy(value, '"') || isWrappedBy(value, "'")
+}
+
+function isWrappedBy(value: string, quote: string): boolean {
+  return value.startsWith(quote) && value.endsWith(quote)
 }
 
 function isMobileSavedView(view: MobileSavedView | null): view is MobileSavedView {
@@ -303,6 +470,7 @@ function localEntryToMobileNote(
     editorBullets: blocks ? localVaultEditorBullets(blocks) : undefined,
     favorite: entry.favorite,
     favoriteIndex: entry.favoriteIndex,
+    fileKind: entry.fileKind,
     id: entry.id,
     icon: entry.icon,
     links: entry.links,

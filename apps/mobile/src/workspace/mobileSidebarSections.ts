@@ -1,5 +1,5 @@
 import { evaluateMobileSavedView } from './mobileSavedViews'
-import { isMobileInboxNote } from './mobileNoteFilters'
+import { isMobileAllNotesEntry, isMobileInboxNote, isMobileMarkdownNote } from './mobileNoteFilters'
 import { mobileSidebarIconFromValue, mobileToneFromValue } from './mobileWorkspaceMetadata'
 import { buildMobileFolderTree } from './mobileWorkspaceFolders'
 import type {
@@ -41,26 +41,28 @@ export function buildMobileSidebarSections({
   views = [],
 }: BuildMobileSidebarSectionsInput): MobileSidebarSection[] {
   const activeNotes = notes.filter((note) => !note.archived)
-  const archivedNotes = notes.filter((note) => note.archived)
+  const activeMarkdownNotes = activeNotes.filter(isMobileMarkdownNote)
   const sections = [
-    primarySection(activeNotes, archivedNotes),
-    favoritesSection(activeNotes),
-    viewsSection(views, notes),
-    typesSection(activeNotes, previousSections, typeDefinitions),
+    primarySection(notes),
+    favoritesSection(activeMarkdownNotes),
+    viewsSection(views, notes.filter(isMobileMarkdownNote)),
+    typesSection(activeMarkdownNotes, previousSections, typeDefinitions),
     foldersSection(notes, folderPaths),
   ]
 
   return sections.filter((section) => section.id === 'primary' || Boolean(section.items?.length || section.folders?.length))
 }
 
-function primarySection(activeNotes: MobileNote[], archivedNotes: MobileNote[]): MobileSidebarSection {
-  const inboxNotes = activeNotes.filter(isMobileInboxNote)
+function primarySection(notes: MobileNote[]): MobileSidebarSection {
+  const inboxNotes = notes.filter(isMobileInboxNote)
+  const allNotes = notes.filter((note) => !note.archived && isMobileAllNotesEntry(note))
+  const archivedNotes = notes.filter((note) => note.archived && isMobileMarkdownNote(note))
 
   return {
     id: 'primary',
     items: [
       { active: true, count: countText(inboxNotes.length), icon: 'inbox', id: 'inbox', label: 'Inbox' },
-      { count: countText(activeNotes.length), icon: 'file', id: 'all-notes', label: 'All Notes' },
+      { count: countText(allNotes.length), icon: 'file', id: 'all-notes', label: 'All Notes' },
       { count: countText(archivedNotes.length), icon: 'archive', id: 'archive', label: 'Archive' },
     ],
   }

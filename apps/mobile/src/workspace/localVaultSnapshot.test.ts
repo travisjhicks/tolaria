@@ -184,6 +184,55 @@ type: Type
     })
   })
 
+  it('loads desktop file kinds while keeping default primary note filters markdown-only', () => {
+    const snapshot = buildLocalVaultWorkspaceSnapshot({
+      files: [
+        vaultFile('Inbox/root.md', `---
+type: Note
+---
+# Root
+`),
+        vaultFile('attachments/reference.md', `---
+type: Note
+_organized: true
+---
+# Attachment Markdown
+`, 1),
+        vaultFile('views/workspace.yml', 'name: Workspace View\nfilters:\n  all: []\n', 2),
+        vaultFile('assets/logo.png', '', 3),
+        vaultFile('Archive/old.md', `---
+type: Note
+_archived: true
+---
+# Old
+`, 4),
+      ],
+      vaultLabel: 'Laputa',
+      vaultPath: '/Users/luca/Laputa',
+    })
+
+    expect(snapshot.source).toMatchObject({ totalNotes: 5, visibleNotes: 1 })
+    expect(snapshot.notes.map((note) => note.title)).toEqual(['Root'])
+    expect(snapshot.allNotes?.find((note) => note.path === 'views/workspace.yml')).toMatchObject({
+      fileKind: 'text',
+      title: 'Workspace View',
+      type: 'File',
+    })
+    expect(snapshot.allNotes?.find((note) => note.path === 'assets/logo.png')).toMatchObject({
+      fileKind: 'binary',
+      title: 'logo.png',
+      type: 'File',
+    })
+    expect(snapshot.sidebarSections.find((section) => section.id === 'primary')?.items).toEqual([
+      expect.objectContaining({ count: '1', id: 'inbox' }),
+      expect.objectContaining({ count: '1', id: 'all-notes' }),
+      expect.objectContaining({ count: '1', id: 'archive' }),
+    ])
+    expect(snapshot.sidebarSections.find((section) => section.id === 'types')?.items).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ typeName: 'File' })]),
+    )
+  })
+
   it('keeps archived Type documents out of live type metadata while counting them as archived notes', () => {
     const snapshot = buildLocalVaultWorkspaceSnapshot({
       files: [

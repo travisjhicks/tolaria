@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createFileSystemWorkspaceRepository, normalizedWorkspaceRelativePath, type WorkspaceFileSystem } from './fileSystemWorkspaceRepository'
-import type { LocalVaultFile } from './localVaultSnapshot'
+import { mobileFileKindForPath, type LocalVaultFile } from './localVaultSnapshot'
 
 type RelativePath = string
 type MovePathInput = {
@@ -37,7 +37,7 @@ type: Project
     const workflow = snapshot.allNotes?.find((note) => note.path === 'Writing/Workflow.md')
 
     expect(snapshot.folderPaths).toEqual(expect.arrayContaining(['Projects', 'Writing']))
-    expect(snapshot.source).toMatchObject({ kind: 'localVault', label: 'Laputa', totalNotes: 2 })
+    expect(snapshot.source).toMatchObject({ kind: 'localVault', label: 'Laputa', totalNotes: 3 })
     expect(workflow).toMatchObject({
       path: 'Writing/Workflow.md',
       relationships: [expect.objectContaining({ key: 'belongs_to' })],
@@ -47,6 +47,33 @@ type: Project
     expect(snapshot.sidebarSections.find((section) => section.id === 'views')?.items?.[0]).toMatchObject({
       icon: 'view',
       label: 'Active Essays',
+    })
+    expect(snapshot.allNotes?.find((note) => note.path === 'views/active-essays.yml')).toMatchObject({
+      fileKind: 'text',
+      title: 'Active Essays',
+      type: 'File',
+    })
+  })
+
+  it('keeps binary vault files as metadata-only entries for folder navigation', () => {
+    const fileSystem = fakeWorkspaceFileSystem({
+      'Assets/logo.png': '',
+      'Writing/Workflow.md': '# Workflow\n\n',
+    })
+    const repository = createFileSystemWorkspaceRepository(fileSystem)
+
+    const snapshot = repository.readSnapshot({ source: 'native', vaultLabel: 'Laputa', vaultRootUri: 'file:///vault' })
+
+    expect(snapshot.sidebarSections.find((section) => section.id === 'primary')?.items).toEqual([
+      expect.objectContaining({ count: '1', id: 'inbox' }),
+      expect.objectContaining({ count: '1', id: 'all-notes' }),
+      expect.objectContaining({ count: '0', id: 'archive' }),
+    ])
+    expect(snapshot.allNotes?.find((note) => note.path === 'Assets/logo.png')).toMatchObject({
+      fileKind: 'binary',
+      rawContent: undefined,
+      title: 'logo.png',
+      type: 'File',
     })
   })
 
@@ -273,10 +300,12 @@ function folderPathsForFiles(paths: string[]): string[] {
 }
 
 function localVaultFile(rootUri: string, relativePath: string, content: string, index: number): LocalVaultFile {
+  const fileKind = mobileFileKindForPath(relativePath)
   return {
     absolutePath: `${rootUri}/${relativePath}`,
-    content,
+    content: fileKind === 'binary' ? '' : content,
     createdAt: 1_700_000_000_000 + index,
+    fileKind,
     modifiedAt: 1_700_000_000_000 + index,
     relativePath,
     size: content.length,

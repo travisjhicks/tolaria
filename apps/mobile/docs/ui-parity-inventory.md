@@ -59,6 +59,7 @@ Folder-derived saved views keep the desktop-shaped `path contains <folder>` YAML
 Inbox navigation follows the desktop capture semantics: only active, unorganized, non-Type notes appear, and an empty Inbox stays empty instead of falling back to all notes.
 Inbox counts, rebuilt note-list subtitles, local-vault initial visible entries, and Inbox-derived saved-view filters use the same shared mobile Inbox predicate so Type documents and organized notes cannot drift between surfaces.
 Local-vault All Notes and Archive counts include markdown Type documents like desktop `isAllNotesEntry`, while Inbox continues to exclude them. Type documents render as `Type` rows with the desktop Type tone; active Type document color metadata is applied only to notes of the defined target type.
+Local-vault loading preserves the desktop `fileKind` distinction for markdown, text, and binary files. Default primary filters stay desktop-compatible: Inbox, Types, Views, Archive, and All Notes remain markdown-only, All Notes excludes markdown inside `attachments/`, and folder navigation can surface text/binary files as metadata-only rows without hydrating them through the markdown editor.
 
 ## Tablet Screens
 

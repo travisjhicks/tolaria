@@ -1,5 +1,6 @@
 import {
   Archive,
+  FileDashed,
   FileText,
   FolderOpen,
   Rocket,
@@ -11,20 +12,30 @@ import {
 } from 'phosphor-react-native'
 import { StyleSheet } from 'react-native'
 import { Text } from '../ui/text'
-import type { MobileTone } from '../../workspace/mobileWorkspaceModel'
+import type { MobileFileKind, MobileTone } from '../../workspace/mobileWorkspaceModel'
 import { noteTypeColor } from './mobileWorkspaceTone'
 
 export function MobileTypeIcon({
   size,
   tone,
   type,
+  fileKind,
 }: {
+  fileKind?: MobileFileKind
   size: number
   tone: MobileTone
   type: string
 }) {
   const color = noteTypeColor(tone)
   const normalizedType = type.toLowerCase()
+
+  if (fileKind === 'binary') {
+    return <FileDashed color={color} size={size} />
+  }
+
+  if (fileKind === 'text') {
+    return <FileText color={color} size={size} />
+  }
 
   if (normalizedType.includes('release')) {
     return <Archive color={color} size={size} />

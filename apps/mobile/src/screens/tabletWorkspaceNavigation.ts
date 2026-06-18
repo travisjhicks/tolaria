@@ -6,7 +6,7 @@ import type {
   MobileWorkspaceSnapshot,
 } from '../workspace/mobileWorkspaceModel'
 import { evaluateMobileSavedView, sortMobileNotesBySort } from '../workspace/mobileSavedViews'
-import { isMobileInboxNote } from '../workspace/mobileNoteFilters'
+import { isMobileAllNotesEntry, isMobileInboxNote, isMobileMarkdownNote } from '../workspace/mobileNoteFilters'
 import {
   buildMobileNeighborhood,
   filterMobileNeighborhood,
@@ -121,7 +121,7 @@ function useTabletSelectionActions({
       selectSidebarSelection(initialSidebarSelection(sourceSnapshot), sourceSnapshot)
     }, [selectSidebarSelection, snapshot]),
     selectSavedView: useCallback((view: MobileSavedView, sourceSnapshot = snapshot) => {
-      const matchingNotes = evaluateMobileSavedView(view, workspaceNotes(sourceSnapshot))
+      const matchingNotes = evaluateMobileSavedView(view, workspaceNotes(sourceSnapshot).filter(isMobileMarkdownNote))
       selectSidebarSelection({
         count: matchingNotes.length.toLocaleString(),
         id: view.id,
@@ -228,8 +228,8 @@ export function notesForSidebarSelection(snapshot: MobileWorkspaceSnapshot, sele
 }
 
 function primaryNotesForSelection(notes: MobileNote[], selection: TabletSidebarItemSelection) {
-  if (selection.id === 'archive') return notes.filter((note) => note.archived)
-  if (selection.id === 'all-notes') return notes.filter((note) => !note.archived)
+  if (selection.id === 'archive') return notes.filter((note) => note.archived && isMobileMarkdownNote(note))
+  if (selection.id === 'all-notes') return notes.filter((note) => !note.archived && isMobileAllNotesEntry(note))
   if (selection.id === 'inbox') return inboxNotes(notes)
 
   return notes
@@ -261,12 +261,12 @@ function notesForSavedView(
   const view = savedViewForSelection(snapshot, selection)
   if (!view) return []
 
-  return evaluateMobileSavedView(view, workspaceNotes(snapshot))
+  return evaluateMobileSavedView(view, workspaceNotes(snapshot).filter(isMobileMarkdownNote))
 }
 
 function notesForFavoriteSelection(notes: MobileNote[], selection: TabletSidebarItemSelection) {
   const selectedNoteId = favoriteNoteId(selection.id)
-  return notes.filter((note) => !note.archived && note.favorite && (
+  return notes.filter((note) => isMobileMarkdownNote(note) && !note.archived && note.favorite && (
     selectedNoteId ? note.id === selectedNoteId : note.title === selection.label
   ))
 }
@@ -281,7 +281,7 @@ function notesForTypeSelection(
   notes: MobileNote[],
   selection: TabletSidebarItemSelection,
 ) {
-  const matchingNotes = notes.filter((note) => !note.archived && noteMatchesType(note, selection))
+  const matchingNotes = notes.filter((note) => isMobileMarkdownNote(note) && !note.archived && noteMatchesType(note, selection))
   return sortMobileNotesBySort(matchingNotes, typeDefinitionForSelection(snapshot, selection)?.sort ?? null)
 }
 
@@ -396,12 +396,14 @@ function selectedMobileNote(
 
 function editorBlocksForSelection(snapshot: MobileWorkspaceSnapshot, selectedNote: MobileNote | null) {
   if (!selectedNote) return snapshot.editorBlocks
+  if (!isMobileMarkdownNote(selectedNote)) return []
   if (selectedNote.editorBlocks) return selectedNote.editorBlocks
   return snapshot.allNotes ? [] : snapshot.editorBlocks
 }
 
 function editorBulletsForSelection(snapshot: MobileWorkspaceSnapshot, selectedNote: MobileNote | null) {
   if (!selectedNote) return snapshot.editorBullets
+  if (!isMobileMarkdownNote(selectedNote)) return []
   if (selectedNote.editorBullets) return selectedNote.editorBullets
   return snapshot.allNotes ? [] : snapshot.editorBullets
 }

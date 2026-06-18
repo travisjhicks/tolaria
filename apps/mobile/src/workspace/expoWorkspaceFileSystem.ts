@@ -1,5 +1,5 @@
 import type { Directory, File, Paths } from 'expo-file-system'
-import type { LocalVaultFile } from './localVaultSnapshot'
+import { mobileFileKindForPath, type LocalVaultFile } from './localVaultSnapshot'
 import { normalizedWorkspaceRelativePath, type WorkspaceFileSystem } from './fileSystemWorkspaceRepository'
 
 type ExpoFileSystemModule = {
@@ -141,12 +141,14 @@ function readDirectoryPaths(
 
 function localVaultFile(file: File, relativePath: RelativeVaultPath): LocalVaultFile {
   const info = file.info()
-  const content = file.textSync()
+  const fileKind = mobileFileKindForPath(relativePath)
+  const content = fileKind === 'binary' ? '' : safeTextContent(file)
 
   return {
     absolutePath: file.uri,
     content,
     createdAt: info.creationTime ?? file.creationTime ?? null,
+    fileKind,
     modifiedAt: info.modificationTime ?? file.modificationTime ?? null,
     relativePath,
     size: info.size ?? content.length,
@@ -166,9 +168,17 @@ function joinedRelativePath(parent: RelativeVaultPath, name: DirectoryName): Rel
 }
 
 function shouldReadFile(relativePath: RelativeVaultPath): boolean {
-  return relativePath.endsWith('.md') || /^views\/[^/]+\.ya?ml$/u.test(relativePath)
+  return Boolean(relativePath.split('/').at(-1))
 }
 
 function shouldReadDirectory(name: DirectoryName): boolean {
   return !name.startsWith('.') && name !== 'node_modules'
+}
+
+function safeTextContent(file: File): string {
+  try {
+    return file.textSync()
+  } catch {
+    return ''
+  }
 }
