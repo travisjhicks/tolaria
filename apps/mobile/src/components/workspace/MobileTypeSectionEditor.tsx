@@ -36,6 +36,7 @@ type MobileTypeSectionEditorProps = {
   typeIcon: string
   tone: MobileTone
   typeName: string
+  typeRenameName: string
   visible: boolean
   onDisplayPropertiesChange: (value: string[]) => void
   onPropertyQueryChange: (value: string) => void
@@ -52,6 +53,7 @@ type MobileTypeSectionEditorProps = {
   onSortChange: (value: string) => void
   onTemplateChange: (value: string) => void
   onTypeIconChange: (value: MobileSidebarIcon) => void
+  onTypeRenameNameChange: (value: string) => void
   onToneChange: (value: MobileTone) => void
   onVisibleChange: (value: boolean) => void
 }
@@ -62,6 +64,13 @@ export function MobileTypeSectionEditor(props: MobileTypeSectionEditorProps) {
       <Text style={styles.typeName} testID="workspace-type-section-name">{props.typeName}</Text>
       <MobileTextInput
         autoFocus
+        label={mobileText('sidebar.section.typeName')}
+        placeholder={props.typeName}
+        testID="workspace-type-section-type-name-input"
+        value={props.typeRenameName}
+        onChangeText={props.onTypeRenameNameChange}
+      />
+      <MobileTextInput
         label={mobileText('sidebar.section.name')}
         placeholder={props.typeName}
         testID="workspace-type-section-label-input"

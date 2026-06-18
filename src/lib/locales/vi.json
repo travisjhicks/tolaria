@@ -510,6 +510,7 @@
   "sidebar.folder.expand": "Mở rộng {name}",
   "sidebar.folder.collapse": "Thu gọn {name}",
   "sidebar.section.name": "Tên mục",
+  "sidebar.section.typeName": "Nhập tên",
   "sidebar.section.showInSidebar": "Hiển thị trong thanh bên",
   "sidebar.section.toggle": "Bật/tắt {label}",
   "sidebar.disabled.comingSoon": "Sắp ra mắt",

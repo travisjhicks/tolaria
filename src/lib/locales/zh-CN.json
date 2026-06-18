@@ -510,6 +510,7 @@
   "sidebar.folder.expand": "展开{name}",
   "sidebar.folder.collapse": "折叠{name}",
   "sidebar.section.name": "分组名称",
+  "sidebar.section.typeName": "输入名称",
   "sidebar.section.showInSidebar": "在侧边栏显示",
   "sidebar.section.toggle": "切换{label}",
   "sidebar.disabled.comingSoon": "即将推出",

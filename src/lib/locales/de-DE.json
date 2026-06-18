@@ -510,6 +510,7 @@
   "sidebar.folder.expand": "{name} erweitern",
   "sidebar.folder.collapse": "{name} einklappen",
   "sidebar.section.name": "Abschnittsname",
+  "sidebar.section.typeName": "Namen eingeben",
   "sidebar.section.showInSidebar": "In der Seitenleiste anzeigen",
   "sidebar.section.toggle": "{label} umschalten",
   "sidebar.disabled.comingSoon": "Demnächst verfügbar",

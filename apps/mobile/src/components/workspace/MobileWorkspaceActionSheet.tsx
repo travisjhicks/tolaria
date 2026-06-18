@@ -181,6 +181,7 @@ type MobileWorkspaceActionSheetProps = {
   typeSchemaRelationshipName: string
   typeSchemaRelationshipTarget: string
   typeSectionLabel: string
+  typeRenameName: string
   typeSort: string
   typeTemplate: string
   typeIcon: string
@@ -208,6 +209,7 @@ type MobileWorkspaceActionSheetProps = {
   onTypeSchemaRelationshipTargetSelect: (title: string, ref: string) => void
   onTypeSchemaRelationshipTargetChange: (value: string) => void
   onTypeSectionLabelChange: (value: string) => void
+  onTypeRenameNameChange: (value: string) => void
   onTypeSortChange: (value: string) => void
   onTypeTemplateChange: (value: string) => void
   onTypeIconChange: (value: MobileSidebarIcon) => void
@@ -597,6 +599,7 @@ function TypeSectionContent(props: MobileWorkspaceActionSheetProps) {
         typeIcon={props.typeIcon}
         tone={props.typeTone}
         typeName={props.typeName}
+        typeRenameName={props.typeRenameName}
         visible={props.typeVisible}
         onDisplayPropertiesChange={props.onTypeDisplayPropertiesChange}
         onPropertyQueryChange={props.onTypePropertyQueryChange}
@@ -613,12 +616,13 @@ function TypeSectionContent(props: MobileWorkspaceActionSheetProps) {
         onSortChange={props.onTypeSortChange}
         onTemplateChange={props.onTypeTemplateChange}
         onTypeIconChange={props.onTypeIconChange}
+        onTypeRenameNameChange={props.onTypeRenameNameChange}
         onToneChange={props.onTypeToneChange}
         onVisibleChange={props.onTypeVisibleChange}
       />
       <SheetFooter>
         <MobileButton label={mobileText('common.cancel')} variant="ghost" onPress={props.onClose} />
-        <MobileButton disabled={props.typeSectionLabel.trim().length === 0} label={mobileText('common.save')} variant="primary" onPress={props.onSaveTypeDefinition} />
+        <MobileButton disabled={props.typeRenameName.trim().length === 0} label={mobileText('common.save')} variant="primary" onPress={props.onSaveTypeDefinition} />
       </SheetFooter>
     </ScrollView>
   )

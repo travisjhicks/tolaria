@@ -59,6 +59,7 @@ export type TabletReadOnlyForm = {
   typeSchemaRelationshipTargetRef: ReadOnlyFormValue
   typeSchemaRelationshipTarget: ReadOnlyFormValue
   typeSectionLabel: ReadOnlyFormValue
+  typeRenameName: ReadOnlyFormValue
   typeSort: ReadOnlyFormValue
   typeTemplate: ReadOnlyFormValue
   typeIcon: ReadOnlyFormValue
@@ -168,6 +169,7 @@ export type TabletWorkspaceChromeProps = {
   onTypeSchemaRelationshipTargetSelect: (title: ReadOnlyFormValue, ref: ReadOnlyFormValue) => void
   onTypeSchemaRelationshipTargetChange: (value: ReadOnlyFormValue) => void
   onTypePropertyQueryChange: (value: ReadOnlyFormValue) => void
+  onTypeRenameNameChange: (value: ReadOnlyFormValue) => void
   onTypeSectionLabelChange: (value: ReadOnlyFormValue) => void
   onTypeSortChange: (value: ReadOnlyFormValue) => void
   onTypeTemplateChange: (value: ReadOnlyFormValue) => void

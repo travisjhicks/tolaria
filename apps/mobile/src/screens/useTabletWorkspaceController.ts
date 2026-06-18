@@ -30,7 +30,6 @@ import { canMoveMobileSavedView, evaluateMobileSavedView } from '../workspace/mo
 import {
   removeTypeSchemaPropertyAt,
   removeTypeSchemaRelationshipAt,
-  typeDefinitionSchemaPatch,
   typeSchemaPropertiesForForm,
   typeSchemaRelationshipTargetSuggestions,
   typeSchemaRelationshipsForForm,
@@ -74,6 +73,7 @@ import {
   addTypeSchemaRelationshipFormValue,
   typeSchemaSourceNote,
 } from './tabletWorkspaceTypeSchemaActions'
+import { typeDefinitionSaveEdit } from './tabletWorkspaceTypeDefinitionSave'
 import { createViewInitialFilters } from './tabletWorkspaceViewHelpers'
 
 const emptyReadOnlyForm: TabletReadOnlyForm = {
@@ -106,6 +106,7 @@ const emptyReadOnlyForm: TabletReadOnlyForm = {
   typeSchemaRelationshipTargetRef: '',
   typeSchemaRelationshipTarget: '',
   typeSectionLabel: '',
+  typeRenameName: '',
   typeSort: '',
   typeTemplate: '',
   typeIcon: 'file',
@@ -554,29 +555,21 @@ function typeSectionWorkspaceActions({
     }),
     onMoveTypeDown: () => moveWorkspaceSidebarItem({ applyEdit, direction: 'down', itemId: readOnlyForm.typeName, kind: 'typeSection' }),
     onMoveTypeUp: () => moveWorkspaceSidebarItem({ applyEdit, direction: 'up', itemId: readOnlyForm.typeName, kind: 'typeSection' }),
-    onSaveTypeDefinition: () => updateTypeDefinition({ applyEdit, closeAction, form: readOnlyForm }),
+    onSaveTypeDefinition: () => updateTypeDefinition({
+      applyEdit,
+      closeAction,
+      form: readOnlyForm,
+      workspaceSnapshot,
+    }),
     onTypeDisplayPropertiesChange: (value: string[]) => updateReadOnlyForm('typeDisplayProperties', value),
     onTypePropertyQueryChange: (value: string) => updateReadOnlyForm('typePropertyQuery', value),
-    onTypeSchemaPropertyAdd: () => addTypeSchemaPropertyFormValue({ form: readOnlyForm, updateReadOnlyForm }),
-    onTypeSchemaPropertyNameChange: (value: string) => updateReadOnlyForm('typeSchemaPropertyName', value),
-    onTypeSchemaPropertyRemove: (index: number) => updateReadOnlyForm('typeSchemaProperties', removeTypeSchemaPropertyAt(readOnlyForm.typeSchemaProperties, index)),
-    onTypeSchemaPropertyValueChange: (value: string) => updateReadOnlyForm('typeSchemaPropertyValue', value),
-    onTypeSchemaRelationshipAdd: () => addTypeSchemaRelationshipFormValue({
-      form: readOnlyForm,
+    ...typeSectionSchemaWorkspaceActions({
       notes,
+      readOnlyForm,
       sourceNote,
       updateReadOnlyForm,
     }),
-    onTypeSchemaRelationshipNameChange: (value: string) => updateReadOnlyForm('typeSchemaRelationshipName', value),
-    onTypeSchemaRelationshipRemove: (index: number) => updateReadOnlyForm('typeSchemaRelationships', removeTypeSchemaRelationshipAt(readOnlyForm.typeSchemaRelationships, index)),
-    onTypeSchemaRelationshipTargetSelect: (title: string, ref: string) => {
-      updateReadOnlyForm('typeSchemaRelationshipTarget', title)
-      updateReadOnlyForm('typeSchemaRelationshipTargetRef', ref)
-    },
-    onTypeSchemaRelationshipTargetChange: (value: string) => {
-      updateReadOnlyForm('typeSchemaRelationshipTarget', value)
-      updateReadOnlyForm('typeSchemaRelationshipTargetRef', '')
-    },
+    onTypeRenameNameChange: (value: string) => updateReadOnlyForm('typeRenameName', value),
     onTypeSectionLabelChange: (value: string) => updateReadOnlyForm('typeSectionLabel', value),
     onTypeSortChange: (value: string) => updateReadOnlyForm('typeSort', value),
     onTypeTemplateChange: (value: string) => updateReadOnlyForm('typeTemplate', value),
@@ -598,6 +591,41 @@ function typeSectionWorkspaceActions({
       '',
       workspaceSnapshot.typeDefinitions,
     ),
+  }
+}
+
+function typeSectionSchemaWorkspaceActions({
+  notes,
+  readOnlyForm,
+  sourceNote,
+  updateReadOnlyForm,
+}: {
+  notes: MobileNote[]
+  readOnlyForm: TabletReadOnlyForm
+  sourceNote: MobileNote | null
+  updateReadOnlyForm: ReadOnlyFormUpdater
+}) {
+  return {
+    onTypeSchemaPropertyAdd: () => addTypeSchemaPropertyFormValue({ form: readOnlyForm, updateReadOnlyForm }),
+    onTypeSchemaPropertyNameChange: (value: string) => updateReadOnlyForm('typeSchemaPropertyName', value),
+    onTypeSchemaPropertyRemove: (index: number) => updateReadOnlyForm('typeSchemaProperties', removeTypeSchemaPropertyAt(readOnlyForm.typeSchemaProperties, index)),
+    onTypeSchemaPropertyValueChange: (value: string) => updateReadOnlyForm('typeSchemaPropertyValue', value),
+    onTypeSchemaRelationshipAdd: () => addTypeSchemaRelationshipFormValue({
+      form: readOnlyForm,
+      notes,
+      sourceNote,
+      updateReadOnlyForm,
+    }),
+    onTypeSchemaRelationshipNameChange: (value: string) => updateReadOnlyForm('typeSchemaRelationshipName', value),
+    onTypeSchemaRelationshipRemove: (index: number) => updateReadOnlyForm('typeSchemaRelationships', removeTypeSchemaRelationshipAt(readOnlyForm.typeSchemaRelationships, index)),
+    onTypeSchemaRelationshipTargetSelect: (title: string, ref: string) => {
+      updateReadOnlyForm('typeSchemaRelationshipTarget', title)
+      updateReadOnlyForm('typeSchemaRelationshipTargetRef', ref)
+    },
+    onTypeSchemaRelationshipTargetChange: (value: string) => {
+      updateReadOnlyForm('typeSchemaRelationshipTarget', value)
+      updateReadOnlyForm('typeSchemaRelationshipTargetRef', '')
+    },
   }
 }
 
@@ -887,6 +915,7 @@ function typeDefinitionFields({
     { key: 'typeSchemaRelationshipTargetRef', value: '' },
     { key: 'typeSchemaRelationshipTarget', value: '' },
     { key: 'typeSectionLabel', value: definition?.label ?? label },
+    { key: 'typeRenameName', value: typeName },
     { key: 'typeSort', value: definition?.sort ?? '' },
     { key: 'typeTemplate', value: definition?.template ?? '' },
     { key: 'typeIcon', value: mobileSidebarIconFromValue(definition?.icon, 'file') },
@@ -1017,28 +1046,17 @@ function updateTypeDefinition({
   applyEdit,
   closeAction,
   form,
+  workspaceSnapshot,
 }: {
   applyEdit: (edit: MobileWorkspaceEdit) => void
   closeAction: () => void
   form: TabletReadOnlyForm
+  workspaceSnapshot: MobileWorkspaceSnapshot
 }) {
-  const typeName = form.typeName.trim()
-  if (!typeName) return
+  const edit = typeDefinitionSaveEdit(form, workspaceSnapshot.typeDefinitions)
+  if (!edit) return
 
-  applyEdit({
-    patch: {
-      label: form.typeSectionLabel,
-      icon: normalizedIcon(form.typeIcon, 'file'),
-      listPropertiesDisplay: normalizedDisplayProperties(form.typeDisplayProperties),
-      ...typeDefinitionSchemaPatch(form.typeSchemaProperties, form.typeSchemaRelationships),
-      sort: form.typeSort,
-      template: form.typeTemplate,
-      tone: form.typeTone,
-      visible: form.typeVisible ? null : false,
-    },
-    type: 'updateTypeDefinition',
-    typeName,
-  })
+  applyEdit(edit)
   closeAction()
 }
 
@@ -1079,10 +1097,6 @@ function viewDisplayPropertiesForEdit(
 
 function normalizedOptionalSort(sort: string) {
   return sort.trim() || null
-}
-
-function normalizedIcon(icon: string, fallback: MobileSidebarIcon) {
-  return mobileSidebarIconFromValue(icon, fallback)
 }
 
 function normalizedOptionalIcon(icon: string) {

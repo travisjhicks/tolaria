@@ -510,6 +510,7 @@
   "sidebar.folder.expand": "{name} 펼치기",
   "sidebar.folder.collapse": "{name} 접기",
   "sidebar.section.name": "섹션 이름",
+  "sidebar.section.typeName": "이름 입력",
   "sidebar.section.showInSidebar": "사이드바에 표시",
   "sidebar.section.toggle": "{label} 토글",
   "sidebar.disabled.comingSoon": "서비스 예정",

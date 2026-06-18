@@ -510,6 +510,7 @@
   "sidebar.folder.expand": "{name} を展開",
   "sidebar.folder.collapse": "{name}を折りたたむ",
   "sidebar.section.name": "セクション名",
+  "sidebar.section.typeName": "名前を入力",
   "sidebar.section.showInSidebar": "サイドバーに表示",
   "sidebar.section.toggle": "{label}を切り替える",
   "sidebar.disabled.comingSoon": "近日公開予定",

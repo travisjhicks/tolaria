@@ -510,6 +510,7 @@
   "sidebar.folder.expand": "Perluas {name}",
   "sidebar.folder.collapse": "Ciutkan {name}",
   "sidebar.section.name": "Nama bagian",
+  "sidebar.section.typeName": "Ketik nama",
   "sidebar.section.showInSidebar": "Tampilkan di bilah sisi",
   "sidebar.section.toggle": "Alihkan {label}",
   "sidebar.disabled.comingSoon": "Segera hadir",

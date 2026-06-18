@@ -510,6 +510,7 @@
   "sidebar.folder.expand": "Разгарнуць {name}",
   "sidebar.folder.collapse": "Згарнуць {name}",
   "sidebar.section.name": "Імя секцыі",
+  "sidebar.section.typeName": "Увядзіце імя",
   "sidebar.section.showInSidebar": "Паказваць у бакавой панэлі",
   "sidebar.section.toggle": "Пераключыць {label}",
   "sidebar.disabled.comingSoon": "Хутка з'явіцца",

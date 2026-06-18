@@ -512,6 +512,7 @@ files:
     sidebar.folder.expand: b7545cb143816942ff096d890090fb6f
     sidebar.folder.collapse: e9f8c6da708219313d72d99cc3998388
     sidebar.section.name: c3642037e309db278bbbfe0590114c02
+    sidebar.section.typeName: 72c4189a4326910705caf5670114d8c5
     sidebar.section.showInSidebar: e38d073926d6fb3dfc4d4347708e3cf5
     sidebar.section.toggle: 2992ffbc76e607a2dc0e99781f101637
     sidebar.disabled.comingSoon: 81151a1669ebd695e837f304a0d8ec79

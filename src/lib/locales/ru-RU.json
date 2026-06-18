@@ -510,6 +510,7 @@
   "sidebar.folder.expand": "Развернуть {name}",
   "sidebar.folder.collapse": "Свернуть {name}",
   "sidebar.section.name": "Название раздела",
+  "sidebar.section.typeName": "Введите имя",
   "sidebar.section.showInSidebar": "Показать на боковой панели",
   "sidebar.section.toggle": "Переключить {label}",
   "sidebar.disabled.comingSoon": "Скоро",

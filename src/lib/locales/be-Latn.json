@@ -511,6 +511,7 @@
   "sidebar.folder.expand": "Razharnuć {name}",
   "sidebar.folder.collapse": "Zharnuć {name}",
   "sidebar.section.name": "Imia siekcyi",
+  "sidebar.section.typeName": "Imia typu",
   "sidebar.section.showInSidebar": "Pakazvać u bakavoj paneli",
   "sidebar.section.toggle": "Pierakliučyć {label}",
   "sidebar.disabled.comingSoon": "Chutka zjavicca",

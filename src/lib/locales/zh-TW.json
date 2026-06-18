@@ -510,6 +510,7 @@
   "sidebar.folder.expand": "展開{name}",
   "sidebar.folder.collapse": "摺疊{name}",
   "sidebar.section.name": "分組名稱",
+  "sidebar.section.typeName": "輸入名稱",
   "sidebar.section.showInSidebar": "在側邊欄顯示",
   "sidebar.section.toggle": "切換{label}",
   "sidebar.disabled.comingSoon": "即將推出",

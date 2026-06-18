@@ -510,6 +510,7 @@
   "sidebar.folder.expand": "Expandir {name}",
   "sidebar.folder.collapse": "Ocultar {name}",
   "sidebar.section.name": "Nombre de la sección",
+  "sidebar.section.typeName": "Escriba el nombre",
   "sidebar.section.showInSidebar": "Mostrar en la barra lateral",
   "sidebar.section.toggle": "Alternar {label}",
   "sidebar.disabled.comingSoon": "Próximamente",

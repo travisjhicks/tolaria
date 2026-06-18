@@ -510,6 +510,7 @@
   "sidebar.folder.expand": "Développer {name}",
   "sidebar.folder.collapse": "Réduire {name}",
   "sidebar.section.name": "Nom de la section",
+  "sidebar.section.typeName": "Saisissez le nom",
   "sidebar.section.showInSidebar": "Afficher dans la barre latérale",
   "sidebar.section.toggle": "Activer/désactiver {label}",
   "sidebar.disabled.comingSoon": "Bientôt disponible",

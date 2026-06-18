@@ -130,6 +130,43 @@ describe('tablet workspace edit selection', () => {
     })])
   })
 
+  it('retargets the selected Type section after a bulk Type rename', () => {
+    const snapshot = workspaceScenarioForId('default')
+    const edit: MobileWorkspaceEdit = {
+      edits: [
+        { nextTypeName: 'Playbook', type: 'renameTypeDefinition', typeName: 'Procedure' },
+        { patch: { label: null }, type: 'updateTypeDefinition', typeName: 'Playbook' },
+      ],
+      type: 'bulkEdit',
+    }
+    const result = applyMobileWorkspaceEditWithWrites(snapshot, edit)
+    const selectedItems: unknown[] = []
+
+    selectAfterWorkspaceEdit({
+      edit,
+      navigation: inertNavigation({
+        selectSidebarItem: (selection) => { selectedItems.push(selection) },
+        sidebarSelection: {
+          count: '51',
+          id: 'type-procedure',
+          kind: 'item',
+          label: 'Procedures',
+          sectionId: 'types',
+          typeName: 'Procedure',
+        },
+      }),
+      result,
+      setSelectedNoteId: () => {},
+    })
+
+    expect(selectedItems).toEqual([expect.objectContaining({
+      id: 'type-playbook',
+      label: 'Playbooks',
+      sectionId: 'types',
+      typeName: 'Playbook',
+    })])
+  })
+
   it('returns to the default section when deleting the selected Type document', () => {
     const snapshot = workspaceScenarioForId('default')
     const edit: MobileWorkspaceEdit = { type: 'deleteTypeDefinition', typeName: 'Procedure' }

@@ -20,7 +20,8 @@ import {
 
 type FolderEdit = Extract<MobileWorkspaceEdit, { type: 'createFolder' | 'deleteFolder' | 'renameFolder' }>
 type PathEdit = Extract<MobileWorkspaceEdit, { type: 'moveNoteToFolder' | 'renameNoteFile' }>
-type TypeEdit = Extract<MobileWorkspaceEdit, { type: 'createTypeDefinition' | 'deleteTypeDefinition' | 'updateTypeDefinition' }>
+type TypeEdit = Extract<MobileWorkspaceEdit, { type: 'createTypeDefinition' | 'deleteTypeDefinition' | 'renameTypeDefinition' | 'updateTypeDefinition' }>
+type RenameTypeEdit = Extract<MobileWorkspaceEdit, { type: 'renameTypeDefinition' }>
 type NoteSelectionSetter = (noteId: string | null) => void
 type EditSelectionContext = {
   edit: MobileWorkspaceEdit
@@ -53,6 +54,7 @@ export function selectAfterWorkspaceEdit({
   if (selectAfterCreatedNote(context)) return
   if (selectAfterInboxOrganized(context)) return
   if (selectAfterViewEdit(context)) return
+  if (selectAfterBulkTypeRename(context)) return
   if (selectAfterTypeEdit(context)) return
   if (selectAfterFolderMutation(context)) return
   selectAfterPathMutation(context)
@@ -94,7 +96,17 @@ function selectAfterViewEdit({ edit, navigation, result }: EditSelectionContext)
 function selectAfterTypeEdit({ edit, navigation, result }: EditSelectionContext) {
   if (!isTypeEdit(edit)) return false
   if (edit.type === 'deleteTypeDefinition') selectAfterDeletedType(edit, navigation, result.snapshot)
+  else if (edit.type === 'renameTypeDefinition') selectAfterRenamedType(edit, navigation, result.snapshot)
   else if (shouldSelectTypeAfterEdit(edit, navigation.sidebarSelection)) selectTypeSection(edit.typeName, result.snapshot, navigation)
+  return true
+}
+
+function selectAfterBulkTypeRename({ edit, navigation, result }: EditSelectionContext) {
+  if (edit.type !== 'bulkEdit') return false
+  const renameEdit = edit.edits.find(isTypeRenameEdit)
+  if (!renameEdit || !isSelectedType(navigation.sidebarSelection, renameEdit.typeName)) return false
+
+  selectTypeSection(renameEdit.nextTypeName, result.snapshot, navigation)
   return true
 }
 
@@ -118,7 +130,14 @@ function isPathEdit(edit: MobileWorkspaceEdit): edit is PathEdit {
 }
 
 function isTypeEdit(edit: MobileWorkspaceEdit): edit is TypeEdit {
-  return edit.type === 'createTypeDefinition' || edit.type === 'deleteTypeDefinition' || edit.type === 'updateTypeDefinition'
+  return edit.type === 'createTypeDefinition'
+    || edit.type === 'deleteTypeDefinition'
+    || edit.type === 'renameTypeDefinition'
+    || edit.type === 'updateTypeDefinition'
+}
+
+function isTypeRenameEdit(edit: MobileWorkspaceEdit): edit is RenameTypeEdit {
+  return edit.type === 'renameTypeDefinition'
 }
 
 function selectCreatedView(
@@ -165,6 +184,14 @@ function selectAfterDeletedType(
   snapshot: MobileWorkspaceSnapshot,
 ) {
   if (isSelectedType(navigation.sidebarSelection, edit.typeName)) navigation.selectDefaultSidebarItem(snapshot)
+}
+
+function selectAfterRenamedType(
+  edit: RenameTypeEdit,
+  navigation: EditSelectionNavigation,
+  snapshot: MobileWorkspaceSnapshot,
+) {
+  if (isSelectedType(navigation.sidebarSelection, edit.typeName)) selectTypeSection(edit.nextTypeName, snapshot, navigation)
 }
 
 function selectTypeSection(

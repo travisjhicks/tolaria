@@ -510,6 +510,7 @@
   "sidebar.folder.expand": "Rozwiń {name}",
   "sidebar.folder.collapse": "Zwiń {name}",
   "sidebar.section.name": "Nazwa sekcji",
+  "sidebar.section.typeName": "Wpisz nazwę",
   "sidebar.section.showInSidebar": "Pokaż na pasku bocznym",
   "sidebar.section.toggle": "Przełącz {label}",
   "sidebar.disabled.comingSoon": "Wkrótce",

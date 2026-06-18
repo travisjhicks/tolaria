@@ -76,6 +76,25 @@ export function renameMobileTypeDefinition(
   }
 }
 
+export function canRenameMobileTypeDefinition(
+  definitions: MobileTypeDefinitions | undefined,
+  sourceTypeName: TypeNameInput,
+  nextTypeName: TypeNameInput,
+): boolean {
+  const sourceName = existingTypeDefinitionName(definitions, sourceTypeName)
+  const normalizedNextTypeName = normalizeRenameTypeName(nextTypeName)
+  if (!sourceName || !normalizedNextTypeName || sourceName === normalizedNextTypeName) return true
+
+  return !conflictingTargetTypeName(definitions, {
+    nextTypeName: normalizedNextTypeName,
+    sourceTypeName: sourceName,
+  })
+}
+
+export function mobileTypeRenameTargetName(value: TypeNameInput): TypeName {
+  return normalizeRenameTypeName(value)
+}
+
 function typeRenameContext(
   snapshot: MobileWorkspaceSnapshot,
   edit: RenameTypeEdit,

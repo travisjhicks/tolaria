@@ -510,6 +510,7 @@
   "sidebar.folder.expand": "Expand {name}",
   "sidebar.folder.collapse": "Collapse {name}",
   "sidebar.section.name": "Section name",
+  "sidebar.section.typeName": "Type name",
   "sidebar.section.showInSidebar": "Show in sidebar",
   "sidebar.section.toggle": "Toggle {label}",
   "sidebar.disabled.comingSoon": "Coming soon",
