@@ -26,6 +26,7 @@ export function MobilePropertiesPanel({
   onAddRelationship,
   onDeleteProperty,
   onEditProperty,
+  onEnterNeighborhood,
   onOpenChangeNoteType,
   onRemoveRelationship,
   onSelectNote,
@@ -38,6 +39,7 @@ export function MobilePropertiesPanel({
   onAddRelationship: (key?: string) => void
   onDeleteProperty: (noteId: string, key: string) => void
   onEditProperty: (noteId: string, key: string, value: MobilePropertyValue) => void
+  onEnterNeighborhood?: (noteId: string) => void
   onOpenChangeNoteType: () => void
   onRemoveRelationship: (noteId: string, key: string, ref: string) => void
   onSelectNote: (noteId: string) => void
@@ -56,6 +58,7 @@ export function MobilePropertiesPanel({
             onAddRelationship={onAddRelationship}
             onDeleteProperty={onDeleteProperty}
             onEditProperty={onEditProperty}
+            onEnterNeighborhood={onEnterNeighborhood}
             onOpenChangeNoteType={onOpenChangeNoteType}
             onRemoveRelationship={onRemoveRelationship}
             onSelectNote={onSelectNote}
@@ -73,6 +76,7 @@ function NoteProperties({
   onAddRelationship,
   onDeleteProperty,
   onEditProperty,
+  onEnterNeighborhood,
   onOpenChangeNoteType,
   onRemoveRelationship,
   onSelectNote,
@@ -83,6 +87,7 @@ function NoteProperties({
   onAddRelationship: (key?: string) => void
   onDeleteProperty: (noteId: string, key: string) => void
   onEditProperty: (noteId: string, key: string, value: MobilePropertyValue) => void
+  onEnterNeighborhood?: (noteId: string) => void
   onOpenChangeNoteType: () => void
   onRemoveRelationship: (noteId: string, key: string, ref: string) => void
   onSelectNote: (noteId: string) => void
@@ -147,6 +152,7 @@ function NoteProperties({
             noteId={note.id}
             relationship={relationship}
             onRemoveRelationship={onRemoveRelationship}
+            onEnterNeighborhood={onEnterNeighborhood}
             onSelectNote={onSelectNote}
           />
         </PropertySection>
@@ -352,12 +358,14 @@ function PlaceholderRelationshipSection({
 function RelationshipValues({
   noteId,
   onRemoveRelationship,
+  onEnterNeighborhood,
   onSelectNote,
   relationship,
 }: {
   noteId: string
   relationship: MobileRelationship
   onRemoveRelationship: (noteId: string, key: string, ref: string) => void
+  onEnterNeighborhood?: (noteId: string) => void
   onSelectNote: (noteId: string) => void
 }) {
   return (
@@ -371,7 +379,11 @@ function RelationshipValues({
             style={relationshipStyles.openTarget}
             testID={`relationship-row-${testIdSegment(value.title)}-open`}
             onPress={() => {
-              if (value.id) onSelectNote(value.id)
+              if (!value.id) return
+              onSelectNote(value.id)
+            }}
+            onLongPress={() => {
+              if (value.id) onEnterNeighborhood?.(value.id)
             }}
           >
             <MobileTypeIcon size={desktopRelationshipParity.iconSize} tone={value.typeTone} type={value.type} />

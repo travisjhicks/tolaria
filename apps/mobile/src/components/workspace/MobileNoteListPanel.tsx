@@ -1,10 +1,10 @@
-import type { ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { MagnifyingGlass, Plus } from 'phosphor-react-native'
 import { FlatList, StyleSheet, View } from 'react-native'
 import { Text } from '../ui/text'
 import { mobileCopy, mobileText } from '../../i18n/mobileText'
 import { MobileLayoutProbeReadout } from '../../qa/MobileLayoutProbeReadout'
-import { useMobileLayoutProbe } from '../../qa/mobileLayoutProbe'
+import { useMobileLayoutProbe, type MobileLayoutProbe } from '../../qa/mobileLayoutProbe'
 import { MobileChip } from '../../ui/MobileChip'
 import { MobileIconButton } from '../../ui/MobileIconButton'
 import { MobileListRow } from '../../ui/MobileListRow'
@@ -12,6 +12,7 @@ import { MobilePanel, MobileToolbar, MobileToolbarSpacer, MobileToolbarTitle } f
 import { desktopPanelParity, desktopToolbarActionParity, desktopToolbarParity } from '../../ui/desktopParity'
 import { mobileColors, mobileSpace, mobileType } from '../../ui/tokens'
 import { configuredMobileNoteRowChips, defaultMobileNoteRowChips } from '../../workspace/mobileNoteDisplay'
+import type { MobileNeighborhood, MobileNeighborhoodGroup } from '../../workspace/mobileNeighborhood'
 import type { MobileNote } from '../../workspace/mobileWorkspaceModel'
 import { MobileTypeIcon } from './MobileWorkspaceIcons'
 import { noteTypeColor, noteTypeSoftColor } from './mobileWorkspaceTone'
@@ -22,6 +23,7 @@ type MobileNoteListPanelProps = {
   fullWidth?: boolean
   leading?: ReactNode
   layoutProbe?: boolean
+  neighborhood?: MobileNeighborhood | null
   notes: MobileNote[]
   onOpenCreateNote: () => void
   onOpenSearch: () => void
@@ -39,6 +41,7 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
     fullWidth = false,
     leading,
     layoutProbe: layoutProbeEnabled = false,
+    neighborhood = null,
     notes,
     onOpenCreateNote,
     onOpenSearch,
@@ -68,7 +71,15 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
         </MobileIconButton>
       </MobileToolbar>
       {searchQuery ? <SearchPill searchQuery={searchQuery} /> : null}
-      {notes.length === 0 ? (
+      {neighborhood ? (
+        <NeighborhoodNoteList
+          activeNoteId={activeNoteId}
+          displayPropertyKeys={displayPropertyKeys}
+          layoutProbe={layoutProbe.probe}
+          neighborhood={neighborhood}
+          onSelectNote={onSelectNote}
+        />
+      ) : notes.length === 0 ? (
         <NoteListEmptyState searchQuery={searchQuery} />
       ) : (
         <FlatList
@@ -78,21 +89,13 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
           extraData={selectedNoteId}
           initialNumToRender={16}
           keyExtractor={(note) => note.id}
-          renderItem={({ item: note }) => (
-            <MobileListRow
-              chips={<NoteRowChips displayPropertyKeys={displayPropertyKeys} note={note} />}
-              layoutProbe={layoutProbe.probe}
-              metricId={`noteList.item.${note.id}`}
-              selected={note.id === activeNoteId}
-              selectedBackgroundColor={noteTypeSoftColor(note.typeTone)}
-              selectedBorderColor={noteTypeColor(note.typeTone)}
-              subtitle={note.snippet}
-              testID={`note-row-${note.id}`}
-              title={note.title}
-              trailing={<MobileTypeIcon size={16} tone={note.typeTone} type={note.type} />}
-              onPress={() => onSelectNote(note.id)}
-            />
-          )}
+          renderItem={({ item: note }) => noteRow({
+            activeNoteId,
+            displayPropertyKeys,
+            layoutProbe: layoutProbe.probe,
+            note,
+            onSelectNote,
+          })}
           removeClippedSubviews
           showsVerticalScrollIndicator={false}
           windowSize={5}
@@ -100,6 +103,123 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
       )}
       {layoutProbeEnabled ? <MobileLayoutProbeReadout metrics={layoutProbe.metrics} testID="note-list-layout-metrics" /> : null}
     </MobilePanel>
+  )
+}
+
+type NeighborhoodRow =
+  | { id: string; kind: 'source'; note: MobileNote }
+  | { group: MobileNeighborhoodGroup; id: string; kind: 'header' }
+  | { id: string; kind: 'note'; note: MobileNote }
+
+function NeighborhoodNoteList({
+  activeNoteId,
+  displayPropertyKeys,
+  layoutProbe,
+  neighborhood,
+  onSelectNote,
+}: {
+  activeNoteId: string | null
+  displayPropertyKeys: string[]
+  layoutProbe: MobileLayoutProbe
+  neighborhood: MobileNeighborhood
+  onSelectNote: (noteId: string) => void
+}) {
+  const rows = useMemo(() => neighborhoodRows(neighborhood), [neighborhood])
+
+  return (
+    <FlatList
+      contentContainerStyle={styles.listContent}
+      data={rows}
+      extraData={activeNoteId}
+      initialNumToRender={18}
+      keyExtractor={(row) => row.id}
+      renderItem={({ item }) => neighborhoodRow({
+        activeNoteId,
+        displayPropertyKeys,
+        item,
+        layoutProbe,
+        onSelectNote,
+      })}
+      removeClippedSubviews
+      showsVerticalScrollIndicator={false}
+      windowSize={5}
+    />
+  )
+}
+
+function neighborhoodRows(neighborhood: MobileNeighborhood): NeighborhoodRow[] {
+  return [
+    { id: `source-${neighborhood.source.id}`, kind: 'source', note: neighborhood.source },
+    ...neighborhood.groups.flatMap((group) => [
+      { group, id: `group-${group.id}`, kind: 'header' } as const,
+      ...group.notes.map((note) => ({ id: `group-${group.id}-${note.id}`, kind: 'note' as const, note })),
+    ]),
+  ]
+}
+
+function neighborhoodRow({
+  activeNoteId,
+  displayPropertyKeys,
+  item,
+  layoutProbe,
+  onSelectNote,
+}: {
+  activeNoteId: string | null
+  displayPropertyKeys: string[]
+  item: NeighborhoodRow
+  layoutProbe: MobileLayoutProbe
+  onSelectNote: (noteId: string) => void
+}) {
+  if (item.kind === 'header') return <RelationshipGroupHeader group={item.group} />
+
+  return noteRow({
+    activeNoteId,
+    displayPropertyKeys,
+    forceSelected: item.kind === 'source',
+    layoutProbe,
+    note: item.note,
+    onSelectNote,
+  })
+}
+
+function noteRow({
+  activeNoteId,
+  displayPropertyKeys,
+  forceSelected = false,
+  layoutProbe,
+  note,
+  onSelectNote,
+}: {
+  activeNoteId: string | null
+  displayPropertyKeys: string[]
+  forceSelected?: boolean
+  layoutProbe: MobileLayoutProbe
+  note: MobileNote
+  onSelectNote: (noteId: string) => void
+}) {
+  return (
+    <MobileListRow
+      chips={<NoteRowChips displayPropertyKeys={displayPropertyKeys} note={note} />}
+      layoutProbe={layoutProbe}
+      metricId={`noteList.item.${note.id}`}
+      selected={forceSelected || note.id === activeNoteId}
+      selectedBackgroundColor={noteTypeSoftColor(note.typeTone)}
+      selectedBorderColor={noteTypeColor(note.typeTone)}
+      subtitle={note.snippet}
+      testID={`note-row-${note.id}`}
+      title={note.title}
+      trailing={<MobileTypeIcon size={16} tone={note.typeTone} type={note.type} />}
+      onPress={() => onSelectNote(note.id)}
+    />
+  )
+}
+
+function RelationshipGroupHeader({ group }: { group: MobileNeighborhoodGroup }) {
+  return (
+    <View style={styles.groupHeader} testID={`relationship-group-${group.id}`}>
+      <Text style={styles.groupLabel}>{group.label}</Text>
+      <Text style={styles.groupCount}>{group.notes.length}</Text>
+    </View>
   )
 }
 
@@ -166,6 +286,26 @@ const styles = StyleSheet.create({
     fontSize: mobileType.title,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  groupCount: {
+    color: mobileColors.textMuted,
+    fontSize: mobileType.micro,
+    fontWeight: '400',
+    fontVariant: ['tabular-nums'],
+  },
+  groupHeader: {
+    minHeight: 32,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: mobileColors.graySoft,
+    paddingHorizontal: mobileSpace.lg,
+  },
+  groupLabel: {
+    color: mobileColors.textMuted,
+    fontSize: mobileType.micro,
+    fontWeight: '500',
+    textTransform: 'uppercase',
   },
   panel: {
     alignSelf: 'stretch',

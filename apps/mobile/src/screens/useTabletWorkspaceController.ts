@@ -212,6 +212,7 @@ export function useTabletWorkspaceController({
     searchQuery,
     snapshot: workspaceSnapshot,
     vaultRootUri: repositoryRequest?.vaultRootUri ?? null,
+    onEnterNeighborhood: navigation.selectNeighborhoodNote,
     onSelectFolder: navigation.selectFolder,
     onSelectNote: navigation.setSelectedNoteId,
     onSelectSidebarItem: navigation.selectSidebarItem,

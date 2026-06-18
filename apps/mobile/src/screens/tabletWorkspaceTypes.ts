@@ -17,6 +17,7 @@ import type {
   MobileTypeSchemaProperty,
   MobileTypeSchemaRelationship,
 } from '../workspace/mobileTypeDefinitionSchema'
+import type { MobileNeighborhood } from '../workspace/mobileNeighborhood'
 import type { MobilePropertyValueKind } from '../workspace/mobilePropertyValues'
 import type {
   NoteCountText,
@@ -85,6 +86,7 @@ export type TabletWorkspaceChromeProps = {
   initialEditorEditingMode?: EditorEditingMode
   layoutProbe?: boolean
   noteListProperties: string[]
+  noteListNeighborhood: MobileNeighborhood | null
   noteListSubtitle: NoteCountText
   noteListTitle: SidebarLabel
   notes: MobileNote[]
@@ -105,6 +107,7 @@ export type TabletWorkspaceChromeProps = {
   onDeleteView: () => void
   onDeleteNote: () => void
   onExportNoteAsPdf: () => void
+  onEnterNeighborhood: (noteId: NoteId) => void
   onDeleteProperty: (noteId: NoteId, key: string) => void
   onEditProperty: (noteId: NoteId, key: string, value: MobilePropertyValue) => void
   onFilenameStemChange: (value: ReadOnlyFormValue) => void

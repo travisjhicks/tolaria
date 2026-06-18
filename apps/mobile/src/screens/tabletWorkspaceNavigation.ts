@@ -7,6 +7,12 @@ import type {
 } from '../workspace/mobileWorkspaceModel'
 import { evaluateMobileSavedView, sortMobileNotesBySort } from '../workspace/mobileSavedViews'
 import { isMobileInboxNote } from '../workspace/mobileNoteFilters'
+import {
+  buildMobileNeighborhood,
+  filterMobileNeighborhood,
+  flattenMobileNeighborhoodNotes,
+  type MobileNeighborhood,
+} from '../workspace/mobileNeighborhood'
 import type {
   MobileSidebarFolderSelection,
   MobileSidebarItemSelection,
@@ -22,6 +28,7 @@ export type SidebarLabel = string
 export type TabletSidebarSelection =
   | { count?: NoteCountText; id: string; kind: 'item'; label: SidebarLabel; sectionId: string; typeName?: string; viewId?: string }
   | { id: string; kind: 'folder'; label: SidebarLabel }
+  | { id: string; kind: 'entity'; label: SidebarLabel }
 type TabletSidebarItemSelection = Extract<TabletSidebarSelection, { kind: 'item' }>
 type SidebarNotesResolver = (
   snapshot: MobileWorkspaceSnapshot,
@@ -32,6 +39,8 @@ type NoteListPropertyResolver = (
   snapshot: MobileWorkspaceSnapshot,
   selection: TabletSidebarItemSelection,
 ) => string[]
+type SelectSidebarSelection = (selection: TabletSidebarSelection, sourceSnapshot?: MobileWorkspaceSnapshot) => void
+type SetSidebarSelection = (selection: TabletSidebarSelection) => void
 
 const sidebarSectionResolvers: Record<string, SidebarNotesResolver> = {
   favorites: (_snapshot, notes, selection) => notesForFavoriteSelection(notes, selection),
@@ -48,7 +57,15 @@ export function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot, 
   const [selectedNoteId, setSelectedNoteId] = useState<NoteId | null>(initialSelectedNoteId(snapshot))
   const sidebarNotes = useMemo(() => notesForSidebarSelection(snapshot, sidebarSelection), [sidebarSelection, snapshot])
   const noteListProperties = useMemo(() => noteListPropertiesForSelection(snapshot, sidebarSelection), [sidebarSelection, snapshot])
-  const notes = useMemo(() => filterNotesBySearch(sidebarNotes, searchQuery, noteListProperties), [noteListProperties, searchQuery, sidebarNotes])
+  const noteListNeighborhood = useMemo(
+    () => neighborhoodForSelection(snapshot, sidebarSelection, searchQuery, noteListProperties),
+    [noteListProperties, searchQuery, sidebarSelection, snapshot],
+  )
+  const notes = useMemo(() => (
+    noteListNeighborhood
+      ? flattenMobileNeighborhoodNotes(noteListNeighborhood)
+      : filterNotesBySearch(sidebarNotes, searchQuery, noteListProperties)
+  ), [noteListNeighborhood, noteListProperties, searchQuery, sidebarNotes])
   const selectedNote = selectedMobileNote(snapshot, notes, selectedNoteId)
 
   const selectSidebarSelection = useCallback((selection: TabletSidebarSelection, sourceSnapshot = snapshot) => {
@@ -57,6 +74,12 @@ export function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot, 
     setSidebarSelection(selection)
     setSelectedNoteId(nextNotes[0]?.id ?? null)
   }, [searchQuery, snapshot])
+  const selectionActions = useTabletSelectionActions({
+    selectSidebarSelection,
+    setSidebarSelection,
+    setSelectedNoteId,
+    snapshot,
+  })
 
   return {
     activeFolderId: sidebarSelection.kind === 'folder' ? sidebarSelection.id : null,
@@ -64,10 +87,30 @@ export function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot, 
     editorBlocks: editorBlocksForSelection(snapshot, selectedNote),
     editorBullets: editorBulletsForSelection(snapshot, selectedNote),
     noteListProperties,
+    noteListNeighborhood,
     noteListSubtitle: noteListSubtitle(sidebarSelection, snapshot.noteListSubtitle, notes.length, searchQuery),
     noteListTitle: sidebarSelection.label,
     notes,
     sidebarSelection,
+    selectedNote,
+    selectedNoteId: selectedNote?.id ?? selectedNoteId,
+    setSelectedNoteId,
+    ...selectionActions,
+  }
+}
+
+function useTabletSelectionActions({
+  selectSidebarSelection,
+  setSidebarSelection,
+  setSelectedNoteId,
+  snapshot,
+}: {
+  selectSidebarSelection: SelectSidebarSelection
+  setSidebarSelection: SetSidebarSelection
+  setSelectedNoteId: (noteId: NoteId | null) => void
+  snapshot: MobileWorkspaceSnapshot
+}) {
+  return {
     selectDefaultSidebarItem: useCallback((sourceSnapshot = snapshot) => {
       selectSidebarSelection(initialSidebarSelection(sourceSnapshot), sourceSnapshot)
     }, [selectSidebarSelection, snapshot]),
@@ -89,6 +132,9 @@ export function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot, 
         label: selection.name,
       }, sourceSnapshot)
     }, [selectSidebarSelection, snapshot]),
+    selectNeighborhoodNote: useCallback((noteId: NoteId, sourceSnapshot = snapshot) => {
+      selectNeighborhoodNote({ noteId, setSelectedNoteId, setSidebarSelection, snapshot: sourceSnapshot })
+    }, [setSelectedNoteId, setSidebarSelection, snapshot]),
     selectSidebarItem: useCallback((selection: MobileSidebarItemSelection, sourceSnapshot = snapshot) => {
       selectSidebarSelection({
         count: selection.count,
@@ -100,10 +146,32 @@ export function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot, 
         viewId: selection.viewId,
       }, sourceSnapshot)
     }, [selectSidebarSelection, snapshot]),
-    selectedNote,
-    selectedNoteId: selectedNote?.id ?? selectedNoteId,
-    setSelectedNoteId,
   }
+}
+
+function selectNeighborhoodNote({
+  noteId,
+  setSelectedNoteId,
+  setSidebarSelection,
+  snapshot,
+}: {
+  noteId: NoteId
+  setSelectedNoteId: (noteId: NoteId | null) => void
+  setSidebarSelection: SetSidebarSelection
+  snapshot: MobileWorkspaceSnapshot
+}) {
+  const sourceNote = workspaceNotes(snapshot).find((note) => note.id === noteId)
+  if (!sourceNote) {
+    setSelectedNoteId(noteId)
+    return
+  }
+
+  setSidebarSelection({
+    id: sourceNote.id,
+    kind: 'entity',
+    label: sourceNote.title,
+  })
+  setSelectedNoteId(sourceNote.id)
 }
 
 export function snapshotWithFavoriteOverrides(
@@ -146,6 +214,7 @@ function activeSidebarItem(item: MobileSidebarItem) {
 
 export function notesForSidebarSelection(snapshot: MobileWorkspaceSnapshot, selection: TabletSidebarSelection) {
   const notes = workspaceNotes(snapshot)
+  if (selection.kind === 'entity') return []
   if (selection.kind === 'folder') return notes.filter((note) => !note.archived && noteBelongsToFolder(note, selection))
 
   const sectionResolver = sidebarSectionResolvers[selection.sectionId]
@@ -158,6 +227,21 @@ function primaryNotesForSelection(notes: MobileNote[], selection: TabletSidebarI
   if (selection.id === 'inbox') return inboxNotes(notes)
 
   return notes
+}
+
+function neighborhoodForSelection(
+  snapshot: MobileWorkspaceSnapshot,
+  selection: TabletSidebarSelection,
+  searchQuery: SearchQuery,
+  displayPropertyKeys: string[],
+): MobileNeighborhood | null {
+  if (selection.kind !== 'entity') return null
+
+  const notes = workspaceNotes(snapshot)
+  const source = notes.find((note) => note.id === selection.id)
+  if (!source) return null
+
+  return filterMobileNeighborhood(buildMobileNeighborhood(source, notes), searchQuery, displayPropertyKeys)
 }
 
 function workspaceNotes(snapshot: MobileWorkspaceSnapshot) {

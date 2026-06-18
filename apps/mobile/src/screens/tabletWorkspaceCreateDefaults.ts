@@ -20,7 +20,7 @@ export function createNoteDefaultsForSelection(
   typeDefinitions?: MobileTypeDefinitions,
 ): MobileCreateNoteDefaults {
   if (selection.kind === 'folder') return { folderPath: selection.id }
-  if (selection.sectionId === 'types') return defaultsForTypeSection(selection, typeDefinitions)
+  if (selection.kind === 'item' && selection.sectionId === 'types') return defaultsForTypeSection(selection, typeDefinitions)
 
   return {}
 }

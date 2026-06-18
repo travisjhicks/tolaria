@@ -146,6 +146,7 @@ function TabletNoteListHost({
   compactTablet,
   gestures,
   layoutProbe,
+  noteListNeighborhood,
   noteListProperties,
   noteListSubtitle,
   noteListTitle,
@@ -164,6 +165,7 @@ function TabletNoteListHost({
         compact={compactTablet}
         displayPropertyKeys={noteListProperties}
         layoutProbe={layoutProbe}
+        neighborhood={noteListNeighborhood}
         notes={notes}
         searchQuery={searchQuery || undefined}
         selectedNoteId={selectedNoteId}
@@ -249,6 +251,7 @@ function TabletPropertiesPanelHost({
   onDeleteProperty,
   onEditProperty,
   onOpenChangeNoteType,
+  onEnterNeighborhood,
   onRemoveRelationship,
   onSelectNote,
   selectedNote,
@@ -266,6 +269,7 @@ function TabletPropertiesPanelHost({
         onDeleteProperty={onDeleteProperty}
         onEditProperty={onEditProperty}
         onOpenChangeNoteType={onOpenChangeNoteType}
+        onEnterNeighborhood={onEnterNeighborhood}
         onSelectNote={onSelectNote}
         onRemoveRelationship={onRemoveRelationship}
         typeDefinitions={snapshot.typeDefinitions}
