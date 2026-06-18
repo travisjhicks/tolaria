@@ -257,6 +257,25 @@ describe('tablet workspace editing history', () => {
     })
     expect(redoneSnapshot.noteListPropertyOverrides).toBeUndefined()
   })
+
+  it('records bulk note edits as one reversible history entry', () => {
+    const previousSnapshot = snapshotWithEditableNotes([
+      ['workflow-orchestration', '# Workflow Orchestration Essay\n\nBulk organize.\n'],
+      ['open-source-project', '# How I Run an Open Source Project\n\nBulk organize.\n'],
+    ])
+    const edit: MobileWorkspaceEdit = {
+      edits: previousSnapshot.notes.map((note) => ({ noteId: note.id, organized: true, type: 'setOrganized' })),
+      type: 'bulkEdit',
+    }
+    const nextSnapshot = applyMobileWorkspaceEdit(previousSnapshot, edit)
+    const entry = requiredHistoryEntry(previousSnapshot, nextSnapshot, edit)
+    const undoneSnapshot = applyHistoryEdits(nextSnapshot, entry.undoEdits)
+    const redoneSnapshot = applyHistoryEdits(undoneSnapshot, entry.redoEdits)
+
+    expect(entry.undoEdits).toHaveLength(2)
+    expect(undoneSnapshot.notes.map((note) => note.organized)).toEqual([false, false])
+    expect(redoneSnapshot.notes.map((note) => note.organized)).toEqual([true, true])
+  })
 })
 
 function snapshotWithEditableNote(overrides: Partial<MobileNote> & { id: string; rawContent: string }): MobileWorkspaceSnapshot {
@@ -289,6 +308,21 @@ function snapshotWithPathBackedSelectedNote(): MobileWorkspaceSnapshot {
     allNotes: [pathBackedNote, ...base.notes.slice(1)],
     notes: [pathBackedNote, ...base.notes.slice(1)],
     selectedNoteId: pathBackedNote.id,
+  }
+}
+
+function snapshotWithEditableNotes(notesById: Array<[string, string]>): MobileWorkspaceSnapshot {
+  const base = workspaceScenarioForId('default')
+  const editableNotes = notesById.map(([noteId, rawContent]) => ({
+    ...noteById(base, noteId),
+    rawContent,
+  }))
+
+  return {
+    ...base,
+    allNotes: editableNotes,
+    notes: editableNotes,
+    selectedNoteId: editableNotes[0]?.id,
   }
 }
 

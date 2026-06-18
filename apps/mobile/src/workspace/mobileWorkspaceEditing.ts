@@ -88,6 +88,7 @@ type WikilinkRef = string
 type WikilinkTarget = string
 
 export type MobileWorkspaceEdit =
+  | { edits: MobileWorkspaceEdit[]; type: 'bulkEdit' }
   | { content: MarkdownContent; noteId: NoteId; type: 'updateNoteContent' }
   | { content: TextFileContent; noteId: NoteId; type: 'updateTextFileContent' }
   | { defaults?: MobileCreateNoteDefaults; title: NoteTitle; type: 'createNote' }
@@ -127,7 +128,7 @@ type MobileFolderEdit = Extract<MobileWorkspaceEdit, { type: 'createFolder' | 'd
 type MobilePrimaryNoteListEdit = Extract<MobileWorkspaceEdit, { type: 'updatePrimaryNoteListProperties' }>
 type MobileRestorationEdit = Extract<MobileWorkspaceEdit, { type: 'restoreFolder' | 'restoreNote' | 'restoreTypeDefinition' | 'restoreView' }>
 type MobileSnapshotEdit = Extract<MobileWorkspaceEdit, { type: 'createRelationshipTarget' | 'deleteNote' | 'moveNoteToFolder' | 'renameNoteFile' }>
-type MobileNoteEdit = Exclude<MobileWorkspaceEdit, MobileFolderEdit | MobilePrimaryNoteListEdit | MobileRestorationEdit | MobileSnapshotEdit | MobileTypeEdit | MobileViewEdit | { type: 'createNote' }>
+type MobileNoteEdit = Exclude<MobileWorkspaceEdit, MobileFolderEdit | MobilePrimaryNoteListEdit | MobileRestorationEdit | MobileSnapshotEdit | MobileTypeEdit | MobileViewEdit | { type: 'bulkEdit' | 'createNote' }>
 type MobileWorkspaceResultHandlerMap = {
   [Type in MobileWorkspaceEdit['type']]?: (
     snapshot: MobileWorkspaceSnapshot,
@@ -236,6 +237,7 @@ const mobileNoteEditHandlers: Record<MobileNoteEdit['type'], MobileNoteEditHandl
 }
 
 const mobileWorkspaceResultHandlers: MobileWorkspaceResultHandlerMap = {
+  bulkEdit: (snapshot, edit) => applyMobileBulkWorkspaceEdit(snapshot, edit),
   createFolder: (snapshot, edit) => applyMobileFolderEdit(snapshot, edit, rebuildSnapshot),
   createNote: (snapshot, edit) => createMobileNoteResult(snapshot, edit.title, edit.defaults),
   createRelationshipTarget: (snapshot, edit) => createRelationshipTarget(snapshot, edit),
@@ -291,6 +293,19 @@ export function applyMobileWorkspaceEditWithWrites(
   if (!isMobileNoteEdit(edit)) return { snapshot, writes: [] }
 
   return applyMobileNoteEditResult(snapshot, edit)
+}
+
+function applyMobileBulkWorkspaceEdit(
+  snapshot: MobileWorkspaceSnapshot,
+  edit: Extract<MobileWorkspaceEdit, { type: 'bulkEdit' }>,
+): MobileWorkspaceEditResult {
+  return edit.edits.reduce<MobileWorkspaceEditResult>((result, childEdit) => {
+    const nextResult = applyMobileWorkspaceEditWithWrites(result.snapshot, childEdit)
+    return {
+      snapshot: nextResult.snapshot,
+      writes: [...result.writes, ...nextResult.writes],
+    }
+  }, { snapshot, writes: [] })
 }
 
 function applyMobileNoteEditResult(

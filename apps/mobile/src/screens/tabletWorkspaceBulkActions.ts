@@ -22,5 +22,8 @@ function applyBulkNoteEdit(
   toEdit: BulkNoteEditFactory,
   applyEdit: ApplyWorkspaceEdit,
 ) {
-  for (const noteId of noteIds) applyEdit(toEdit(noteId))
+  applyEdit({
+    edits: noteIds.map(toEdit),
+    type: 'bulkEdit',
+  })
 }
