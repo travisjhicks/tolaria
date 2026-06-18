@@ -178,6 +178,7 @@ export type TabletWorkspaceChromeProps = {
   searchQuery: SearchQuery
   selectedNote: MobileNote | null
   selectedNoteId: string | null
+  sourceSelectionProbe?: boolean
   snapshot: MobileWorkspaceSnapshot
   typePropertyOptions: string[]
   typeRelationshipTargetOptions: MobileWorkspaceSuggestionItem[]

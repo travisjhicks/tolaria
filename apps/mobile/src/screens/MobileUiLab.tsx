@@ -9,6 +9,9 @@ import {
 } from '../workspace/nativeWorkspacePicker'
 import { initialMobileEditorStateFromMode } from './mobileEditorMode'
 import {
+  nativeSourceSelectionProbeEnabled,
+} from '../qa/nativeSourceSelectionProbe'
+import {
   nativeWysiwygMutationProbeEnabled,
   nativeWysiwygMutationProbeInitialContent,
 } from '../qa/nativeWysiwygMutationProbe'
@@ -43,6 +46,7 @@ export function MobileUiLab() {
     : baseRepositoryRequest
   const { initialEditorEditing, initialEditorEditingMode } = initialMobileEditorStateFromMode(editorMode(searchParams))
   const layoutProbe = layoutProbeEnabled(searchParams)
+  const sourceSelectionProbe = nativeSourceSelectionProbeEnabled(searchParams)
   const wysiwygMutationProbe = nativeWysiwygMutationProbeEnabled(searchParams) || wysiwygPersistenceProbe
   const baseSnapshot = repository.readSnapshot(repositoryRequest)
   const snapshot = wysiwygMutationProbe && !wysiwygPersistenceProbe
@@ -56,6 +60,7 @@ export function MobileUiLab() {
     scenarioId,
     snapshot,
     source,
+    sourceSelectionProbe,
     wysiwygMutationProbe,
     wysiwygPersistenceProbe,
   })
@@ -74,6 +79,7 @@ export function MobileUiLab() {
         onOpenNativeVault={handleOpenNativeVault}
         repository={repository}
         repositoryRequest={repositoryRequest}
+        sourceSelectionProbe={sourceSelectionProbe}
         snapshot={snapshot}
         wysiwygMutationProbe={wysiwygMutationProbe}
       />
@@ -167,6 +173,7 @@ function mobileWorkspaceKey({
   scenarioId,
   snapshot,
   source,
+  sourceSelectionProbe,
   wysiwygMutationProbe,
   wysiwygPersistenceProbe,
 }: {
@@ -177,6 +184,7 @@ function mobileWorkspaceKey({
   scenarioId: string | null
   snapshot: ReturnType<typeof readOnlyWorkspaceRepository.readSnapshot>
   source: ReturnType<typeof currentSnapshotSource>
+  sourceSelectionProbe: boolean
   wysiwygMutationProbe: boolean
   wysiwygPersistenceProbe: boolean
 }) {
@@ -188,6 +196,7 @@ function mobileWorkspaceKey({
     qaRun ?? 'interactive',
     initialEditorEditing ? 'raw-editor' : 'read-editor',
     initialEditorEditingMode,
+    sourceSelectionProbe ? 'source-selection-probe' : 'no-source-selection-probe',
     wysiwygMutationProbe ? 'wysiwyg-mutation-probe' : 'no-wysiwyg-mutation-probe',
     wysiwygPersistenceProbe ? 'wysiwyg-persistence-probe' : 'no-wysiwyg-persistence-probe',
     layoutProbeMode(layoutProbe),

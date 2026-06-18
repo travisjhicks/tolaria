@@ -1,0 +1,42 @@
+import { activeMobileWikilinkQuery } from '../workspace/mobileWikilinkAutocomplete'
+import { mobileMarkdownSelectionAfterTextChange } from '../workspace/mobileMarkdownSourceSelection'
+import type { NativeSourceSelectionProof } from './nativeSourceSelectionLog'
+
+export function nativeSourceSelectionProof(): NativeSourceSelectionProof {
+  const insertionCursor = selectionAfter(
+    'Intro\n\nFollow up today',
+    'Intro\n\nFollow up with Maria today',
+    17,
+  )
+  const replacementCursor = selectionAfter(
+    'Intro\n\nFollow up today',
+    'Intro\n\nFollow up tomorrow',
+    17,
+    22,
+  )
+  const deletionCursor = selectionAfter(
+    'Intro\n\nFollow up today',
+    'Intro\n\nFollow today',
+    17,
+  )
+  const autocompleteCursor = selectionAfter('Links [[Pro today', 'Links [[Proj today', 11)
+
+  return {
+    autocompleteCursor,
+    autocompletePreserved: activeMobileWikilinkQuery('Links [[Proj today', autocompleteCursor)?.query === 'Proj',
+    deletionCursor,
+    deletionPreserved: deletionCursor === 14,
+    insertionCursor,
+    insertionPreserved: insertionCursor === 28,
+    replacementCursor,
+    replacementPreserved: replacementCursor === 25,
+  }
+}
+
+export function nativeSourceSelectionProbeEnabled(searchParams: URLSearchParams): boolean {
+  return searchParams.get('sourceSelectionProbe') === '1'
+}
+
+function selectionAfter(previousText: string, nextText: string, start: number, end = start): number {
+  return mobileMarkdownSelectionAfterTextChange(previousText, nextText, { start, end }).start
+}

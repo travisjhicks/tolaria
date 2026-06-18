@@ -25,6 +25,7 @@ export function TabletWorkspace({
   onOpenNativeVault,
   repository = fixtureReadOnlyWorkspaceRepository,
   repositoryRequest,
+  sourceSelectionProbe = false,
   snapshot,
   wysiwygMutationProbe = false,
 }: {
@@ -34,6 +35,7 @@ export function TabletWorkspace({
   onOpenNativeVault?: () => void
   repository?: ReadOnlyWorkspaceRepository
   repositoryRequest?: ReadOnlyWorkspaceRequest
+  sourceSelectionProbe?: boolean
   snapshot: MobileWorkspaceSnapshot
   wysiwygMutationProbe?: boolean
 }) {
@@ -48,6 +50,7 @@ export function TabletWorkspace({
         initialEditorEditing={initialEditorEditing}
         initialEditorEditingMode={initialEditorEditingMode}
         layoutProbe={layoutProbe}
+        sourceSelectionProbe={sourceSelectionProbe}
         wysiwygMutationProbe={wysiwygMutationProbe}
         {...controller}
       />
@@ -180,6 +183,7 @@ type TabletEditorPanelHostProps = Pick<
   | 'onToggleFavorite'
   | 'onUpdateNoteContent'
   | 'selectedNote'
+  | 'sourceSelectionProbe'
   | 'wysiwygMutationProbe'
 > & {
   onNavigateWikilink: (target: string) => void
@@ -198,6 +202,7 @@ function TabletEditorPanelHost({
   onToggleFavorite,
   onUpdateNoteContent,
   selectedNote,
+  sourceSelectionProbe,
   suggestionNotes,
   wysiwygMutationProbe,
 }: TabletEditorPanelHostProps) {
@@ -215,6 +220,7 @@ function TabletEditorPanelHost({
       onOpenMoreActions={onOpenMoreActions}
       onToggleFavorite={onToggleFavorite}
       onUpdateContent={onUpdateNoteContent}
+      sourceSelectionProbe={sourceSelectionProbe}
       wysiwygMutationProbe={wysiwygMutationProbe}
     />
   )

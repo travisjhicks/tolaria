@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, type NativeSyntheticEvent, type TextInputSelectionChangeEventData, View } from 'react-native'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Input } from '../ui/input'
 import { Text } from '../ui/text'
 import { MobileChip } from '../../ui/MobileChip'
@@ -18,8 +18,14 @@ import {
   applyMobileMarkdownFormat,
   type MobileMarkdownFormatAction,
 } from '../../workspace/mobileMarkdownFormatting'
+import {
+  mobileMarkdownSelectionAfterTextChange,
+  type MobileMarkdownTextSelection,
+} from '../../workspace/mobileMarkdownSourceSelection'
 import { mobileNoteEditableContent } from '../../workspace/mobileDocumentContent'
 import type { MobileEditorBlock, MobileNote } from '../../workspace/mobileWorkspaceModel'
+import { nativeSourceSelectionProof } from '../../qa/nativeSourceSelectionProbe'
+import { nativeSourceSelectionLogLine } from '../../qa/nativeSourceSelectionLog'
 import { MobileMarkdownFormattingToolbar } from './MobileMarkdownFormattingToolbar'
 
 export type MobileMarkdownSourceEditorProps = {
@@ -29,11 +35,7 @@ export type MobileMarkdownSourceEditorProps = {
   note: MobileNote
   notes: MobileNote[]
   onUpdateContent: (noteId: string, content: string) => void
-}
-
-type TextSelectionRange = {
-  end: number
-  start: number
+  sourceSelectionProbe?: boolean
 }
 
 type InlineAutocompleteKind = 'personMention' | 'wikilink'
@@ -45,6 +47,7 @@ export function MobileMarkdownSourceEditor({
   note,
   notes,
   onUpdateContent,
+  sourceSelectionProbe = false,
 }: MobileMarkdownSourceEditorProps) {
   const content = mobileNoteEditableContent({
     ...note,
@@ -57,6 +60,7 @@ export function MobileMarkdownSourceEditor({
     notes,
     onUpdateContent,
   })
+  useNativeSourceSelectionProbe(sourceSelectionProbe)
 
   return (
     <View style={editorStyles.container} testID="editor-markdown-form">
@@ -94,6 +98,18 @@ export function MobileMarkdownSourceEditor({
   )
 }
 
+function useNativeSourceSelectionProbe(enabled: boolean) {
+  useEffect(() => {
+    if (!enabled) return undefined
+
+    const timer = setTimeout(() => {
+      console.info(nativeSourceSelectionLogLine(nativeSourceSelectionProof()))
+    }, 250)
+
+    return () => clearTimeout(timer)
+  }, [enabled])
+}
+
 function useMarkdownInlineAutocomplete({
   content,
   noteId,
@@ -105,8 +121,8 @@ function useMarkdownInlineAutocomplete({
   notes: MobileNote[]
   onUpdateContent: (noteId: string, content: string) => void
 }) {
-  const [selection, setSelection] = useState<TextSelectionRange>(textStartSelection())
-  const [controlledSelection, setControlledSelection] = useState<TextSelectionRange | undefined>(textStartSelection())
+  const [selection, setSelection] = useState<MobileMarkdownTextSelection>(textStartSelection())
+  const [controlledSelection, setControlledSelection] = useState<MobileMarkdownTextSelection | undefined>(textStartSelection())
   const state = useMemo(() => markdownInlineAutocompleteState(content, selection.start, notes), [content, notes, selection.start])
 
   const handleSelectionChange = useCallback((event: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => {
@@ -115,11 +131,11 @@ function useMarkdownInlineAutocomplete({
   }, [])
   const handleMarkdownChange = useCallback((nextContent: string) => {
     onUpdateContent(noteId, nextContent)
-    const nextSelection = textEndSelection(nextContent)
+    const nextSelection = mobileMarkdownSelectionAfterTextChange(content, nextContent, selection)
     const activeAutocomplete = hasActiveInlineAutocomplete(nextContent, nextSelection.start)
     setSelection(nextSelection)
     setControlledSelection(activeAutocomplete ? nextSelection : undefined)
-  }, [noteId, onUpdateContent])
+  }, [content, noteId, onUpdateContent, selection])
   const applyFormat = useCallback((action: MobileMarkdownFormatAction) => {
     const result = applyMobileMarkdownFormat(content, selection, action)
     onUpdateContent(noteId, result.text)
@@ -187,11 +203,7 @@ function hasActiveInlineAutocomplete(text: string, cursor: number): boolean {
   return activeMobilePersonMentionQuery(text, cursor) !== null
 }
 
-function textEndSelection(text: string): TextSelectionRange {
-  return { end: text.length, start: text.length }
-}
-
-function textStartSelection(): TextSelectionRange {
+function textStartSelection(): MobileMarkdownTextSelection {
   return { end: 0, start: 0 }
 }
 

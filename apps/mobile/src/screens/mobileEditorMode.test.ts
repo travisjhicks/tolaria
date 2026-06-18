@@ -14,6 +14,10 @@ describe('mobile editor mode URL state', () => {
       initialEditorEditing: true,
       initialEditorEditingMode: 'source',
     })
+    expect(initialMobileEditorStateFromMode('source')).toEqual({
+      initialEditorEditing: true,
+      initialEditorEditingMode: 'source',
+    })
   })
 
   it('opens the native TenTap editor for wysiwyg-mode QA routes', () => {
