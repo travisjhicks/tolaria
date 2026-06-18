@@ -42,6 +42,7 @@ export function createFileSystemWorkspaceRepository(fileSystem: WorkspaceFileSys
       return buildLocalVaultWorkspaceSnapshot({
         files: fileSystem.readVaultFiles(rootUri),
         folderPaths: fileSystem.readVaultDirectories(rootUri),
+        vaultAlias: request?.vaultAlias,
         vaultLabel: workspaceLabel(rootUri, request),
         vaultPath: rootUri,
       })
@@ -116,6 +117,7 @@ function workspaceLabel(rootUri: string, request?: ReadOnlyWorkspaceRequest) {
 function emptyFileSystemSnapshot(request?: ReadOnlyWorkspaceRequest): MobileWorkspaceSnapshot {
   return buildLocalVaultWorkspaceSnapshot({
     files: [],
+    vaultAlias: request?.vaultAlias,
     vaultLabel: request?.vaultLabel ?? 'Tolaria Vault',
     vaultPath: request?.vaultRootUri ?? '',
   })

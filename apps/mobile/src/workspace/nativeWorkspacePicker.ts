@@ -1,4 +1,7 @@
+import { mobileWorkspaceAlias } from './mobileWorkspaceAlias'
+
 export type NativeWorkspaceSelection = {
+  vaultAlias: string | null
   vaultLabel: string
   vaultRootUri: string
 }
@@ -45,8 +48,10 @@ export function nativeWorkspaceSelectionFromDirectory(
   const vaultRootUri = directory.uri?.trim()
   if (!vaultRootUri) return null
 
+  const vaultLabel = directory.name?.trim() || fallbackWorkspaceLabel(vaultRootUri)
   return {
-    vaultLabel: directory.name?.trim() || fallbackWorkspaceLabel(vaultRootUri),
+    vaultAlias: mobileWorkspaceAlias({ label: vaultLabel, path: vaultRootUri }),
+    vaultLabel,
     vaultRootUri,
   }
 }

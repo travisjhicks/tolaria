@@ -221,6 +221,7 @@ export type MobileWorkspaceSnapshot = {
 }
 
 export type MobileWorkspaceSource = {
+  alias?: string | null
   kind: 'fixture' | 'localVault'
   label: string
   totalNotes: number

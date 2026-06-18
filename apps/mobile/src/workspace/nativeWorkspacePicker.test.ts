@@ -10,6 +10,7 @@ describe('native workspace picker', () => {
       name: 'Laputa',
       uri: 'file:///Users/luca/Laputa/',
     })).toEqual({
+      vaultAlias: 'laputa',
       vaultLabel: 'Laputa',
       vaultRootUri: 'file:///Users/luca/Laputa/',
     })
@@ -19,6 +20,7 @@ describe('native workspace picker', () => {
     expect(nativeWorkspaceSelectionFromDirectory({
       uri: 'file:///Users/luca/Work%20Vault/',
     })).toEqual({
+      vaultAlias: 'work-vault',
       vaultLabel: 'Work Vault',
       vaultRootUri: 'file:///Users/luca/Work%20Vault/',
     })

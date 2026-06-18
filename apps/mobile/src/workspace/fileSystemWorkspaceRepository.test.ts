@@ -33,15 +33,21 @@ type: Project
     })
     const repository = createFileSystemWorkspaceRepository(fileSystem)
 
-    const snapshot = repository.readSnapshot({ source: 'native', vaultLabel: 'Laputa', vaultRootUri: 'file:///vault' })
+    const snapshot = repository.readSnapshot({
+      source: 'native',
+      vaultAlias: 'laputa',
+      vaultLabel: 'Laputa',
+      vaultRootUri: 'file:///vault',
+    })
     const workflow = snapshot.allNotes?.find((note) => note.path === 'Writing/Workflow.md')
 
     expect(snapshot.folderPaths).toEqual(expect.arrayContaining(['Projects', 'Writing']))
-    expect(snapshot.source).toMatchObject({ kind: 'localVault', label: 'Laputa', totalNotes: 3 })
+    expect(snapshot.source).toMatchObject({ alias: 'laputa', kind: 'localVault', label: 'Laputa', totalNotes: 3 })
     expect(workflow).toMatchObject({
       path: 'Writing/Workflow.md',
       relationships: [expect.objectContaining({ key: 'belongs_to' })],
       title: 'Workflow',
+      workspaceAlias: 'laputa',
     })
     expect(snapshot.notes.find((note) => note.path === 'Writing/Workflow.md')?.rawContent).toContain('# Workflow')
     expect(snapshot.sidebarSections.find((section) => section.id === 'views')?.items?.[0]).toMatchObject({

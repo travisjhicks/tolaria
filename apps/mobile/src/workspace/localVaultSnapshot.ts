@@ -23,6 +23,7 @@ import { buildMobileSidebarSections } from './mobileSidebarSections'
 import { isMobileInboxNote } from './mobileNoteFilters'
 import { normalizeMobileNoteWidth } from './mobileNoteWidth'
 import { normalizeMobileWikilinkTarget } from './mobileWikilinks'
+import { mobileWorkspaceAlias } from './mobileWorkspaceAlias'
 import type {
   MobileFileKind,
   MobileNote,
@@ -64,6 +65,7 @@ export type LocalVaultSnapshotOptions = {
   folderPaths?: RelativeVaultPath[]
   files: LocalVaultFile[]
   maxNotes?: number
+  vaultAlias?: string | null
   vaultLabel: LocalVaultLabel
   vaultPath: VaultRootPath
 }
@@ -185,17 +187,20 @@ export function buildLocalVaultWorkspaceSnapshot({
   folderPaths = [],
   files,
   maxNotes = DEFAULT_MAX_NOTES,
+  vaultAlias,
   vaultLabel,
   vaultPath,
 }: LocalVaultSnapshotOptions): MobileWorkspaceSnapshot {
+  const workspaceAlias = mobileWorkspaceAlias({ alias: vaultAlias, label: vaultLabel, path: vaultPath })
+  const workspaceIdentity = { alias: workspaceAlias, label: vaultLabel }
   const entries = applyTypeDefinitionTones(files.map(parseLocalVaultEntry))
   const typeDefinitions = localTypeDefinitions(entries)
   const allNoteEntries = [...entries].sort(compareByModifiedDate)
   const visibleEntries = visibleNoteEntries(entries)
   const selectedEntries = visibleEntries.slice(0, maxNotes)
-  const resolveRelationship = relationshipResolver(entries)
-  const allNotes = allNoteEntries.map((entry) => localEntryToMobileNote(entry, resolveRelationship, vaultLabel, 'summary'))
-  const notes = selectedEntries.map((entry) => localEntryToMobileNote(entry, resolveRelationship, vaultLabel, 'editable'))
+  const resolveRelationship = relationshipResolver(entries, workspaceAlias)
+  const allNotes = allNoteEntries.map((entry) => localEntryToMobileNote(entry, resolveRelationship, workspaceIdentity, 'summary'))
+  const notes = selectedEntries.map((entry) => localEntryToMobileNote(entry, resolveRelationship, workspaceIdentity, 'editable'))
   const selectedNoteId = notes[0]?.id
   const views = orderedMobileSavedViews(files.map(parseViewFile).filter(isMobileSavedView))
 
@@ -209,6 +214,7 @@ export function buildLocalVaultWorkspaceSnapshot({
     folderPaths,
     sidebarSections: buildMobileSidebarSections({ folderPaths, notes: allNotes, typeDefinitions, views }),
     source: {
+      alias: workspaceAlias,
       kind: 'localVault',
       label: vaultLabel,
       totalNotes: entries.length,
@@ -456,7 +462,7 @@ function cleanTypeName(value: string): NoteTypeName {
 function localEntryToMobileNote(
   entry: LocalVaultEntry,
   resolveRelationship: RelationshipResolver,
-  vaultLabel: string,
+  workspace: { alias: string | null; label: string },
   detailLevel: MobileNoteDetailLevel,
 ): MobileNote {
   const blocks = detailLevel === 'editable' ? localVaultEditorBlocks(entry.body) : undefined
@@ -490,7 +496,8 @@ function localEntryToMobileNote(
     title: entry.title,
     type: entry.type,
     typeTone: entry.typeTone,
-    workspace: vaultLabel,
+    workspace: workspace.label,
+    workspaceAlias: workspace.alias,
   }
 }
 
@@ -558,10 +565,10 @@ function mobilePropertyValue(value: unknown): MobilePropertyValue {
   return ''
 }
 
-function relationshipResolver(entries: LocalVaultEntry[]): RelationshipResolver {
+function relationshipResolver(entries: LocalVaultEntry[], workspaceAlias: string | null): RelationshipResolver {
   const index = new Map<string, LocalVaultEntry>()
   for (const entry of entries) {
-    for (const target of relationshipResolverTargets(entry)) {
+    for (const target of relationshipResolverTargets(entry, workspaceAlias)) {
       addRelationshipResolverTarget(index, target, entry)
     }
   }
@@ -569,13 +576,19 @@ function relationshipResolver(entries: LocalVaultEntry[]): RelationshipResolver 
   return (target) => index.get(normalizeMobileWikilinkTarget(target)) ?? null
 }
 
-function relationshipResolverTargets(entry: LocalVaultEntry): string[] {
-  return [
+function relationshipResolverTargets(entry: LocalVaultEntry, workspaceAlias: string | null): string[] {
+  const targets = [
     entry.path,
     entry.path.replace(/\.[^.]+$/, ''),
     entry.filename.replace(/\.[^.]+$/, ''),
     ...entry.aliases,
     entry.title,
+  ]
+  if (!workspaceAlias) return targets
+
+  return [
+    ...targets,
+    ...targets.map((target) => `${workspaceAlias}/${target}`),
   ]
 }
 

@@ -50,6 +50,7 @@ export function MobileUiLab() {
   const baseRepositoryRequest = {
     scenarioId,
     source,
+    vaultAlias: currentVaultAlias(searchParams, nativeWorkspace),
     vaultLabel: currentVaultLabel(searchParams, nativeWorkspace),
     vaultRootUri: currentVaultRootUri(searchParams, nativeWorkspace),
   }
@@ -195,6 +196,14 @@ function currentVaultLabel(
   return searchParams.get('vaultLabel') || envValue('EXPO_PUBLIC_TOLARIA_NATIVE_VAULT_LABEL')
 }
 
+function currentVaultAlias(
+  searchParams: URLSearchParams,
+  nativeWorkspace: NativeWorkspaceSelection | null,
+): string | null {
+  if (nativeWorkspace) return nativeWorkspace.vaultAlias
+  return searchParams.get('vaultAlias') || envValue('EXPO_PUBLIC_TOLARIA_NATIVE_VAULT_ALIAS')
+}
+
 function layoutProbeEnabled(searchParams: URLSearchParams) {
   return searchParams.get('layoutProbe') === '1' || envFlagEnabled('EXPO_PUBLIC_TOLARIA_LAYOUT_PROBE')
 }
@@ -264,6 +273,7 @@ function mobileWorkspaceKey({
     flagKey(wysiwygPersistenceProbe, 'wysiwyg-persistence-probe', 'no-wysiwyg-persistence-probe'),
     layoutProbeMode(layoutProbe),
     sourceInfo?.kind ?? 'fixture',
+    sourceInfo?.alias ?? 'no-workspace-alias',
     sourceInfo?.label ?? 'Tolaria Vault',
     sourceInfo?.totalNotes ?? snapshot.notes.length,
     firstNoteId(snapshot),

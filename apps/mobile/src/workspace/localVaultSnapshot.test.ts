@@ -77,6 +77,37 @@ type: Journal
     })
   })
 
+  it('annotates notes with the workspace alias and resolves alias-prefixed relationship refs', () => {
+    const snapshot = buildLocalVaultWorkspaceSnapshot({
+      files: [
+        vaultFile('relationships/source.md', `---
+type: Note
+related_to:
+  - "[[team/refs/target]]"
+---
+# Source
+`),
+        vaultFile('refs/target.md', `---
+type: Project
+---
+# Target
+`),
+      ],
+      vaultAlias: 'team',
+      vaultLabel: 'Team Notes',
+      vaultPath: '/Users/luca/Team Notes',
+    })
+
+    expect(snapshot.source).toMatchObject({ alias: 'team', label: 'Team Notes' })
+    expect(snapshot.notes[0]).toMatchObject({ workspace: 'Team Notes', workspaceAlias: 'team' })
+    expect(snapshot.notes[0]?.relationships[0]?.values[0]).toMatchObject({
+      id: 'refs/target.md',
+      ref: '[[team/refs/target]]',
+      title: 'Target',
+      type: 'Project',
+    })
+  })
+
   it('caps the rendered note list while keeping total vault counts and full navigation notes', () => {
     const files = Array.from({ length: 5 }, (_, index) => vaultFile(`note-${index}.md`, `---
 type: Note
