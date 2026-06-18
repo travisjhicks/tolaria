@@ -1,7 +1,9 @@
 import {
+  mobileFilenameStemForTitle,
   movedMobileNoteFilePath,
   renamedMobileNoteFilePath,
 } from '../workspace/mobileNotePaths'
+import { mobileNoteEditableContent } from '../workspace/mobileDocumentContent'
 import {
   mobileFolderChildPath,
   mobileFolderName,
@@ -21,16 +23,58 @@ type PathHistoryEdit = Extract<
   MobileWorkspaceEdit,
   { type: 'moveNoteToFolder' | 'renameFolder' | 'renameNoteFile' }
 >
+type TitlePropertyEdit = Extract<MobileWorkspaceEdit, { type: 'updateProperty' }> & { value: string }
 
 export function mobileWorkspacePathHistoryEntry(
   previousSnapshot: MobileWorkspaceSnapshot,
   nextSnapshot: MobileWorkspaceSnapshot,
   sourceEdit: MobileWorkspaceEdit | undefined,
 ): MobileWorkspaceHistoryEntry | null {
-  if (!sourceEdit || !isPathHistoryEdit(sourceEdit)) return null
+  if (!sourceEdit) return null
+  const titlePathEntry = titlePropertyPathHistoryEntry(previousSnapshot, nextSnapshot, sourceEdit)
+  if (titlePathEntry) return titlePathEntry
+  if (!isPathHistoryEdit(sourceEdit)) return null
   if (sourceEdit.type === 'moveNoteToFolder') return movedNoteHistoryEntry(previousSnapshot, nextSnapshot, sourceEdit)
   if (sourceEdit.type === 'renameNoteFile') return renamedNoteHistoryEntry(previousSnapshot, nextSnapshot, sourceEdit)
   return renamedFolderHistoryEntry(previousSnapshot, nextSnapshot, sourceEdit)
+}
+
+function titlePropertyPathHistoryEntry(
+  previousSnapshot: MobileWorkspaceSnapshot,
+  nextSnapshot: MobileWorkspaceSnapshot,
+  sourceEdit: MobileWorkspaceEdit,
+): MobileWorkspaceHistoryEntry | null {
+  if (!isTitlePropertyEdit(sourceEdit)) return null
+
+  const previousNote = noteById(previousSnapshot, sourceEdit.noteId)
+  const nextPath = previousNote ? renamedMobileNoteFilePath(previousNote, mobileFilenameStemForTitle(sourceEdit.value)) : null
+  const nextNote = nextPath ? noteByPath(nextSnapshot, nextPath) : null
+  if (!previousNote || !nextNote || noteWritePath(previousNote) === noteWritePath(nextNote)) return null
+
+  return {
+    redoEdits: [
+      { filenameStem: filenameStem(nextNote), noteId: previousNote.id, type: 'renameNoteFile' },
+      ...contentRestoreEdits(previousSnapshot, nextSnapshot, previousNote, nextNote),
+    ],
+    undoEdits: [
+      { filenameStem: filenameStem(previousNote), noteId: nextNote.id, type: 'renameNoteFile' },
+      ...contentRestoreEdits(nextSnapshot, previousSnapshot, nextNote, previousNote),
+    ],
+  }
+}
+
+function contentRestoreEdits(
+  fromSnapshot: MobileWorkspaceSnapshot,
+  toSnapshot: MobileWorkspaceSnapshot,
+  movedFromNote: MobileNote,
+  movedToNote: MobileNote,
+): MobileWorkspaceHistoryEntry['undoEdits'] {
+  const fromNotesById = new Map(workspaceNotes(fromSnapshot).map((note) => [note.id, note]))
+  return workspaceNotes(toSnapshot).flatMap((toNote) => {
+    const fromNote = fromNotesById.get(toNote.id) ?? (toNote.id === movedToNote.id ? movedFromNote : null)
+    if (!fromNote || mobileNoteEditableContent(fromNote) === mobileNoteEditableContent(toNote)) return []
+    return [{ content: mobileNoteEditableContent(toNote), noteId: toNote.id, type: 'updateNoteContent' as const }]
+  })
 }
 
 function movedNoteHistoryEntry(
@@ -128,4 +172,15 @@ function filenameStem(note: MobileNote): string {
 
 function isPathHistoryEdit(edit: MobileWorkspaceEdit): edit is PathHistoryEdit {
   return edit.type === 'moveNoteToFolder' || edit.type === 'renameFolder' || edit.type === 'renameNoteFile'
+}
+
+function isTitlePropertyEdit(edit: MobileWorkspaceEdit): edit is TitlePropertyEdit {
+  return edit.type === 'updateProperty'
+    && normalizedFrontmatterKey(edit.key) === 'title'
+    && typeof edit.value === 'string'
+    && edit.value.trim().length > 0
+}
+
+function normalizedFrontmatterKey(key: string): string {
+  return key.trim().toLowerCase().replace(/\s+/gu, '_')
 }

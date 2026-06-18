@@ -215,6 +215,30 @@ describe('tablet workspace editing history', () => {
     expect(noteById(redoneSnapshot, 'Tolaria/Mobile UI/workflow-manual.md').path).toBe('Tolaria/Mobile UI/workflow-manual.md')
   })
 
+  it('undoes and redoes title-property filename renames with inbound wikilinks', () => {
+    const previousSnapshot = titleRenameHistorySnapshot()
+    const edit: MobileWorkspaceEdit = {
+      key: 'title',
+      noteId: 'workflow-orchestration',
+      type: 'updateProperty',
+      value: 'Renamed Workflow Essay',
+    }
+    const { redoneSnapshot, undoneSnapshot } = historyRoundTrip(previousSnapshot, edit)
+    const undoneSource = noteById(undoneSnapshot, 'workflow-orchestration')
+    const undoneRef = noteById(undoneSnapshot, 'open-source-project')
+    const redoneSource = noteById(redoneSnapshot, 'workflow-orchestration')
+    const redoneRef = noteById(redoneSnapshot, 'open-source-project')
+
+    expect(undoneSource.path).toBe('Tolaria/Mobile UI/Workflow Orchestration Essay.md')
+    expect(undoneSource.rawContent).toContain('title: Workflow Orchestration Essay')
+    expect(undoneRef.rawContent).toContain('[[Workflow Orchestration Essay]]')
+    expect(undoneRef.rawContent).toContain('[[Tolaria/Mobile UI/Workflow Orchestration Essay|Workflow]]')
+    expect(redoneSource.path).toBe('Tolaria/Mobile UI/renamed-workflow-essay.md')
+    expect(redoneSource.rawContent).toContain('title: Renamed Workflow Essay')
+    expect(redoneRef.rawContent).toContain('[[Tolaria/Mobile UI/renamed-workflow-essay]]')
+    expect(redoneRef.rawContent).toContain('[[Tolaria/Mobile UI/renamed-workflow-essay|Workflow]]')
+  })
+
   it('undoes and redoes folder subtree renames through folder edits', () => {
     const previousSnapshot = snapshotWithFolderPaths(['Tolaria', 'Tolaria/Mobile UI'])
     const { redoneSnapshot, undoneSnapshot } = historyRoundTrip(previousSnapshot, {
@@ -308,6 +332,32 @@ function snapshotWithPathBackedSelectedNote(): MobileWorkspaceSnapshot {
     allNotes: [pathBackedNote, ...base.notes.slice(1)],
     notes: [pathBackedNote, ...base.notes.slice(1)],
     selectedNoteId: pathBackedNote.id,
+  }
+}
+
+function titleRenameHistorySnapshot(): MobileWorkspaceSnapshot {
+  const base = workspaceScenarioForId('default')
+  const source = {
+    ...noteById(base, 'workflow-orchestration'),
+    rawContent: [
+      '---',
+      'title: Workflow Orchestration Essay',
+      'type: Essay',
+      '---',
+      'Body without an H1.',
+      '',
+    ].join('\n'),
+  }
+  const ref = {
+    ...noteById(base, 'open-source-project'),
+    rawContent: '# Ref\n\n[[Workflow Orchestration Essay]] and [[Tolaria/Mobile UI/Workflow Orchestration Essay|Workflow]]\n',
+  }
+
+  return {
+    ...base,
+    allNotes: [source, ref],
+    notes: [source, ref],
+    selectedNoteId: source.id,
   }
 }
 
