@@ -28,6 +28,13 @@ import {
   nativeWysiwygPersistenceProbeRepository,
   nativeWysiwygPersistenceProbeRequest,
 } from '../qa/nativeWysiwygPersistenceProbeRepository'
+import {
+  nativeWorkspacePersistenceProbeEnabled,
+} from '../qa/nativeWorkspacePersistenceProbe'
+import {
+  nativeWorkspacePersistenceProbeRepository,
+  nativeWorkspacePersistenceProbeRequest,
+} from '../qa/nativeWorkspacePersistenceProbeRepository'
 import type { MobileNote, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
 
 export function MobileUiLab() {
@@ -35,6 +42,7 @@ export function MobileUiLab() {
   const isWideEnoughForTablet = width >= 900
   const searchParams = useMobileUiSearchParams()
   const [nativeWorkspace, setNativeWorkspace] = useState<NativeWorkspaceSelection | null>(null)
+  const workspacePersistenceProbe = nativeWorkspacePersistenceProbeEnabled(searchParams)
   const wysiwygPersistenceProbe = nativeWysiwygPersistenceProbeEnabled(searchParams)
   const scenarioId = currentScenarioId(searchParams)
   const source = currentSnapshotSource(searchParams, nativeWorkspace)
@@ -44,12 +52,11 @@ export function MobileUiLab() {
     vaultLabel: currentVaultLabel(searchParams, nativeWorkspace),
     vaultRootUri: currentVaultRootUri(searchParams, nativeWorkspace),
   }
-  const repository = wysiwygPersistenceProbe
-    ? nativeWysiwygPersistenceProbeRepository(readOnlyWorkspaceRepository)
-    : readOnlyWorkspaceRepository
-  const repositoryRequest = wysiwygPersistenceProbe
-    ? nativeWysiwygPersistenceProbeRequest(baseRepositoryRequest)
-    : baseRepositoryRequest
+  const repository = mobileRepositoryForProbes({ workspacePersistenceProbe, wysiwygPersistenceProbe })
+  const repositoryRequest = mobileRepositoryRequestForProbes(
+    baseRepositoryRequest,
+    { workspacePersistenceProbe, wysiwygPersistenceProbe },
+  )
   const { initialEditorEditing, initialEditorEditingMode } = initialMobileEditorStateFromMode(editorMode(searchParams))
   const layoutProbe = layoutProbeEnabled(searchParams)
   const sourceSelectionProbe = nativeSourceSelectionProbeEnabled(searchParams)
@@ -69,6 +76,7 @@ export function MobileUiLab() {
     snapshot,
     source,
     sourceSelectionProbe,
+    workspacePersistenceProbe,
     wysiwygAutocompleteProbe,
     wysiwygWikilinkInsertProbe,
     wysiwygMutationProbe,
@@ -137,6 +145,33 @@ function editorMode(searchParams: URLSearchParams) {
   return searchParams.get('editorMode')
 }
 
+function mobileRepositoryForProbes({
+  workspacePersistenceProbe,
+  wysiwygPersistenceProbe,
+}: {
+  workspacePersistenceProbe: boolean
+  wysiwygPersistenceProbe: boolean
+}) {
+  if (workspacePersistenceProbe) return nativeWorkspacePersistenceProbeRepository(readOnlyWorkspaceRepository)
+  if (wysiwygPersistenceProbe) return nativeWysiwygPersistenceProbeRepository(readOnlyWorkspaceRepository)
+  return readOnlyWorkspaceRepository
+}
+
+function mobileRepositoryRequestForProbes(
+  request: ReadOnlyWorkspaceRequest,
+  {
+    workspacePersistenceProbe,
+    wysiwygPersistenceProbe,
+  }: {
+    workspacePersistenceProbe: boolean
+    wysiwygPersistenceProbe: boolean
+  },
+) {
+  if (workspacePersistenceProbe) return nativeWorkspacePersistenceProbeRequest(request)
+  if (wysiwygPersistenceProbe) return nativeWysiwygPersistenceProbeRequest(request)
+  return request
+}
+
 function currentVaultRootUri(
   searchParams: URLSearchParams,
   nativeWorkspace: NativeWorkspaceSelection | null,
@@ -186,6 +221,7 @@ function mobileWorkspaceKey({
   snapshot,
   source,
   sourceSelectionProbe,
+  workspacePersistenceProbe,
   wysiwygAutocompleteProbe,
   wysiwygWikilinkInsertProbe,
   wysiwygMutationProbe,
@@ -199,6 +235,7 @@ function mobileWorkspaceKey({
   snapshot: ReturnType<typeof readOnlyWorkspaceRepository.readSnapshot>
   source: ReturnType<typeof currentSnapshotSource>
   sourceSelectionProbe: boolean
+  workspacePersistenceProbe: boolean
   wysiwygAutocompleteProbe: boolean
   wysiwygWikilinkInsertProbe: boolean
   wysiwygMutationProbe: boolean
@@ -213,6 +250,7 @@ function mobileWorkspaceKey({
     flagKey(initialEditorEditing, 'raw-editor', 'read-editor'),
     initialEditorEditingMode,
     flagKey(sourceSelectionProbe, 'source-selection-probe', 'no-source-selection-probe'),
+    flagKey(workspacePersistenceProbe, 'workspace-persistence-probe', 'no-workspace-persistence-probe'),
     flagKey(wysiwygAutocompleteProbe, 'wysiwyg-autocomplete-probe', 'no-wysiwyg-autocomplete-probe'),
     flagKey(wysiwygWikilinkInsertProbe, 'wysiwyg-wikilink-insert-probe', 'no-wysiwyg-wikilink-insert-probe'),
     flagKey(wysiwygMutationProbe, 'wysiwyg-mutation-probe', 'no-wysiwyg-mutation-probe'),

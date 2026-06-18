@@ -91,6 +91,8 @@ Editor autocomplete is covered as behavior too: `[[` suggestions match active no
 
 Property editing is covered through real typed writes: scalar text, tag lists, number values, boolean Yes/No values, status chips, ISO date entry, URL entry, color swatches, and raw frontmatter edits all pass through the same frontmatter write boundary as desktop-style property edits.
 
+`pnpm mobile:qa:ios-workspace-persistence` runs an isolated native Expo FileSystem vault and fails unless repository-level writes persist and rehydrate on the actual iOS Simulator. The probe covers create/save/move/delete note writes, save/delete `views/*.yml`, create/rename/delete folders, and create/delete Type documents through the same mobile repository boundary used by tablet and phone action sheets.
+
 React Native Web screenshots are a fast preflight only. Layout-sensitive mobile UI work must also pass the native iOS simulator metric check and produce a simulator screenshot before it is accepted, because spacing, safe-area, and text layout can diverge between web and the actual Expo app.
 
 Native editor screenshots can open `exp://.../--/?layoutProbe=1&editorMode=raw` to mount the same tablet editor directly in raw-edit mode, or `exp://.../--/?layoutProbe=1&editorMode=wysiwyg` to mount the native TenTap editor directly in document-edit mode. These are QA entry points only; they avoid depending on simulator accessibility taps when the goal is to inspect native rendering of edit-only controls. `pnpm mobile:qa:ios-wysiwyg-layout` uses the same WYSIWYG route but fails on missing or drifted native editor/toolbar metrics.
