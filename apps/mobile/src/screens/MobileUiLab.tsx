@@ -120,6 +120,7 @@ export function MobileUiLab() {
       initialEditorEditing={initialEditorEditing}
       initialEditorEditingMode={initialEditorEditingMode}
       initialState={currentPhoneState(searchParams)}
+      layoutProbe={layoutProbe}
       onOpenNativeVault={handleOpenNativeVault}
       repository={repository}
       repositoryRequest={repositoryRequest}

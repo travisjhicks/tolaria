@@ -11,6 +11,7 @@ import { MobilePropertiesPanel } from '../components/workspace/MobilePropertiesP
 import { MobileSyncStatusBar } from '../components/workspace/MobileSyncStatusBar'
 import { MobileWorkspaceSidebar } from '../components/workspace/MobileWorkspaceSidebar'
 import { mobileText } from '../i18n/mobileText'
+import { probeProps, useMobileLayoutProbe, type MobileLayoutProbe } from '../qa/mobileLayoutProbe'
 import { MobileIconButton } from '../ui/MobileIconButton'
 import { mobileColors, mobileSpace } from '../ui/tokens'
 import { useHorizontalSwipe } from '../ui/useHorizontalSwipe'
@@ -39,6 +40,7 @@ export function PhoneWorkspace({
   initialEditorEditing = false,
   initialEditorEditingMode = 'wysiwyg',
   initialState = 'list',
+  layoutProbe = false,
   onOpenNativeVault,
   repository = fixtureReadOnlyWorkspaceRepository,
   repositoryRequest,
@@ -47,6 +49,7 @@ export function PhoneWorkspace({
   initialEditorEditing?: boolean
   initialEditorEditingMode?: EditorEditingMode
   initialState?: PhoneWorkspaceState
+  layoutProbe?: boolean
   onOpenNativeVault?: () => void
   repository?: ReadOnlyWorkspaceRepository
   repositoryRequest?: ReadOnlyWorkspaceRequest
@@ -56,6 +59,7 @@ export function PhoneWorkspace({
   const { phoneState, previousPhoneState, setPhoneState } = usePhoneState(initialState)
   const { width } = useWindowDimensions()
   const dragPreview = usePhoneDragPreview(phoneState, width)
+  const phoneLayoutProbe = useMobileLayoutProbe(layoutProbe)
   const openList = useCallback(() => setPhoneState('list'), [setPhoneState])
   const openSidebar = useCallback(() => setPhoneState('sidebar'), [setPhoneState])
   const openProperties = useCallback(() => setPhoneState('properties'), [setPhoneState])
@@ -76,10 +80,12 @@ export function PhoneWorkspace({
       controller={controller}
       initialEditorEditing={initialEditorEditing}
       initialEditorEditingMode={initialEditorEditingMode}
+      layoutProbe={false}
       openEditor={openEditor}
       openList={openList}
       openProperties={openProperties}
       openSidebar={openSidebar}
+      phoneLayoutProbe={disabledPhoneLayoutProbe}
       phoneState={dragPreview.previewState}
       phoneSwipePreview={dragPreview}
       suggestionNotes={suggestionNotes}
@@ -87,7 +93,7 @@ export function PhoneWorkspace({
   ) : null
 
   return (
-    <View style={styles.root}>
+    <View {...phoneLayoutProbe.probe('phone.root')} style={styles.root}>
       <PhoneWorkspaceTransition
         dragX={dragPreview.dragX}
         preview={preview}
@@ -99,10 +105,12 @@ export function PhoneWorkspace({
           controller={controller}
           initialEditorEditing={initialEditorEditing}
           initialEditorEditingMode={initialEditorEditingMode}
+          layoutProbe={layoutProbe}
           openEditor={openEditor}
           openList={openList}
           openProperties={openProperties}
           openSidebar={openSidebar}
+          phoneLayoutProbe={phoneLayoutProbe.probe}
           phoneState={phoneState}
           phoneSwipePreview={dragPreview}
           suggestionNotes={suggestionNotes}
@@ -113,7 +121,7 @@ export function PhoneWorkspace({
         compactTablet
         defaultPropertiesVisible={false}
         initialEditorEditing={initialEditorEditing}
-        layoutProbe={false}
+        layoutProbe={layoutProbe}
         suggestionNotes={suggestionNotes}
       />
       <MobileSyncStatusBar sync={controller.snapshot.sync} onOpenLocalVault={onOpenNativeVault} />
@@ -228,14 +236,18 @@ type PhoneWorkspaceStateViewProps = {
   controller: PhoneWorkspaceController
   initialEditorEditing: boolean
   initialEditorEditingMode: EditorEditingMode
+  layoutProbe: boolean
   openEditor: (noteId?: string) => void
   openList: () => void
   openProperties: () => void
   openSidebar: () => void
+  phoneLayoutProbe: MobileLayoutProbe
   phoneState: PhoneWorkspaceState
   phoneSwipePreview: PhoneSwipePreview
   suggestionNotes: MobileNote[]
 }
+
+const disabledPhoneLayoutProbe: MobileLayoutProbe = () => ({})
 
 function PhoneWorkspaceStateView(props: PhoneWorkspaceStateViewProps) {
   if (props.phoneState === 'sidebar') return <PhoneSidebarDrawer {...props} />
@@ -255,8 +267,10 @@ function phoneSwipePreviewHandlers(phoneSwipePreview: PhoneSwipePreview) {
 
 function PhoneNoteListScreen({
   controller,
+  layoutProbe,
   openEditor,
   openSidebar,
+  phoneLayoutProbe,
   phoneSwipePreview,
 }: PhoneWorkspaceStateViewProps) {
   const swipeHandlers = useHorizontalSwipe({
@@ -265,7 +279,7 @@ function PhoneNoteListScreen({
   })
 
   return (
-    <View {...swipeHandlers} style={styles.screen} testID="phone-note-list-screen">
+    <View {...swipeHandlers} {...probeProps(phoneLayoutProbe, 'phone.list.screen')} style={styles.screen} testID="phone-note-list-screen">
       <MobileNoteListPanel
         compact
         bulkActions={{
@@ -275,6 +289,7 @@ function PhoneNoteListScreen({
         }}
         displayPropertyKeys={controller.noteListProperties}
         fullWidth
+        layoutProbe={layoutProbe}
         leading={(
           <MobileIconButton accessibilityLabel={mobileText('sidebar.action.expand')} testID="phone-sidebar-action" onPress={openSidebar}>
             <List color={mobileColors.textMuted} size={18} />
@@ -297,8 +312,10 @@ function PhoneNoteListScreen({
 
 function PhoneSidebarDrawer({
   controller,
+  layoutProbe,
   openEditor,
   openList,
+  phoneLayoutProbe,
   phoneSwipePreview,
 }: PhoneWorkspaceStateViewProps) {
   const { width } = useWindowDimensions()
@@ -311,12 +328,17 @@ function PhoneSidebarDrawer({
   const selectItem = useSelectAndOpenList(controller.onSelectSidebarItem, openList)
 
   return (
-    <View {...swipeHandlers} style={styles.drawerRoot} testID="phone-sidebar-screen">
-      <View pointerEvents="none" style={[styles.drawerPreview, { left: drawerWidth, width }]}>
+    <View {...swipeHandlers} {...probeProps(phoneLayoutProbe, 'phone.sidebar.screen')} style={styles.drawerRoot} testID="phone-sidebar-screen">
+      <View
+        {...probeProps(phoneLayoutProbe, 'phone.sidebar.preview')}
+        pointerEvents="none"
+        style={[styles.drawerPreview, { left: drawerWidth, width }]}
+      >
         <MobileNoteListPanel
           compact
           displayPropertyKeys={controller.noteListProperties}
           fullWidth
+          layoutProbe={layoutProbe}
           neighborhood={controller.noteListNeighborhood}
           notes={controller.notes}
           selectedNoteId={controller.selectedNoteId}
@@ -328,10 +350,11 @@ function PhoneSidebarDrawer({
           onSelectNote={openEditor}
         />
       </View>
-      <View style={[styles.drawerPanel, { width: drawerWidth }]}>
+      <View {...probeProps(phoneLayoutProbe, 'phone.sidebar.drawer')} style={[styles.drawerPanel, { width: drawerWidth }]}>
         <MobileWorkspaceSidebar
           activeFolderId={controller.activeFolderId}
           activeItemId={controller.activeItemId}
+          layoutProbe={layoutProbe}
           sections={controller.snapshot.sidebarSections}
           title={controller.snapshot.source?.label}
           onCreateFolder={controller.onOpenCreateFolder}
@@ -354,8 +377,10 @@ function PhoneEditorScreen({
   controller,
   initialEditorEditing,
   initialEditorEditingMode,
+  layoutProbe,
   openList,
   openProperties,
+  phoneLayoutProbe,
   phoneSwipePreview,
   suggestionNotes,
 }: PhoneWorkspaceStateViewProps) {
@@ -367,7 +392,7 @@ function PhoneEditorScreen({
   const handleNavigateWikilink = usePhoneWikilinkNavigation({ controller, suggestionNotes })
 
   return (
-    <View {...swipeHandlers} style={styles.screen} testID="phone-editor-screen">
+    <View {...swipeHandlers} {...probeProps(phoneLayoutProbe, 'phone.editor.screen')} style={styles.screen} testID="phone-editor-screen">
       <PhoneEditorTopBar
         title={controller.selectedNote?.title ?? ''}
         onBack={openList}
@@ -377,6 +402,7 @@ function PhoneEditorScreen({
         controller={controller}
         initialEditorEditing={initialEditorEditing}
         initialEditorEditingMode={initialEditorEditingMode}
+        layoutProbe={layoutProbe}
         notes={suggestionNotes}
         onNavigateWikilink={handleNavigateWikilink}
       />
@@ -410,12 +436,14 @@ function PhoneEditorBody({
   controller,
   initialEditorEditing,
   initialEditorEditingMode,
+  layoutProbe,
   notes,
   onNavigateWikilink,
 }: {
   controller: PhoneWorkspaceController
   initialEditorEditing: boolean
   initialEditorEditingMode: EditorEditingMode
+  layoutProbe: boolean
   notes: MobileNote[]
   onNavigateWikilink: (target: string) => void
 }) {
@@ -426,6 +454,7 @@ function PhoneEditorBody({
       compact
       initialEditing={initialEditorEditing}
       initialEditingMode={initialEditorEditingMode}
+      layoutProbe={layoutProbe}
       note={controller.selectedNote}
       notes={notes}
       onNavigateWikilink={onNavigateWikilink}
@@ -441,6 +470,7 @@ function PhonePropertiesScreen({
   controller,
   openEditor,
   openList,
+  phoneLayoutProbe,
   phoneSwipePreview,
 }: PhoneWorkspaceStateViewProps) {
   const returnToEditor = useCallback(() => openEditor(), [openEditor])
@@ -454,7 +484,7 @@ function PhonePropertiesScreen({
   })
 
   return (
-    <View {...swipeHandlers} style={styles.screen} testID="phone-properties-screen">
+    <View {...swipeHandlers} {...probeProps(phoneLayoutProbe, 'phone.properties.screen')} style={styles.screen} testID="phone-properties-screen">
       <PhoneTopBar title={mobileText('inspector.title.properties')} onBack={returnToEditor} />
       <MobilePropertiesPanel
         compact

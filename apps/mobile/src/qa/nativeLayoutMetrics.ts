@@ -16,6 +16,8 @@ export type NativeLayoutAssertionFailure = {
   message: string
 }
 
+export type NativePhoneLayoutState = 'editor' | 'list' | 'properties' | 'sidebar'
+
 type SidebarPadding = {
   bottom: number
   left: number
@@ -64,6 +66,11 @@ type NoteListItemMetrics = {
   header: NativeLayoutMetric | undefined
   subtitle: NativeLayoutMetric | undefined
   title: NativeLayoutMetric | undefined
+}
+
+type PhoneShellMetrics = {
+  root: NativeLayoutMetric | undefined
+  screen: NativeLayoutMetric | undefined
 }
 
 type WysiwygEditorMetrics = {
@@ -153,6 +160,14 @@ export const nativeWysiwygEditorMetricContract = {
   toolbarHostPaddingTop: 4,
 } as const
 
+export const nativePhoneShellMetricContract = {
+  drawerMaxWidth: 320,
+  drawerWidthRatio: 0.78,
+  maxWidth: 899,
+  minContentHeight: 320,
+  minRootHeight: 480,
+} as const
+
 const sidebarItemMetricSpecs: SidebarItemMetricSpec[] = [
   { contentHeight: nativeSidebarMetricContract.itemContentHeight.withCount, id: 'sidebar.item.inbox', padding: nativeSidebarMetricContract.itemPadding.withCount },
   { contentHeight: nativeSidebarMetricContract.itemContentHeight.withCount, id: 'sidebar.item.all-notes', padding: nativeSidebarMetricContract.itemPadding.withCount },
@@ -237,6 +252,16 @@ export function assertNativeMobileLayoutMetrics(metrics: NativeLayoutMetricMap):
   return [
     ...assertNativeSidebarLayoutMetrics(metrics),
     ...assertNativeNoteListLayoutMetrics(metrics),
+  ]
+}
+
+export function assertNativePhoneLayoutMetrics(
+  metrics: NativeLayoutMetricMap,
+  state: NativePhoneLayoutState,
+): NativeLayoutAssertionFailure[] {
+  return [
+    ...assertNativePhoneShellMetrics(metrics, state),
+    ...assertNativePhoneContentMetrics(metrics, state),
   ]
 }
 
@@ -405,6 +430,177 @@ function assertNativeNoteListLayoutMetrics(metrics: NativeLayoutMetricMap): Nati
   return [
     ...assertNoteListPanelLayout(metrics),
     ...noteListItemMetricSpecs.flatMap((spec) => assertNoteListItemLayout({ ...spec, metrics })),
+  ]
+}
+
+function assertNativePhoneContentMetrics(
+  metrics: NativeLayoutMetricMap,
+  state: NativePhoneLayoutState,
+): NativeLayoutAssertionFailure[] {
+  if (state === 'list') return assertNativePhoneNoteListLayoutMetrics(metrics)
+  if (state === 'sidebar') {
+    return [
+      ...assertNativePhoneSidebarLayoutMetrics(metrics),
+      ...assertNativeSidebarLayoutMetrics(metrics),
+      ...assertNativePhoneNoteListLayoutMetrics(metrics),
+    ]
+  }
+
+  return []
+}
+
+function assertNativePhoneShellMetrics(
+  metrics: NativeLayoutMetricMap,
+  state: NativePhoneLayoutState,
+): NativeLayoutAssertionFailure[] {
+  const shell = phoneShellMetrics(metrics, state)
+
+  return [
+    ...expectMetric({
+      id: 'phone.root',
+      message: 'phone root is captured before checking native phone layout',
+      metric: shell.root,
+    }),
+    ...expectMetric({
+      id: `phone.${state}.screen`,
+      message: 'active phone screen is captured before checking native phone layout',
+      metric: shell.screen,
+    }),
+    ...expectAtLeast({
+      actual: shell.root?.height ?? null,
+      expected: nativePhoneShellMetricContract.minRootHeight,
+      id: 'phone.root',
+      message: 'phone root keeps enough vertical space for native workspace chrome',
+    }),
+    ...expectAtMost({
+      actual: shell.root?.width ?? null,
+      expected: nativePhoneShellMetricContract.maxWidth,
+      id: 'phone.root',
+      message: 'phone layout metric is captured on the compact phone breakpoint',
+    }),
+    ...expectClose({
+      actual: shell.root && shell.screen ? shell.screen.width - shell.root.width : null,
+      expected: 0,
+      id: `phone.${state}.screen`,
+      message: 'active phone screen spans the phone root width',
+    }),
+    ...expectAtLeast({
+      actual: shell.screen?.height ?? null,
+      expected: nativePhoneShellMetricContract.minContentHeight,
+      id: `phone.${state}.screen`,
+      message: 'active phone screen keeps usable content height',
+    }),
+  ]
+}
+
+function phoneShellMetrics(metrics: NativeLayoutMetricMap, state: NativePhoneLayoutState): PhoneShellMetrics {
+  return {
+    root: metrics['phone.root'],
+    screen: metrics[`phone.${state}.screen`],
+  }
+}
+
+function assertNativePhoneSidebarLayoutMetrics(metrics: NativeLayoutMetricMap): NativeLayoutAssertionFailure[] {
+  const root = metrics['phone.root']
+  const drawer = metrics['phone.sidebar.drawer']
+  const preview = metrics['phone.sidebar.preview']
+  const expectedDrawerWidth = root ? phoneSidebarDrawerWidth(root.width) : nativePhoneShellMetricContract.drawerMaxWidth
+
+  return [
+    ...expectMetric({
+      id: 'phone.sidebar.drawer',
+      message: 'phone sidebar drawer is captured before checking native drawer layout',
+      metric: drawer,
+    }),
+    ...expectMetric({
+      id: 'phone.sidebar.preview',
+      message: 'phone sidebar preview is captured before checking native drawer layout',
+      metric: preview,
+    }),
+    ...expectClose({
+      actual: drawer?.x ?? null,
+      expected: 0,
+      id: 'phone.sidebar.drawer',
+      message: 'phone sidebar drawer starts at the root leading edge',
+    }),
+    ...expectClose({
+      actual: drawer?.width ?? null,
+      expected: expectedDrawerWidth,
+      id: 'phone.sidebar.drawer',
+      message: 'phone sidebar drawer keeps the compact navigation width',
+    }),
+    ...expectClose({
+      actual: preview?.x ?? null,
+      expected: expectedDrawerWidth,
+      id: 'phone.sidebar.preview',
+      message: 'phone sidebar keeps the note-list preview attached to the drawer edge',
+    }),
+    ...expectClose({
+      actual: preview && root ? preview.width - root.width : null,
+      expected: 0,
+      id: 'phone.sidebar.preview',
+      message: 'phone sidebar preview preserves the full note-list surface width',
+    }),
+  ]
+}
+
+function phoneSidebarDrawerWidth(rootWidth: number) {
+  return Math.min(
+    nativePhoneShellMetricContract.drawerMaxWidth,
+    Math.round(rootWidth * nativePhoneShellMetricContract.drawerWidthRatio),
+  )
+}
+
+function assertNativePhoneNoteListLayoutMetrics(metrics: NativeLayoutMetricMap): NativeLayoutAssertionFailure[] {
+  const panel = metrics['noteList.panel']
+
+  return [
+    ...expectMetric({
+      id: 'noteList.panel',
+      message: 'phone note-list panel is captured before checking native note row spacing',
+      metric: panel,
+    }),
+    ...noteListItemMetricSpecs.flatMap((spec) => assertPhoneNoteListItemLayout({ ...spec, metrics, panel })),
+  ]
+}
+
+function assertPhoneNoteListItemLayout({
+  id,
+  metrics,
+  panel,
+}: {
+  id: string
+  metrics: NativeLayoutMetricMap
+  panel: NativeLayoutMetric | undefined
+}): NativeLayoutAssertionFailure[] {
+  const item = noteListItemMetrics(id, metrics)
+
+  return [
+    ...assertNoteListItemMetricsCaptured(id, item),
+    ...assertPhoneNoteListItemSurfaceLayout(id, item, panel),
+    ...assertNoteListItemContentLayout(id, item),
+    ...assertNoteListItemTextLayout(id, item),
+  ]
+}
+
+function assertPhoneNoteListItemSurfaceLayout(
+  id: string,
+  item: NoteListItemMetrics,
+  panel: NativeLayoutMetric | undefined,
+): NativeLayoutAssertionFailure[] {
+  return [
+    ...expectClose({
+      actual: item.frame?.x ?? null,
+      expected: nativeNoteListMetricContract.frameX,
+      id: `${id}.frame`,
+      message: 'phone note row surface starts at the note-list edge',
+    }),
+    ...expectClose({
+      actual: item.frame && panel ? item.frame.width - panel.width : null,
+      expected: 0,
+      id: `${id}.frame`,
+      message: 'phone note row surface fills the phone note-list panel',
+    }),
   ]
 }
 
@@ -1041,6 +1237,13 @@ function expectClose(expectation: LayoutExpectation): NativeLayoutAssertionFailu
 function expectAtLeast(expectation: LayoutExpectation): NativeLayoutAssertionFailure[] {
   const { actual, expected, id, message } = expectation
   if (actual !== null && actual >= expected) return []
+
+  return [{ actual, expected, id, message }]
+}
+
+function expectAtMost(expectation: LayoutExpectation): NativeLayoutAssertionFailure[] {
+  const { actual, expected, id, message } = expectation
+  if (actual !== null && actual <= expected) return []
 
   return [{ actual, expected, id, message }]
 }

@@ -5,6 +5,7 @@ import { spawnSync } from 'node:child_process'
 import { createServer } from 'node:http'
 import {
   assertNativeMobileLayoutMetrics,
+  assertNativePhoneLayoutMetrics,
   assertNativeWysiwygEditorLayoutMetrics,
   formatNativeLayoutAssertionFailures,
   latestNativeLayoutMetrics,
@@ -37,6 +38,7 @@ Options:
   --last <duration>     log show window when no URL is opened, such as 90s or 5m. Defaults to ${defaultLogWindow}.
   --open-url <url>      Open a simulator URL before collecting logs. Use Expo deep links with layoutProbe=1.
                        http(s) URLs are rejected because they open Mobile Safari, not the native app.
+  --phone-state <state> Assert compact phone layout metrics for list, sidebar, editor, or properties.
   --require-wysiwyg     Also require WYSIWYG editor layout metrics from editorMode=wysiwyg QA URLs.
   --require-wysiwyg-mutation
                        Also require the native TenTap mutation/save proof from wysiwygMutationProbe=1.
@@ -70,12 +72,21 @@ function parseOptions(args) {
     help: false,
     last: readOption(args, '--last', defaultLogWindow),
     openUrl: readOption(args, '--open-url', undefined),
+    phoneState: readPhoneState(args),
     requestedDevice: readOption(args, '--device', process.env.MOBILE_QA_SIMULATOR_UDID),
     requireWysiwyg: args.includes('--require-wysiwyg'),
     requireWysiwygMutation: args.includes('--require-wysiwyg-mutation'),
     requireWysiwygPersistence: args.includes('--require-wysiwyg-persistence'),
     waitMs: readWaitMs(args),
   }
+}
+
+function readPhoneState(args) {
+  const value = readOption(args, '--phone-state', undefined)
+  if (!value) return undefined
+  if (value === 'editor' || value === 'list' || value === 'properties' || value === 'sidebar') return value
+
+  throw new Error('--phone-state must be one of: list, sidebar, editor, properties')
 }
 
 function readWaitMs(args) {
@@ -294,7 +305,7 @@ async function runNativeQa(options) {
       proofLogs: evidence.proofLogs,
     })
 
-    if (failures.length > 0 || mutationFailures.length > 0 || persistenceFailures.length > 0) {
+    if (hasNativeQaFailures({ failures, mutationFailures, persistenceFailures })) {
       throw new Error(formatNativeQaFailures({ failures, mutationFailures, persistenceFailures }))
     }
 
@@ -342,6 +353,7 @@ function nativeQaFailures({ metrics, options, proofLogs }) {
   return {
     failures: nativeLayoutFailures({
       metrics,
+      phoneState: options.phoneState,
       requireWysiwyg: options.requireWysiwyg,
       requireWysiwygMutation: options.requireWysiwygMutation,
       requireWysiwygPersistence: options.requireWysiwygPersistence,
@@ -373,15 +385,30 @@ function nativeQaUrl(openUrl, { requireWysiwygMutation, requireWysiwygPersistenc
     : mutationUrl
 }
 
-function nativeLayoutFailures({ metrics, requireWysiwyg, requireWysiwygMutation, requireWysiwygPersistence }) {
+function nativeLayoutFailures({ metrics, phoneState, requireWysiwyg, requireWysiwygMutation, requireWysiwygPersistence }) {
   if (requireWysiwygMutation || requireWysiwygPersistence) {
     return requireWysiwyg ? assertNativeWysiwygEditorLayoutMetrics(metrics) : []
+  }
+
+  if (phoneState) {
+    return [
+      ...assertNativePhoneLayoutMetrics(metrics, phoneState),
+      ...(requireWysiwyg ? assertNativeWysiwygEditorLayoutMetrics(metrics) : []),
+    ]
   }
 
   return [
     ...assertNativeMobileLayoutMetrics(metrics),
     ...(requireWysiwyg ? assertNativeWysiwygEditorLayoutMetrics(metrics) : []),
   ]
+}
+
+function hasNativeQaFailures({ failures, mutationFailures, persistenceFailures }) {
+  return failureCount([failures, mutationFailures, persistenceFailures]) > 0
+}
+
+function failureCount(failureGroups) {
+  return failureGroups.reduce((total, group) => total + group.length, 0)
 }
 
 function formatNativeQaFailures({ failures, mutationFailures, persistenceFailures }) {

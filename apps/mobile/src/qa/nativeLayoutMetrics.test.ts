@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   assertNativeMobileLayoutMetrics,
+  assertNativePhoneLayoutMetrics,
   assertNativeWysiwygEditorLayoutMetrics,
   formatNativeLayoutAssertionFailures,
   latestNativeLayoutMetrics,
   nativeNoteListMetricContract,
+  nativePhoneShellMetricContract,
   nativeSidebarMetricContract,
   nativeWysiwygEditorMetricContract,
   parseNativeLayoutMetrics,
@@ -54,6 +56,13 @@ describe('native layout metrics', () => {
       toolbarHostPaddingHorizontal: mobileSpace.md,
       toolbarHostPaddingTop: mobileSpace.xs,
     })
+    expect(nativePhoneShellMetricContract).toEqual({
+      drawerMaxWidth: 320,
+      drawerWidthRatio: 0.78,
+      maxWidth: 899,
+      minContentHeight: 320,
+      minRootHeight: 480,
+    })
   })
 
   it('parses simulator log metrics and keeps the latest metric per id', () => {
@@ -72,6 +81,36 @@ describe('native layout metrics', () => {
       x: 6,
       y: 4,
     })
+  })
+
+  it('accepts native phone list metrics that keep desktop note row spacing at full width', () => {
+    const phoneWidth = 390
+    const metrics = latestNativeLayoutMetrics([
+      phoneRootMetric({ width: phoneWidth }),
+      phoneScreenMetric('list', { width: phoneWidth }),
+      noteListPanelMetric({ width: phoneWidth }),
+      noteListItemMetric('noteList.item.workflow-orchestration', { frameWidth: phoneWidth, selected: true, y: 0 }),
+      noteListItemMetric('noteList.item.open-source-project', { frameWidth: phoneWidth, y: 118 }),
+    ].flat())
+
+    expect(assertNativePhoneLayoutMetrics(metrics, 'list')).toEqual([])
+  })
+
+  it('reports native phone sidebar metrics that miss drawer or shared sidebar spacing evidence', () => {
+    const phoneWidth = 390
+    const metrics = latestNativeLayoutMetrics([
+      phoneRootMetric({ width: phoneWidth }),
+      phoneScreenMetric('sidebar', { width: phoneWidth }),
+      phoneSidebarDrawerMetric({ drawerWidth: 240, width: phoneWidth }),
+      noteListPanelMetric({ width: phoneWidth }),
+      noteListItemMetric('noteList.item.workflow-orchestration', { frameWidth: phoneWidth, selected: true, y: 0 }),
+      noteListItemMetric('noteList.item.open-source-project', { frameWidth: phoneWidth, y: 118 }),
+    ].flat())
+
+    const formatted = formatNativeLayoutAssertionFailures(assertNativePhoneLayoutMetrics(metrics, 'sidebar'))
+
+    expect(formatted).toContain('phone.sidebar.drawer: phone sidebar drawer keeps the compact navigation width')
+    expect(formatted).toContain('sidebar.item.inbox: row is captured before checking native padding')
   })
 
   it('accepts native sidebar metrics that match desktop spacing tokens', () => {
@@ -375,6 +414,44 @@ function noteListPanelMetric({
     x: 0,
     y: 0,
   }
+}
+
+function phoneRootMetric({
+  height = 760,
+  width = 390,
+}: {
+  height?: number
+  width?: number
+} = {}): NativeLayoutMetric {
+  return containerMetric({ height, id: 'phone.root', width })
+}
+
+function phoneScreenMetric(
+  state: 'editor' | 'list' | 'properties' | 'sidebar',
+  {
+    height = 704,
+    width = 390,
+  }: {
+    height?: number
+    width?: number
+  } = {},
+): NativeLayoutMetric {
+  return containerMetric({ height, id: `phone.${state}.screen`, width })
+}
+
+function phoneSidebarDrawerMetric({
+  drawerWidth,
+  width,
+}: {
+  drawerWidth?: number
+  width: number
+}): NativeLayoutMetric[] {
+  const actualDrawerWidth = drawerWidth ?? Math.round(width * nativePhoneShellMetricContract.drawerWidthRatio)
+
+  return [
+    containerMetric({ height: 704, id: 'phone.sidebar.drawer', width: actualDrawerWidth }),
+    containerMetric({ height: 704, id: 'phone.sidebar.preview', width, x: actualDrawerWidth }),
+  ]
 }
 
 function noteListItemMetric(
