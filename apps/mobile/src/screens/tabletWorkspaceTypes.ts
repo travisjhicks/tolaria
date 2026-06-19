@@ -82,6 +82,8 @@ export type TabletReadOnlyForm = {
 export type TabletWorkspaceChromeProps = {
   activeFolderId: string | null
   activeItemId: string | null
+  canGoBack: boolean
+  canGoForward: boolean
   canMoveFavoriteDown: boolean
   canMoveFavoriteUp: boolean
   canMoveTypeDown: boolean
@@ -139,6 +141,8 @@ export type TabletWorkspaceChromeProps = {
   onFilenameStemChange: (value: ReadOnlyFormValue) => void
   onFolderNameChange: (value: ReadOnlyFormValue) => void
   onFolderPathChange: (value: ReadOnlyFormValue) => void
+  onGoBack: () => void
+  onGoForward: () => void
   onMoveFavoriteDown: () => void
   onMoveFavoriteUp: () => void
   onMoveNoteToFolder: () => void

@@ -35,6 +35,8 @@ export type MobileCommandPaletteGroup = {
 export type MobileCommandPaletteHandlers = {
   activeFolderId?: string | null
   activeItemId?: string | null
+  canGoBack?: boolean
+  canGoForward?: boolean
   canMoveSelectedViewDown?: boolean
   canMoveSelectedViewUp?: boolean
   canRedoWorkspaceEdit: boolean
@@ -63,6 +65,8 @@ export type MobileCommandPaletteHandlers = {
   onMoveSelectedViewDown?: () => void
   onMoveSelectedViewUp?: () => void
   onDeleteSelectedFolder?: () => void
+  onGoBack?: () => void
+  onGoForward?: () => void
   onNoteListFilterChange?: (filter: MobileNoteListFilter) => void
   onPastePlainText?: () => void
   onCopyDeepLink?: () => void
@@ -359,6 +363,8 @@ function navigationCommands(handlers: MobileCommandPaletteHandlers): MobileComma
     primaryNavigationCommand('goInbox', 'inbox', mobileText('command.navigation.goInbox'), handlers),
     primaryNavigationCommand('goAllNotes', 'all-notes', mobileText('command.navigation.goAllNotes'), handlers),
     primaryNavigationCommand('goArchived', 'archive', mobileText('command.navigation.goArchived'), handlers),
+    workspaceHistoryCommand('viewGoBack', handlers.canGoBack, handlers.onGoBack, mobileText('command.navigation.goBack')),
+    workspaceHistoryCommand('viewGoForward', handlers.canGoForward, handlers.onGoForward, mobileText('command.navigation.goForward')),
     ...folderNavigationCommands(handlers),
     ...typeSectionNavigationCommands(handlers),
     ...noteListFilterCommands(handlers),
@@ -788,6 +794,22 @@ function primaryNavigationCommand(
     execute: selection ? () => handlers.onSelectSidebarItem(selection) : undefined,
     group: 'Navigation',
     keywords: [itemId, 'go', 'navigate', 'sidebar'],
+    label,
+  })
+}
+
+function workspaceHistoryCommand(
+  desktopCommand: Extract<DesktopCommandKey, 'viewGoBack' | 'viewGoForward'>,
+  canNavigate: boolean | undefined,
+  execute: (() => void) | undefined,
+  label: string,
+): MobileCommandPaletteCommand {
+  return command({
+    desktopCommand,
+    enabled: Boolean(canNavigate && execute),
+    execute,
+    group: 'Navigation',
+    keywords: ['go', 'navigate', 'history', label],
     label,
   })
 }

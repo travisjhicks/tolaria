@@ -1,15 +1,48 @@
 import { describe, expect, it } from 'vitest'
 import {
+  emptyTabletNavigationHistory,
   favoriteNeighborhoodSelectionForSidebarItem,
   filterNotesBySearch,
   noteListFilterCountsForSelection,
   noteListPropertiesForSelection,
   notesForSidebarSelection,
+  pushTabletNavigationHistory,
+  traverseTabletNavigationHistory,
+  type TabletNavigationHistoryEntry,
   type TabletSidebarSelection,
 } from './tabletWorkspaceNavigation'
 import type { MobileNote, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
 
 describe('tablet workspace navigation', () => {
+  it('records desktop-style back and forward history for logical mobile selections', () => {
+    const inbox = navigationEntry(primarySelection('inbox', 'Inbox'), 'workflow')
+    const allNotes = navigationEntry(primarySelection('all-notes', 'All Notes'), 'open-source-project')
+    const folder = navigationEntry({ id: 'Tolaria/Mobile UI', kind: 'folder', label: 'Mobile UI' }, 'workflow')
+    let history = emptyTabletNavigationHistory()
+
+    history = pushTabletNavigationHistory(history, inbox, allNotes)
+    history = pushTabletNavigationHistory(history, allNotes, folder)
+
+    const backToAllNotes = traverseTabletNavigationHistory(history, 'back', folder)
+    expect(backToAllNotes.entry).toEqual(allNotes)
+    expect(backToAllNotes.history.forwardStack).toEqual([folder])
+
+    const backToInbox = traverseTabletNavigationHistory(backToAllNotes.history, 'back', allNotes)
+    expect(backToInbox.entry).toEqual(inbox)
+
+    const forwardToAllNotes = traverseTabletNavigationHistory(backToInbox.history, 'forward', inbox)
+    expect(forwardToAllNotes.entry).toEqual(allNotes)
+  })
+
+  it('does not record duplicate workspace navigation entries', () => {
+    const inbox = navigationEntry(primarySelection('inbox', 'Inbox'), 'workflow')
+    const renamedInbox = navigationEntry(primarySelection('inbox', 'Inbox label changed'), 'workflow')
+
+    expect(pushTabletNavigationHistory(emptyTabletNavigationHistory(), inbox, renamedInbox)).toEqual(
+      emptyTabletNavigationHistory(),
+    )
+  })
+
   it('uses canonical type names for renamed desktop Type sidebar sections', () => {
     const snapshot = workspaceSnapshot([
       note({ archived: true, id: 'archived', properties: [{ key: 'Priority', label: 'Priority', value: 0 }], title: 'Archived', type: 'Project' }),
@@ -302,6 +335,26 @@ function workspaceSnapshot(notes: MobileNote[]): MobileWorkspaceSnapshot {
         sort: 'property:Priority:asc',
       },
     },
+  }
+}
+
+function navigationEntry(
+  sidebarSelection: TabletSidebarSelection,
+  selectedNoteId: string | null,
+): TabletNavigationHistoryEntry {
+  return {
+    noteListFilter: 'open',
+    selectedNoteId,
+    sidebarSelection,
+  }
+}
+
+function primarySelection(id: string, label: string): TabletSidebarSelection {
+  return {
+    id,
+    kind: 'item',
+    label,
+    sectionId: 'primary',
   }
 }
 

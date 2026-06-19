@@ -52,6 +52,26 @@ test.describe('mobile command palette actions', () => {
     await expect(page.getByTestId('workspace-all-notes-file-visibility')).toBeVisible()
   })
 
+  test('dispatches workspace history commands from the tablet command palette', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'tablet-landscape', 'Command palette action checks use the full-width tablet layout.')
+
+    await page.goto('/')
+    await page.getByTestId('sidebar-item-all-notes').click()
+    await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('All Notes')
+
+    await openCommandPalette(page)
+    await runCommand(page, 'go back', 'view-go-back')
+
+    await expect(page.getByTestId('mobile-command-palette')).toBeHidden()
+    await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('Inbox')
+
+    await openCommandPalette(page)
+    await runCommand(page, 'go forward', 'view-go-forward')
+
+    await expect(page.getByTestId('mobile-command-palette')).toBeHidden()
+    await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('All Notes')
+  })
+
   test('dispatches selected-folder commands from the tablet command palette', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'tablet-landscape', 'Command palette action checks use the full-width tablet layout.')
 

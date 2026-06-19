@@ -17,6 +17,8 @@ describe('mobile command palette', () => {
     expect(commandIds).toContain(appCommandManifest.commands.fileQuickOpen.id)
     expect(commandIds).toContain(appCommandManifest.commands.fileNewNote.id)
     expect(commandIds).toContain(appCommandManifest.commands.editPastePlainText.id)
+    expect(commandIds).toContain(appCommandManifest.commands.viewGoBack.id)
+    expect(commandIds).toContain(appCommandManifest.commands.viewGoForward.id)
     expect(commandIds).toContain(appCommandManifest.commands.viewToggleProperties.id)
     expect(commandIds).toContain(appCommandManifest.commands.vaultOpen.id)
     expect(commandIds).not.toContain(appCommandManifest.commands.vaultCommitPush.id)
@@ -37,6 +39,39 @@ describe('mobile command palette', () => {
         sectionId: 'primary',
       }),
     )
+  })
+
+  it('exposes desktop back and forward commands when workspace history is available', () => {
+    const handlers = commandHandlers()
+    const goBack = enabledCommand(handlers, appCommandManifest.commands.viewGoBack.id)
+    const goForward = enabledCommand(handlers, appCommandManifest.commands.viewGoForward.id)
+
+    expect(goBack).toMatchObject({
+      desktopCommand: 'viewGoBack',
+      group: 'Navigation',
+      label: 'Go Back',
+    })
+    expect(goForward).toMatchObject({
+      desktopCommand: 'viewGoForward',
+      group: 'Navigation',
+      label: 'Go Forward',
+    })
+
+    goBack.execute()
+    goForward.execute()
+
+    expect(handlers.onGoBack).toHaveBeenCalledOnce()
+    expect(handlers.onGoForward).toHaveBeenCalledOnce()
+  })
+
+  it('keeps desktop back and forward out of results before history exists', () => {
+    const handlers = commandHandlers({ canGoBack: false, canGoForward: false })
+    const commandIds = mobileCommandPaletteResults(buildMobileCommandPaletteCommands(handlers), '')
+      .flatList
+      .map((command) => command.id)
+
+    expect(commandIds).not.toContain(appCommandManifest.commands.viewGoBack.id)
+    expect(commandIds).not.toContain(appCommandManifest.commands.viewGoForward.id)
   })
 
   it('exposes desktop-style type section navigation commands', () => {
@@ -298,6 +333,8 @@ function commandHandlers(
   const handlers: MobileCommandPaletteHandlers = {
     canRedoWorkspaceEdit: true,
     canUndoWorkspaceEdit: true,
+    canGoBack: true,
+    canGoForward: true,
     onCopyDeepLink: vi.fn(),
     onCopyFilePath: vi.fn(),
     onCopySelectedFolderPath: vi.fn(),
@@ -307,6 +344,8 @@ function commandHandlers(
     onDeleteNote: vi.fn(),
     onEnterNeighborhood: vi.fn(),
     onExportNoteAsPdf: vi.fn(),
+    onGoBack: vi.fn(),
+    onGoForward: vi.fn(),
     onOpenBacklinks: vi.fn(),
     onOpenChangeNoteType: vi.fn(),
     onOpenCreateNote: vi.fn(),

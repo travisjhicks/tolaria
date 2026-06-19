@@ -52,8 +52,41 @@ type NavigationVisibleNotesInput = {
   sidebarSelection: TabletSidebarSelection
   snapshot: MobileWorkspaceSnapshot
 }
+type NavigationHistoryStateInput = {
+  noteListFilter: MobileNoteListFilter
+  selectedNoteId: NoteId | null
+  setNoteListFilter: (filter: MobileNoteListFilter) => void
+  setSelectedNoteId: (noteId: NoteId | null) => void
+  setSidebarSelection: (selection: TabletSidebarSelection) => void
+  sidebarSelection: TabletSidebarSelection
+}
+type NavigationSelectionActionsInput = {
+  noteListFilter: MobileNoteListFilter
+  noteListProperties: string[]
+  searchQuery: SearchQuery
+  selectNavigationEntry: SelectNavigationEntry
+  sidebarSelection: TabletSidebarSelection
+  snapshot: MobileWorkspaceSnapshot
+}
 type SelectSidebarSelection = (selection: TabletSidebarSelection, sourceSnapshot?: MobileWorkspaceSnapshot) => void
-type SetSidebarSelection = (selection: TabletSidebarSelection) => void
+type SelectNavigationEntry = (entry: TabletNavigationHistoryEntry) => void
+
+export type TabletNavigationHistoryEntry = {
+  noteListFilter: MobileNoteListFilter
+  selectedNoteId: NoteId | null
+  sidebarSelection: TabletSidebarSelection
+}
+export type TabletNavigationHistory = {
+  backStack: TabletNavigationHistoryEntry[]
+  forwardStack: TabletNavigationHistoryEntry[]
+}
+export type TabletNavigationHistoryTraversal = {
+  entry: TabletNavigationHistoryEntry | null
+  history: TabletNavigationHistory
+}
+export type TabletNavigationHistoryDirection = 'back' | 'forward'
+
+const tabletNavigationHistoryLimit = 100
 
 const sidebarSectionResolvers: Record<string, SidebarNotesResolver> = {
   favorites: (_snapshot, notes, selection) => notesForFavoriteSelection(notes, selection),
@@ -64,6 +97,81 @@ const noteListPropertyResolvers: Record<string, NoteListPropertyResolver> = {
   primary: (snapshot, selection) => primaryNoteListPropertiesForSelection(snapshot, selection),
   types: (snapshot, selection) => typeDefinitionForSelection(snapshot, selection)?.listPropertiesDisplay ?? [],
   views: (snapshot, selection) => savedViewForSelection(snapshot, selection)?.definition.listPropertiesDisplay ?? [],
+}
+
+export function emptyTabletNavigationHistory(): TabletNavigationHistory {
+  return { backStack: [], forwardStack: [] }
+}
+
+export function pushTabletNavigationHistory(
+  history: TabletNavigationHistory,
+  current: TabletNavigationHistoryEntry,
+  next: TabletNavigationHistoryEntry,
+): TabletNavigationHistory {
+  if (sameTabletNavigationEntry(current, next)) return history
+
+  return {
+    backStack: limitTabletNavigationHistory([...history.backStack, current]),
+    forwardStack: [],
+  }
+}
+
+export function traverseTabletNavigationHistory(
+  history: TabletNavigationHistory,
+  direction: TabletNavigationHistoryDirection,
+  current: TabletNavigationHistoryEntry,
+): TabletNavigationHistoryTraversal {
+  const sourceStack = direction === 'back' ? history.backStack : history.forwardStack
+  const entry = sourceStack.at(-1) ?? null
+  if (!entry) return { entry, history }
+
+  return {
+    entry,
+    history: nextTabletNavigationHistory(history, direction, current),
+  }
+}
+
+function nextTabletNavigationHistory(
+  history: TabletNavigationHistory,
+  direction: TabletNavigationHistoryDirection,
+  current: TabletNavigationHistoryEntry,
+): TabletNavigationHistory {
+  if (direction === 'back') {
+    return {
+      backStack: history.backStack.slice(0, -1),
+      forwardStack: limitTabletNavigationHistory([...history.forwardStack, current]),
+    }
+  }
+
+  return {
+    backStack: limitTabletNavigationHistory([...history.backStack, current]),
+    forwardStack: history.forwardStack.slice(0, -1),
+  }
+}
+
+function limitTabletNavigationHistory(entries: TabletNavigationHistoryEntry[]) {
+  return entries.slice(Math.max(0, entries.length - tabletNavigationHistoryLimit))
+}
+
+function sameTabletNavigationEntry(
+  left: TabletNavigationHistoryEntry,
+  right: TabletNavigationHistoryEntry,
+) {
+  return left.noteListFilter === right.noteListFilter
+    && left.selectedNoteId === right.selectedNoteId
+    && tabletSidebarSelectionKey(left.sidebarSelection) === tabletSidebarSelectionKey(right.sidebarSelection)
+}
+
+function tabletSidebarSelectionKey(selection: TabletSidebarSelection) {
+  if (selection.kind !== 'item') return `${selection.kind}:${selection.id}`
+
+  return [
+    selection.kind,
+    selection.sectionId,
+    selection.id,
+    selection.typeName ?? '',
+    selection.viewId ?? '',
+  ].join(':')
 }
 
 export function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot, searchQuery: SearchQuery) {
@@ -79,41 +187,33 @@ export function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot, 
     snapshot,
   })
   const selectedNote = selectedMobileNote(snapshot, notes, selectedNoteId)
-
-  const selectSidebarSelection = useCallback((selection: TabletSidebarSelection, sourceSnapshot = snapshot) => {
-    const nextNoteListProperties = noteListPropertiesForSelection(sourceSnapshot, selection)
-    const nextNotes = filterNotesBySearch(
-      notesForSidebarSelection(sourceSnapshot, selection, { noteListFilter: 'open' }),
-      searchQuery,
-      nextNoteListProperties,
-      sourceSnapshot.typeDefinitions,
-    )
-    setSidebarSelection(selection)
-    setNoteListFilter('open')
-    setSelectedNoteId(nextNotes[0]?.id ?? null)
-  }, [searchQuery, snapshot])
-  const selectNoteListFilter = useCallback((filter: MobileNoteListFilter) => {
-    const nextNotes = filterNotesBySearch(
-      notesForSidebarSelection(snapshot, sidebarSelection, { noteListFilter: filter }),
-      searchQuery,
-      noteListProperties,
-      snapshot.typeDefinitions,
-    )
-    setNoteListFilter(filter)
-    setSelectedNoteId(nextNotes[0]?.id ?? null)
-  }, [noteListProperties, searchQuery, sidebarSelection, snapshot])
-  const selectionActions = useTabletSelectionActions({
-    selectSidebarSelection,
-    setSidebarSelection,
+  const navigationHistory = useTabletNavigationHistoryState({
+    noteListFilter,
+    selectedNoteId,
+    setNoteListFilter,
     setSelectedNoteId,
+    setSidebarSelection,
+    sidebarSelection,
+  })
+  const { selectNavigationEntry } = navigationHistory
+  const selectionActions = useTabletNavigationSelectionActions({
+    noteListFilter,
+    noteListProperties,
+    searchQuery,
+    selectNavigationEntry,
+    sidebarSelection,
     snapshot,
   })
 
   return {
     activeFolderId: sidebarSelection.kind === 'folder' ? sidebarSelection.id : null,
     activeItemId: sidebarSelection.kind === 'item' ? sidebarSelection.id : null,
+    canGoBack: navigationHistory.canGoBack,
+    canGoForward: navigationHistory.canGoForward,
     editorBlocks: editorBlocksForSelection(snapshot, selectedNote),
     editorBullets: editorBulletsForSelection(snapshot, selectedNote),
+    goBack: navigationHistory.goBack,
+    goForward: navigationHistory.goForward,
     noteListProperties,
     noteListNeighborhood,
     noteListFilter,
@@ -128,12 +228,111 @@ export function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot, 
     }),
     noteListTitle: sidebarSelection.label,
     notes,
-    onNoteListFilterChange: selectNoteListFilter,
     sidebarSelection,
     selectedNote,
     selectedNoteId: selectedNote?.id ?? selectedNoteId,
     setSelectedNoteId,
     ...selectionActions,
+  }
+}
+
+function useTabletNavigationSelectionActions({
+  noteListFilter,
+  noteListProperties,
+  searchQuery,
+  selectNavigationEntry,
+  sidebarSelection,
+  snapshot,
+}: NavigationSelectionActionsInput) {
+  const selectSidebarSelection = useCallback((selection: TabletSidebarSelection, sourceSnapshot = snapshot) => {
+    const nextNoteListProperties = noteListPropertiesForSelection(sourceSnapshot, selection)
+    const nextNotes = filterNotesBySearch(
+      notesForSidebarSelection(sourceSnapshot, selection, { noteListFilter: 'open' }),
+      searchQuery,
+      nextNoteListProperties,
+      sourceSnapshot.typeDefinitions,
+    )
+    selectNavigationEntry({
+      noteListFilter: 'open',
+      selectedNoteId: nextNotes[0]?.id ?? null,
+      sidebarSelection: selection,
+    })
+  }, [searchQuery, selectNavigationEntry, snapshot])
+  const onNoteListFilterChange = useCallback((filter: MobileNoteListFilter) => {
+    const nextNotes = filterNotesBySearch(
+      notesForSidebarSelection(snapshot, sidebarSelection, { noteListFilter: filter }),
+      searchQuery,
+      noteListProperties,
+      snapshot.typeDefinitions,
+    )
+    selectNavigationEntry({
+      noteListFilter: filter,
+      selectedNoteId: nextNotes[0]?.id ?? null,
+      sidebarSelection,
+    })
+  }, [noteListProperties, searchQuery, selectNavigationEntry, sidebarSelection, snapshot])
+  const selectNote = useCallback((noteId: NoteId | null) => {
+    selectNavigationEntry({
+      noteListFilter,
+      selectedNoteId: noteId,
+      sidebarSelection,
+    })
+  }, [noteListFilter, selectNavigationEntry, sidebarSelection])
+  const sidebarActions = useTabletSelectionActions({
+    selectNavigationEntry,
+    selectSidebarSelection,
+    snapshot,
+  })
+
+  return {
+    onNoteListFilterChange,
+    selectNote,
+    ...sidebarActions,
+  }
+}
+
+function useTabletNavigationHistoryState({
+  noteListFilter,
+  selectedNoteId,
+  setNoteListFilter,
+  setSelectedNoteId,
+  setSidebarSelection,
+  sidebarSelection,
+}: NavigationHistoryStateInput) {
+  const [history, setHistory] = useState<TabletNavigationHistory>(() => emptyTabletNavigationHistory())
+  const currentEntry = useCallback((): TabletNavigationHistoryEntry => ({
+    noteListFilter,
+    selectedNoteId,
+    sidebarSelection,
+  }), [noteListFilter, selectedNoteId, sidebarSelection])
+  const applyEntry = useCallback((entry: TabletNavigationHistoryEntry) => {
+    setSidebarSelection(entry.sidebarSelection)
+    setNoteListFilter(entry.noteListFilter)
+    setSelectedNoteId(entry.selectedNoteId)
+  }, [setNoteListFilter, setSelectedNoteId, setSidebarSelection])
+  const selectNavigationEntry = useCallback((entry: TabletNavigationHistoryEntry) => {
+    setHistory((currentHistory) => pushTabletNavigationHistory(currentHistory, currentEntry(), entry))
+    applyEntry(entry)
+  }, [applyEntry, currentEntry])
+  const goBack = useCallback(() => {
+    const traversal = traverseTabletNavigationHistory(history, 'back', currentEntry())
+    if (!traversal.entry) return
+    setHistory(traversal.history)
+    applyEntry(traversal.entry)
+  }, [applyEntry, currentEntry, history])
+  const goForward = useCallback(() => {
+    const traversal = traverseTabletNavigationHistory(history, 'forward', currentEntry())
+    if (!traversal.entry) return
+    setHistory(traversal.history)
+    applyEntry(traversal.entry)
+  }, [applyEntry, currentEntry, history])
+
+  return {
+    canGoBack: history.backStack.length > 0,
+    canGoForward: history.forwardStack.length > 0,
+    goBack,
+    goForward,
+    selectNavigationEntry,
   }
 }
 
@@ -161,14 +360,12 @@ function useNavigationVisibleNotes({
 }
 
 function useTabletSelectionActions({
+  selectNavigationEntry,
   selectSidebarSelection,
-  setSidebarSelection,
-  setSelectedNoteId,
   snapshot,
 }: {
+  selectNavigationEntry: SelectNavigationEntry
   selectSidebarSelection: SelectSidebarSelection
-  setSidebarSelection: SetSidebarSelection
-  setSelectedNoteId: (noteId: NoteId | null) => void
   snapshot: MobileWorkspaceSnapshot
 }) {
   return {
@@ -194,16 +391,15 @@ function useTabletSelectionActions({
       }, sourceSnapshot)
     }, [selectSidebarSelection, snapshot]),
     selectNeighborhoodNote: useCallback((noteId: NoteId, sourceSnapshot = snapshot) => {
-      selectNeighborhoodNote({ noteId, setSelectedNoteId, setSidebarSelection, snapshot: sourceSnapshot })
-    }, [setSelectedNoteId, setSidebarSelection, snapshot]),
+      selectNavigationEntry(navigationEntryForNeighborhoodNote(noteId, sourceSnapshot))
+    }, [selectNavigationEntry, snapshot]),
     selectSidebarItem: useCallback((selection: MobileSidebarItemSelection, sourceSnapshot = snapshot) => {
       const favoriteSelection = favoriteNeighborhoodSelectionForSidebarItem(sourceSnapshot, selection)
       if (favoriteSelection) {
-        selectNeighborhoodNote({
-          noteId: favoriteSelection.id,
-          setSelectedNoteId,
-          setSidebarSelection,
-          snapshot: sourceSnapshot,
+        selectNavigationEntry({
+          noteListFilter: 'open',
+          selectedNoteId: favoriteSelection.id,
+          sidebarSelection: favoriteSelection,
         })
         return
       }
@@ -217,33 +413,36 @@ function useTabletSelectionActions({
         typeName: selection.typeName,
         viewId: selection.viewId,
       }, sourceSnapshot)
-    }, [selectSidebarSelection, setSelectedNoteId, setSidebarSelection, snapshot]),
+    }, [selectNavigationEntry, selectSidebarSelection, snapshot]),
   }
 }
 
-function selectNeighborhoodNote({
-  noteId,
-  setSelectedNoteId,
-  setSidebarSelection,
-  snapshot,
-}: {
-  noteId: NoteId
-  setSelectedNoteId: (noteId: NoteId | null) => void
-  setSidebarSelection: SetSidebarSelection
-  snapshot: MobileWorkspaceSnapshot
-}) {
+function navigationEntryForNeighborhoodNote(
+  noteId: NoteId,
+  snapshot: MobileWorkspaceSnapshot,
+): TabletNavigationHistoryEntry {
   const sourceNote = workspaceNotes(snapshot).find((note) => note.id === noteId)
   if (!sourceNote) {
-    setSelectedNoteId(noteId)
-    return
+    return {
+      noteListFilter: 'open',
+      selectedNoteId: noteId,
+      sidebarSelection: {
+        id: noteId,
+        kind: 'entity',
+        label: noteId,
+      },
+    }
   }
 
-  setSidebarSelection({
-    id: sourceNote.id,
-    kind: 'entity',
-    label: sourceNote.title,
-  })
-  setSelectedNoteId(sourceNote.id)
+  return {
+    noteListFilter: 'open',
+    selectedNoteId: sourceNote.id,
+    sidebarSelection: {
+      id: sourceNote.id,
+      kind: 'entity',
+      label: sourceNote.title,
+    },
+  }
 }
 
 export function snapshotWithFavoriteOverrides(
