@@ -233,12 +233,19 @@ describe('mobile workspace suggestions', () => {
       'favorite',
       'body',
     ])
+    expect(mobileViewFieldSuggestions(notes, '')).toEqual(
+      expect.arrayContaining(['filename', 'archived', 'tags']),
+    )
+    expect(mobileViewFieldSuggestions(notes, 'file')).toEqual(['filename'])
+    expect(mobileViewFieldSuggestions(notes, 'arch')).toEqual(['archived'])
+    expect(mobileViewFieldSuggestions(notes, 'tag')).toEqual(['tags'])
     expect(mobileViewFieldSuggestions(notes, 'bel')).toContain('belongs_to')
     expect(mobileViewFieldSuggestions(notes, 'isa')).toEqual([])
     expect(mobileViewValueSuggestions(notes, 'type', 'ess')).toEqual(['Essay'])
     expect(mobileViewValueSuggestions(notes, 'isa', 'pro')).toEqual(['Procedure'])
     expect(mobileViewValueSuggestions(notes, 'filename', 'workflow')).toEqual(['Workflow Orchestration Essay.md'])
     expect(mobileViewValueSuggestions(notes, 'archived', 'fal')).toEqual(['false'])
+    expect(mobileViewValueSuggestions(notes, 'tags', 'design')).toEqual(['Design'])
     expect(mobileViewValueSuggestions(notes, 'belongs_to', 'mvp')).toContain('Tolaria MVP')
   })
 

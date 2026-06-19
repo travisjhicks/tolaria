@@ -40,7 +40,8 @@ type RelationshipTargetSuggestionOptions = {
 
 const DESKTOP_SUGGESTED_PROPERTY_KEYS = ['Status', 'Date', 'URL', 'icon'] as const
 const DESKTOP_SUGGESTED_RELATIONSHIP_KEYS = ['belongs_to', 'related_to', 'has'] as const
-const DESKTOP_VIEW_BUILT_IN_FIELDS = ['type', 'status', 'title', 'favorite', 'body'] as const
+const DESKTOP_VIEW_BUILT_IN_FIELDS = ['type', 'status', 'title', 'favorite', 'body', 'filename', 'archived', 'tags'] as const
+const VIEW_FIELD_SUGGESTION_LIMIT = 12
 const ICON_PROPERTY_KEYS = ['icon', '_icon'] as const
 const BUILT_IN_VIEW_VALUE_RESOLVERS: Record<string, ViewValueResolver> = {
   archived: (note) => [String(note.archived === true)],
@@ -138,7 +139,7 @@ export function mobileViewFieldSuggestions(
   query: SuggestionQuery,
   typeDefinitions?: MobileTypeDefinitions,
 ): ViewField[] {
-  return visibleSuggestions(viewFieldCandidates(notes, typeDefinitions), query)
+  return visibleSuggestions(viewFieldCandidates(notes, typeDefinitions), query, VIEW_FIELD_SUGGESTION_LIMIT)
 }
 
 export function mobileViewValueSuggestions(
@@ -332,10 +333,11 @@ function sortablePropertyCandidates(
 function visibleSuggestions(
   values: readonly SuggestionText[],
   query: SuggestionQuery,
+  limit = 8,
 ): SuggestionText[] {
   return uniqueSuggestedKeys(values)
     .filter((value) => matchesSuggestionQuery(value, query))
-    .slice(0, 8)
+    .slice(0, limit)
 }
 
 function sortedVisibleSuggestions(
