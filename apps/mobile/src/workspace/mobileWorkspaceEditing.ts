@@ -450,12 +450,11 @@ function createMobileNote(
   defaults: MobileCreateNoteDefaults = {},
 ): MobileWorkspaceSnapshot {
   const trimmedTitle = title.trim()
-  if (!trimmedTitle) return snapshot
 
   const notePool = workspaceNotePool(snapshot)
-  const basePath = createNotePath(trimmedTitle, defaults.folderPath)
+  const basePath = createNotePath(createNotePathTitle(trimmedTitle), defaults.folderPath)
   const id = uniqueMobileNotePath(notePool, basePath)
-  if (id !== basePath) return snapshot
+  if (id !== basePath && trimmedTitle) return snapshot
 
   const now = Date.now()
   const type = cleanTypeName(defaults.type ?? 'Note') || 'Note'
@@ -476,7 +475,7 @@ function createMobileNote(
       status: defaults.status ?? '',
       snippet: '',
       tags: defaults.tags ?? [],
-      title: trimmedTitle,
+      title: createNotePathTitle(trimmedTitle),
       type,
       typeTone: 'gray',
       workspace: snapshot.source?.label ?? 'Tolaria Vault',
@@ -493,6 +492,10 @@ function createMobileNote(
     [note, ...snapshot.notes],
     [note, ...notePool],
   )
+}
+
+function createNotePathTitle(title: NoteTitle): NoteTitle {
+  return title.trim() || 'Untitled'
 }
 
 function createMobileNoteResult(

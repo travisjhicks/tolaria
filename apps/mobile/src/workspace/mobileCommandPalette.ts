@@ -27,6 +27,7 @@ export type MobileCommandPaletteGroup = {
 export type MobileCommandPaletteHandlers = {
   canRedoWorkspaceEdit: boolean
   canUndoWorkspaceEdit: boolean
+  onCreateNoteOfType?: (typeName: string) => void
   onOpenBacklinks?: () => void
   onOpenChangeNoteType?: () => void
   onOpenCreateNote: () => void
@@ -376,7 +377,27 @@ function noteCreationCommands(handlers: MobileCommandPaletteHandlers): MobileCom
       keywords: ['new', 'create', 'type', 'template'],
       label: mobileText('command.note.newType'),
     }),
+    ...typedNoteCreationCommands(handlers),
   ]
+}
+
+function typedNoteCreationCommands(handlers: MobileCommandPaletteHandlers): MobileCommandPaletteCommand[] {
+  const createTypedNote = handlers.onCreateNoteOfType
+  if (!createTypedNote) return []
+
+  return typeSidebarItems(handlers.snapshot).flatMap((item) => {
+    const typeName = typeNameForCommand(item)
+    if (genericTypeCommandName(typeName)) return []
+
+    return [dynamicCommand({
+      enabled: true,
+      execute: () => createTypedNote(typeName),
+      group: 'Note',
+      id: `new-${commandSlug(typeName)}`,
+      keywords: ['new', 'create', typeName.toLowerCase()],
+      label: mobileText('command.note.newTypedNote').replace('{type}', typeName),
+    })]
+  })
 }
 
 function noteHistoryCommands(handlers: MobileCommandPaletteHandlers): MobileCommandPaletteCommand[] {
@@ -671,6 +692,14 @@ function typeSidebarItems(snapshot: MobileWorkspaceSnapshot): MobileSidebarItem[
     .find((section) => section.id === 'types')
     ?.items
     ?.filter((item) => item.typeName || item.label) ?? []
+}
+
+function typeNameForCommand(item: MobileSidebarItem): string {
+  return (item.typeName ?? item.label).trim()
+}
+
+function genericTypeCommandName(typeName: string): boolean {
+  return ['note', 'type'].includes(typeName.toLowerCase())
 }
 
 function sidebarSelectionFromTypeItem(item: MobileSidebarItem): MobileSidebarItemSelection {

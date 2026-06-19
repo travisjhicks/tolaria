@@ -5,7 +5,6 @@ import type {
   MobileSidebarItemSelection,
 } from '../components/workspace/MobileWorkspaceSidebar'
 import type {
-  MobileCreateNoteDefaults,
   MobileNote,
   MobilePropertyValue,
   MobileSavedView,
@@ -54,7 +53,13 @@ import {
 } from '../workspace/mobileWorkspaceMetadata'
 import { useTabletWorkspaceNavigation } from './tabletWorkspaceNavigation'
 import type { TabletReadOnlyForm } from './tabletWorkspaceTypes'
-import { createNoteDefaultsForSelection } from './tabletWorkspaceCreateDefaults'
+import {
+  createTypedWorkspaceNote,
+  createWorkspaceNote,
+  createWorkspaceView,
+  normalizedOptionalIcon,
+  normalizedOptionalSort,
+} from './tabletWorkspaceCreateActions'
 import { editorWorkspaceActions } from './tabletWorkspaceEditorActions'
 import { selectAfterWorkspaceEdit } from './tabletWorkspaceEditSelection'
 import { favoriteWorkspaceActions, openFavoriteActions } from './tabletWorkspaceFavoriteActions'
@@ -470,17 +475,21 @@ function createWorkspaceActions({
   workspaceSnapshot,
 }: WorkspaceActionsContext) {
   return {
-    onCreateNote: (titleOverride?: string) => createNote({
+    onCreateNote: (titleOverride?: string) => createWorkspaceNote({
       applyEdit,
       closeAction,
-      defaults: createNoteDefaultsForSelection(
-        navigation.sidebarSelection,
-        workspaceSnapshot.typeDefinitions,
-      ),
+      selection: navigation.sidebarSelection,
       title: titleOverride ?? readOnlyForm.createTitle,
+      typeDefinitions: workspaceSnapshot.typeDefinitions,
+    }),
+    onCreateNoteOfType: (typeName: string) => createTypedWorkspaceNote({
+      applyEdit,
+      closeAction,
+      typeDefinitions: workspaceSnapshot.typeDefinitions,
+      typeName,
     }),
     onCreateTitleChange: (value: string) => updateReadOnlyForm('createTitle', value),
-    onCreateView: () => createView({
+    onCreateView: () => createWorkspaceView({
       applyEdit,
       closeAction,
       displayProperties: readOnlyForm.viewDisplayProperties,
@@ -954,21 +963,6 @@ function typeDefinitionFields({
   ]
 }
 
-function createNote({
-  applyEdit,
-  closeAction,
-  defaults,
-  title,
-}: {
-  applyEdit: (edit: MobileWorkspaceEdit) => void
-  closeAction: () => void
-  defaults: MobileCreateNoteDefaults
-  title: string
-}) {
-  applyEdit({ defaults, title, type: 'createNote' })
-  closeAction()
-}
-
 function createRelationshipTarget({
   applyEdit,
   closeAction,
@@ -989,42 +983,6 @@ function createRelationshipTarget({
     sourceNoteId: selectedNote.id,
     targetTitle: title,
     type: 'createRelationshipTarget',
-  })
-  closeAction()
-}
-
-function createView({
-  applyEdit,
-  closeAction,
-  displayProperties,
-  filters,
-  icon,
-  name,
-  sort,
-  tone,
-}: {
-  applyEdit: (edit: MobileWorkspaceEdit) => void
-  closeAction: () => void
-  displayProperties: string[]
-  filters: MobileViewFilterGroup
-  icon: string
-  name: string
-  sort: string
-  tone: MobileTone | null
-}) {
-  const trimmedName = name.trim()
-  if (!trimmedName) return
-
-  applyEdit({
-    definition: {
-      color: tone,
-      filters,
-      icon: normalizedOptionalIcon(icon),
-      listPropertiesDisplay: normalizedDisplayProperties(displayProperties),
-      name: trimmedName,
-      sort: normalizedOptionalSort(sort),
-    },
-    type: 'createView',
   })
   closeAction()
 }
@@ -1142,14 +1100,6 @@ function viewDisplayPropertiesForEdit(
     evaluateMobileSavedView(view, workspaceNotes(snapshot)),
     snapshot.typeDefinitions,
   )
-}
-
-function normalizedOptionalSort(sort: string) {
-  return sort.trim() || null
-}
-
-function normalizedOptionalIcon(icon: string) {
-  return icon.trim() ? mobileSidebarIconFromValue(icon, 'view') : null
 }
 
 function workspaceNotes(snapshot: MobileWorkspaceSnapshot) {

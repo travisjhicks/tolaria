@@ -119,6 +119,7 @@ export type TabletWorkspaceChromeProps = {
   onCopyFilePath: () => void
   onCreateFolder: () => void
   onCreateNote: (titleOverride?: string) => void
+  onCreateNoteOfType: (typeName: string) => void
   onCreateRelationshipTarget: () => void
   onCreateTitleChange: (value: ReadOnlyFormValue) => void
   onCreateType: () => void

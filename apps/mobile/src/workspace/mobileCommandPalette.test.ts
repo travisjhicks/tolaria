@@ -62,6 +62,22 @@ describe('mobile command palette', () => {
     )
   })
 
+  it('exposes desktop-style typed note creation commands', () => {
+    const handlers = commandHandlers()
+    const commands = buildMobileCommandPaletteCommands(handlers)
+    const essayCommand = commands.find((command) => command.id === 'new-essay')
+
+    expect(essayCommand).toMatchObject({
+      enabled: true,
+      group: 'Note',
+      label: 'New Essay',
+    })
+
+    essayCommand?.execute()
+
+    expect(handlers.onCreateNoteOfType).toHaveBeenCalledWith('Essay')
+  })
+
   it('exposes desktop-style section filter commands when note-list filters are visible', () => {
     const handlers = commandHandlers({ noteListFilter: 'open', noteListFilterVisible: true })
     const results = mobileCommandPaletteResults(buildMobileCommandPaletteCommands(handlers), '')
@@ -183,6 +199,7 @@ function commandHandlers(
     canUndoWorkspaceEdit: true,
     onCopyDeepLink: vi.fn(),
     onCopyFilePath: vi.fn(),
+    onCreateNoteOfType: vi.fn(),
     onDeleteNote: vi.fn(),
     onEnterNeighborhood: vi.fn(),
     onExportNoteAsPdf: vi.fn(),

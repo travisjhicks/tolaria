@@ -66,6 +66,39 @@ describe('mobile note creation parity', () => {
     }])
   })
 
+  it('creates title-less typed notes for immediate type commands', () => {
+    const result = applyMobileWorkspaceEditWithWrites(workspaceScenarioForId('default'), {
+      defaults: {
+        template: '## Objective\n\nLaunch mobile parity.\n',
+        type: 'Project',
+      },
+      title: '',
+      type: 'createNote',
+    })
+    const note = result.snapshot.notes[0]
+
+    expect(note).toMatchObject({
+      id: 'untitled.md',
+      rawContent: [
+        '---',
+        'type: Project',
+        '---',
+        '',
+        '## Objective',
+        '',
+        'Launch mobile parity.',
+        '',
+      ].join('\n'),
+      title: 'Untitled',
+      type: 'Project',
+    })
+    expect(result.writes).toEqual([{
+      content: note?.rawContent,
+      kind: 'createNote',
+      path: 'untitled.md',
+    }])
+  })
+
   it('plans create writes for new notes', () => {
     const result = applyMobileWorkspaceEditWithWrites(workspaceScenarioForId('default'), {
       title: 'Mobile Persistence Contract',
