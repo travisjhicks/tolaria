@@ -81,6 +81,21 @@ describe('applyMobileWorkspaceEdit', () => {
     expect(note?.properties).toContainEqual({ key: 'priority', label: 'Priority', value: 'High' })
   })
 
+  it('preserves desktop scalar-array properties when re-deriving edited note content', () => {
+    const snapshot = applyMobileWorkspaceEdit(workspaceScenarioForId('default'), {
+      content: '---\ntype: Essay\nscore: [1, true, "Needs Review"]\n---\n# Revised Mobile Essay\n\nA body.\n',
+      noteId: 'workflow-orchestration',
+      type: 'updateNoteContent',
+    })
+
+    const note = snapshot.notes.find((candidate) => candidate.id === 'workflow-orchestration')
+    expect(note?.properties).toContainEqual({
+      key: 'score',
+      label: 'Score',
+      value: ['1', 'true', 'Needs Review'],
+    })
+  })
+
   it('writes tag lists as frontmatter arrays and re-derives note tags', () => {
     const snapshot = applyMobileWorkspaceEdit(workspaceScenarioForId('default'), {
       key: 'tags',

@@ -7,6 +7,7 @@ import {
   parseLocalVaultDocument,
   serializeLocalVaultFrontmatterScalar,
   type LocalVaultFrontmatter,
+  type LocalVaultFrontmatterScalar,
   type LocalVaultFrontmatterValue,
 } from './localVaultFrontmatter'
 import {
@@ -1297,9 +1298,14 @@ function mobileProperties(properties: Record<string, LocalVaultFrontmatterValue>
 }
 
 function mobilePropertyValue(value: LocalVaultFrontmatterValue): MobilePropertyValue {
-  if (Array.isArray(value)) return value.filter((item): item is string => typeof item === 'string')
+  if (Array.isArray(value)) return value.flatMap(scalarPropertyArrayItem)
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value
   return ''
+}
+
+function scalarPropertyArrayItem(value: LocalVaultFrontmatterScalar): string[] {
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return [String(value)]
+  return []
 }
 
 function cleanTypeName(value: string): string {

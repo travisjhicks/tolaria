@@ -570,9 +570,14 @@ function mobileProperties(properties: Record<string, unknown>): MobileProperty[]
 }
 
 function mobilePropertyValue(value: unknown): MobilePropertyValue {
-  if (Array.isArray(value)) return value.filter((item): item is string => typeof item === 'string')
+  if (Array.isArray(value)) return value.flatMap(scalarPropertyArrayItem)
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value
   return ''
+}
+
+function scalarPropertyArrayItem(value: unknown): string[] {
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return [String(value)]
+  return []
 }
 
 function relationshipResolver(entries: LocalVaultEntry[], workspaceAlias: string | null): RelationshipResolver {

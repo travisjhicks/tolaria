@@ -469,6 +469,27 @@ _archived: 1
     )
   })
 
+  it('preserves desktop scalar-array properties as mobile list display values', () => {
+    const snapshot = buildLocalVaultWorkspaceSnapshot({
+      files: [
+        vaultFile('Scored.md', `---
+score: [1, true, "Needs Review"]
+_organized: false
+---
+# Scored
+`),
+      ],
+      vaultLabel: 'Laputa',
+      vaultPath: '/Users/luca/Laputa',
+    })
+
+    expect(snapshot.notes[0]?.properties).toContainEqual({
+      key: 'score',
+      label: 'Score',
+      value: ['1', 'true', 'Needs Review'],
+    })
+  })
+
   it('derives sidebar primary counts, type counts, and folder paths from local vault notes', () => {
     const snapshot = buildLocalVaultWorkspaceSnapshot({
       files: [
