@@ -153,6 +153,7 @@ export type TabletWorkspaceChromeProps = {
   onOpenRenameNoteFile: () => void
   onOpenSetNoteIcon: () => void
   onOpenSearch: () => void
+  onOpenTableOfContents: () => void
   onNoteListFilterChange: (filter: MobileNoteListFilter) => void
   onPrimaryAllNotesShowImagesChange: (value: boolean) => void
   onPrimaryAllNotesShowPdfsChange: (value: boolean) => void

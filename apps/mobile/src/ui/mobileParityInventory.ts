@@ -134,6 +134,13 @@ export const mobileParityInventory = [
     surface: 'Editor find and replace sheet',
   },
   {
+    assertions: ['mobile table-of-contents model tests', 'phone More-menu table-of-contents user-flow checks'],
+    contracts: ['desktopEditorParity', 'desktopToolbarActionParity'],
+    desktopSource: 'TableOfContentsPanel and tableOfContentsModel',
+    mobileFile: 'src/components/workspace/MobileTableOfContentsSheet.tsx',
+    surface: 'Editor table of contents sheet',
+  },
+  {
     assertions: ['saved-view reorder user-flow checks', 'type-section reorder user-flow checks'],
     contracts: ['desktopSidebarParity', 'desktopToolbarActionParity'],
     desktopSource: 'Sidebar saved-view and type-section context actions',

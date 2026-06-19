@@ -11,6 +11,7 @@ test.describe('phone editor command parity', () => {
     await insertPhoneWikilink(page)
     await applyPhoneFormattingCommands(page)
     await assertRenderedPhoneMarkdown(page)
+    await openPhoneTableOfContents(page)
   })
 })
 
@@ -101,6 +102,16 @@ async function assertRenderedPhoneMarkdown(page: Page) {
   await expect(page.getByTestId('editor-heading-2')).toContainText('Section title')
   await expect(page.getByTestId('editor-task-row')).toBeVisible()
   await expect(page.getByTestId('editor-table')).toBeVisible()
+}
+
+async function openPhoneTableOfContents(page: Page) {
+  await page.getByTestId('editor-more-action').click()
+  await page.getByTestId('workspace-action-table-of-contents').click()
+  await expect(page.getByTestId('table-of-contents-panel')).toBeVisible()
+  await expect(page.getByTestId('table-of-contents-row-toc-title')).toContainText('Phone Editor Commands')
+  await expect(page.getByTestId('table-of-contents-row-toc-heading-1')).toContainText('Section title')
+  await page.getByTestId('workspace-action-sheet-toolbar').getByRole('button', { name: 'Cancel' }).click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
 }
 
 async function expectBodyOnlyPhoneNote(page: Page, title: string) {

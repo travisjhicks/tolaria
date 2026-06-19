@@ -407,6 +407,7 @@ function noteWorkspaceActionOpeners({
     onOpenSetNoteIcon: () => openAction('setNoteIcon', [
       { key: 'noteIcon', value: selectedNote?.icon ?? '' },
     ]),
+    onOpenTableOfContents: () => setOpenAction('tableOfContents'),
   }
 }
 

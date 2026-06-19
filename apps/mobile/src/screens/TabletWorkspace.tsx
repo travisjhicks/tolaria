@@ -448,6 +448,7 @@ function actionSheetHandlers(props: ActionSheetHostProps) {
     onOpenReplaceInNote: props.onOpenReplaceInNote,
     onOpenRenameNoteFile: props.onOpenRenameNoteFile,
     onOpenSetNoteIcon: props.onOpenSetNoteIcon,
+    onOpenTableOfContents: props.onOpenTableOfContents,
     onPrimaryAllNotesShowImagesChange: props.onPrimaryAllNotesShowImagesChange,
     onPrimaryAllNotesShowPdfsChange: props.onPrimaryAllNotesShowPdfsChange,
     onPrimaryAllNotesShowUnsupportedChange: props.onPrimaryAllNotesShowUnsupportedChange,

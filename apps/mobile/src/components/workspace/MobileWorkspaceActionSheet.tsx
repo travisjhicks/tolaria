@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Pressable, ScrollView, StyleSheet, View, type NativeSyntheticEvent, type TextInputKeyPressEventData } from 'react-native'
-import { CheckCircle, FilePlus, FolderOpen, LinkSimple, Star, Trash } from 'phosphor-react-native'
+import { CheckCircle, FilePlus, FolderOpen, LinkSimple, ListBullets, Star, Trash } from 'phosphor-react-native'
 import { Text } from '../ui/text'
 import { mobileText } from '../../i18n/mobileText'
 import { MobileButton } from '../../ui/MobileButton'
@@ -50,6 +50,7 @@ import { MobileViewDisplayPropertiesPicker } from './MobileViewDisplayProperties
 import { MobileViewFilterBuilder } from './MobileViewFilterBuilder'
 import { MobileEditorFindSheet } from './MobileEditorFindSheet'
 import { NoteMoreActionRows } from './MobileNoteMoreActions'
+import { MobileTableOfContentsSheet } from './MobileTableOfContentsSheet'
 import { MobileSavedViewActions, MobileTypeSectionActions } from './MobileWorkspaceMoveActions'
 import { MobileWorkspaceSuggestionList } from './MobileWorkspaceSuggestionList'
 import type { MobileWorkspaceSuggestionItem } from './MobileWorkspaceSuggestionList'
@@ -76,6 +77,7 @@ export type MobileWorkspaceAction =
   | 'replaceInNote'
   | 'search'
   | 'setNoteIcon'
+  | 'tableOfContents'
 
 type MobileWorkspaceActionSheetProps = {
   action: MobileWorkspaceAction
@@ -134,6 +136,7 @@ type MobileWorkspaceActionSheetProps = {
   onOpenReplaceInNote: () => void
   onOpenRenameNoteFile: () => void
   onOpenSetNoteIcon: () => void
+  onOpenTableOfContents: () => void
   onPrimaryAllNotesShowImagesChange: (value: boolean) => void
   onPrimaryAllNotesShowPdfsChange: (value: boolean) => void
   onPrimaryAllNotesShowUnsupportedChange: (value: boolean) => void
@@ -300,6 +303,7 @@ const actionContentByAction: Record<MobileWorkspaceAction, (props: MobileWorkspa
   replaceInNote: (props) => <MobileEditorFindSheet editorBlocks={props.editorBlocks} editorBullets={props.editorBullets} note={props.selectedNote} replace onClose={props.onClose} onUpdateContent={props.onUpdateNoteContent} />,
   search: (props) => <SearchContent {...props} />,
   setNoteIcon: (props) => <SingleTextFieldContent config={singleTextFieldConfig(props)} />,
+  tableOfContents: (props) => <MobileTableOfContentsSheet blocks={props.editorBlocks} bullets={props.editorBullets} note={props.selectedNote} onClose={props.onClose} />,
 }
 
 function SearchContent({
@@ -1019,6 +1023,12 @@ function MoreActionsContent(props: MobileWorkspaceActionSheetProps) {
         />
       ) : null}
       <ActionRow
+        icon={<ListBullets color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
+        label={mobileText('tableOfContents.title')}
+        testID="workspace-action-table-of-contents"
+        onPress={props.onOpenTableOfContents}
+      />
+      <ActionRow
         icon={<LinkSimple color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
         label={mobileText('command.note.copyDeepLink')}
         testID="workspace-action-copy-deep-link"
@@ -1122,6 +1132,7 @@ const actionTitleByAction: Record<MobileWorkspaceAction, () => string> = {
   replaceInNote: () => mobileText('command.note.replaceInNote'),
   search: () => mobileText('noteList.searchAction'),
   setNoteIcon: () => mobileText('command.note.setIcon'),
+  tableOfContents: () => mobileText('tableOfContents.title'),
 }
 
 const styles = StyleSheet.create({
