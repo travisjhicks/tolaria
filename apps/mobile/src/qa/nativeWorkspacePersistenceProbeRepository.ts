@@ -1,6 +1,6 @@
 import type { Directory, Paths } from 'expo-file-system'
 import { applyMobileWorkspaceEditWithWrites } from '../workspace/mobileWorkspaceEditing'
-import type { MobilePropertyDisplayMode, MobileTypeDefinition, MobileViewDefinition, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
+import type { MobileNote, MobilePropertyDisplayMode, MobileSavedView, MobileTypeDefinition, MobileViewDefinition, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
 import type { MobileTypeDefinitionPatch } from '../workspace/mobileTypeDefinitions'
 import type { ReadOnlyWorkspaceRepository, ReadOnlyWorkspaceRequest } from '../workspace/readOnlyWorkspaceRepository'
 import {
@@ -35,6 +35,13 @@ const renamedTypeSchemaCarrierName = 'Schema Carrier'
 const renamedTypeSourceName = 'Rename Source'
 const renamedTypeSourcePath = 'rename-source.md'
 const renamedFolderPath = 'Folders/Proof Queue'
+const restoredFolderPath = 'Restored Folder'
+const restoredNotePath = 'Restored Undo Note.md'
+const restoredTypeName = 'Restored Type'
+const restoredTypeOrder = 42
+const restoredTypePath = 'restored-type.md'
+const restoredViewFilename = 'restored-view.yml'
+const restoredViewName = 'Restored View'
 const typeName = 'Proof Decision'
 const updatedTypeName = 'Section Proof'
 const updatedTypeTemplate = '## Next\n\n- Keep desktop sections durable.'
@@ -104,6 +111,10 @@ async function logWorkspacePersistenceProof(
   const renamedAssignedContent = renamedAssignedNote
     ? await baseRepository.readNoteContent(renamedAssignedNote, request)
     : null
+  const restoredNote = noteByPath(snapshot, restoredNotePath)
+  const restoredNoteContent = restoredNote
+    ? await baseRepository.readNoteContent(restoredNote, request)
+    : null
   const relationshipSource = noteByPath(snapshot, relationshipSourcePath)
   const relationshipSourceContent = relationshipSource
     ? await baseRepository.readNoteContent(relationshipSource, request)
@@ -118,6 +129,7 @@ async function logWorkspacePersistenceProof(
     movedContent,
     relationshipSourceContent,
     renamedAssignedContent,
+    restoredNoteContent,
   })))
 }
 
@@ -143,6 +155,7 @@ function workspacePersistenceProbeWrites(seedSnapshot: MobileWorkspaceSnapshot) 
   return [
     ...workspacePersistenceNoteAndRelationshipWrites(seedSnapshot),
     ...workspacePersistenceMetadataWrites(seedSnapshot),
+    ...workspacePersistenceRestorationWrites(seedSnapshot),
     ...workspacePersistenceViewWrites(seedSnapshot),
     workspacePersistenceConfigWrite(),
     ...workspacePersistenceFolderWrites(),
@@ -180,6 +193,19 @@ function workspacePersistenceNoteAndRelationshipWrites(seedSnapshot: MobileWorks
       sourceNoteId: relationshipSourcePath,
       targetTitle: 'Native Related Target',
       type: 'createRelationshipTarget',
+    },
+  ])
+}
+
+function workspacePersistenceRestorationWrites(seedSnapshot: MobileWorkspaceSnapshot) {
+  return workspacePersistenceEditWrites(seedSnapshot, [
+    { note: restoredMobileNote(), noteIndex: 0, type: 'restoreNote' },
+    { path: restoredFolderPath, type: 'restoreFolder' },
+    { view: restoredMobileView(), viewIndex: 0, type: 'restoreView' },
+    {
+      definition: restoredTypeDefinition(),
+      type: 'restoreTypeDefinition',
+      typeName: restoredTypeName,
     },
   ])
 }
@@ -463,6 +489,7 @@ function workspacePersistenceProof(
     movedContent: string | null
     relationshipSourceContent: string | null
     renamedAssignedContent: string | null
+    restoredNoteContent: string | null
   },
 ): NativeWorkspacePersistenceProof {
   return {
@@ -481,6 +508,10 @@ function workspacePersistenceProof(
     relationshipTargetHydrated: snapshotContainsNotePath(snapshot, relationshipTargetPath),
     reorderedTypeSectionHydrated: reorderedTypeSectionHydrated(snapshot),
     reorderedViewHydrated: reorderedViewHydrated(snapshot),
+    restoredFolderHydrated: restoredFolderHydrated(snapshot),
+    restoredNoteHydrated: restoredNoteHydrated(snapshot, content.restoredNoteContent),
+    restoredTypeDefinitionHydrated: restoredTypeDefinitionHydrated(snapshot),
+    restoredViewHydrated: restoredViewHydrated(snapshot),
     renamedTypeAssignedNoteHydrated: renamedTypeAssignedNoteHydrated(snapshot, content.renamedAssignedContent),
     renamedTypeDefinitionHydrated: renamedTypeDefinitionHydrated(snapshot),
     renamedTypeSchemaRefsHydrated: renamedTypeSchemaRefsHydrated(snapshot),
@@ -495,6 +526,10 @@ function workspacePersistenceProof(
 function folderRenameApplied(snapshot: MobileWorkspaceSnapshot) {
   return snapshot.folderPaths?.includes(renamedFolderPath) === true
     && snapshotContainsNotePath(snapshot, `${renamedFolderPath}/Keep.md`)
+}
+
+function restoredFolderHydrated(snapshot: MobileWorkspaceSnapshot) {
+  return snapshot.folderPaths?.includes(restoredFolderPath) === true
 }
 
 function snapshotContainsNotePath(snapshot: MobileWorkspaceSnapshot, path: string) {
@@ -515,6 +550,13 @@ function reorderedViewHydrated(snapshot: MobileWorkspaceSnapshot) {
   return typeof alpha?.definition.order === 'number'
     && typeof beta?.definition.order === 'number'
     && beta.definition.order < alpha.definition.order
+}
+
+function restoredViewHydrated(snapshot: MobileWorkspaceSnapshot) {
+  const view = viewByName(snapshot, restoredViewName)
+  return view?.filename === restoredViewFilename
+    && view.definition.order === 7
+    && view.definition.icon === 'rotate-ccw'
 }
 
 function viewByName(snapshot: MobileWorkspaceSnapshot, name: string) {
@@ -592,6 +634,14 @@ function reorderedTypeSectionHydrated(snapshot: MobileWorkspaceSnapshot) {
     && beta.order < alpha.order
 }
 
+function restoredTypeDefinitionHydrated(snapshot: MobileWorkspaceSnapshot) {
+  const definition = snapshot.typeDefinitions?.[restoredTypeName]
+  return definition?.path === restoredTypePath
+    && definition.order === restoredTypeOrder
+    && definition.tone === 'blue'
+    && textContainsAll(definition.rawContent ?? null, [`# ${restoredTypeName}`, `_order: ${restoredTypeOrder}`])
+}
+
 function typeOrderHydrated(definition: MobileTypeDefinition | undefined): definition is MobileTypeDefinition & { order: number } {
   return typeof definition?.order === 'number'
     && textContainsAll(definition.rawContent ?? null, ['_order:'])
@@ -618,6 +668,11 @@ function folderPathStartsWith(snapshot: MobileWorkspaceSnapshot, pathPrefix: str
 
 function movedContentPreserved(content: string | null) {
   return content?.includes('saved before moving through native persistence') === true
+}
+
+function restoredNoteHydrated(snapshot: MobileWorkspaceSnapshot, content: string | null) {
+  return snapshotContainsNotePath(snapshot, restoredNotePath)
+    && textContainsAll(content, ['# Restored Undo Note', 'Restored from mobile history.'])
 }
 
 function noteChromeMetadataHydrated(snapshot: MobileWorkspaceSnapshot, content: string | null) {
@@ -680,6 +735,52 @@ function noteByPath(snapshot: MobileWorkspaceSnapshot, path: string) {
   return (snapshot.allNotes ?? snapshot.notes).find((note) => note.path === path) ?? null
 }
 
+function restoredMobileNote(): MobileNote {
+  return {
+    created: '2d ago',
+    date: '2d ago',
+    favorite: false,
+    id: restoredNotePath,
+    links: 0,
+    modified: '2d ago',
+    path: restoredNotePath,
+    rawContent: restoredNoteContent(),
+    relationships: [],
+    snippet: 'Restored from mobile history.',
+    status: 'Active',
+    tags: ['Restored'],
+    title: 'Restored Undo Note',
+    type: 'Essay',
+    typeTone: 'green',
+    workspace: 'TV',
+  }
+}
+
+function restoredMobileView(): MobileSavedView {
+  return {
+    definition: {
+      color: 'blue',
+      filters: { all: [] },
+      icon: 'rotate-ccw',
+      name: restoredViewName,
+      order: 7,
+      sort: 'modified:desc',
+    },
+    filename: restoredViewFilename,
+    id: 'view-restored-view',
+  }
+}
+
+function restoredTypeDefinition(): MobileTypeDefinition {
+  return {
+    icon: 'rotate-ccw',
+    order: restoredTypeOrder,
+    path: restoredTypePath,
+    rawContent: typeDefinitionContent(restoredTypeName, 'blue', restoredTypeOrder),
+    tone: 'blue',
+  }
+}
+
 function seedNoteInitialContent() {
   return [
     '---',
@@ -702,6 +803,21 @@ function seedNoteUpdatedContent() {
     '# Seeded Mobile Note',
     '',
     'This was saved before moving through native persistence.',
+    '',
+  ].join('\n')
+}
+
+function restoredNoteContent() {
+  return [
+    '---',
+    'type: Essay',
+    'status: Active',
+    'tags:',
+    '  - Restored',
+    '---',
+    '# Restored Undo Note',
+    '',
+    'Restored from mobile history.',
     '',
   ].join('\n')
 }

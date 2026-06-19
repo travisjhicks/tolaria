@@ -88,6 +88,20 @@ describe('native workspace persistence probe', () => {
     ])
   })
 
+  it('reports incomplete restoration persistence proofs', () => {
+    expectProofFailures({
+      restoredFolderHydrated: false,
+      restoredNoteHydrated: false,
+      restoredTypeDefinitionHydrated: false,
+      restoredViewHydrated: false,
+    }, [
+      'workspace.persistence.restoreView',
+      'workspace.persistence.restoreFolder',
+      'workspace.persistence.restoreType',
+      'workspace.persistence.restoreNote',
+    ])
+  })
+
   it('ignores malformed and incomplete proof lines', () => {
     const logText = [
       'TOLARIA_MOBILE_WORKSPACE_PERSISTENCE_PROBE not-json',
@@ -126,6 +140,10 @@ function passingWorkspaceProof(): NativeWorkspacePersistenceProof {
     relationshipTargetHydrated: true,
     reorderedTypeSectionHydrated: true,
     reorderedViewHydrated: true,
+    restoredFolderHydrated: true,
+    restoredNoteHydrated: true,
+    restoredTypeDefinitionHydrated: true,
+    restoredViewHydrated: true,
     renamedTypeAssignedNoteHydrated: true,
     renamedTypeDefinitionHydrated: true,
     renamedTypeSchemaRefsHydrated: true,

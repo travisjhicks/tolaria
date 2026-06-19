@@ -17,6 +17,10 @@ export type NativeWorkspacePersistenceProof = {
   relationshipTargetHydrated: boolean
   reorderedTypeSectionHydrated: boolean
   reorderedViewHydrated: boolean
+  restoredFolderHydrated: boolean
+  restoredNoteHydrated: boolean
+  restoredTypeDefinitionHydrated: boolean
+  restoredViewHydrated: boolean
   renamedTypeAssignedNoteHydrated: boolean
   renamedTypeDefinitionHydrated: boolean
   renamedTypeSchemaRefsHydrated: boolean
@@ -76,8 +80,10 @@ export function assertNativeWorkspacePersistenceProofs(
     proofFailure(latest.updatedViewHydrated, 'workspace.persistence.updateView', 'Updated desktop-compatible views rehydrate from reducer-generated native view writes'),
     proofFailure(latest.reorderedViewHydrated, 'workspace.persistence.moveView', 'Moved saved-view order rehydrates from reducer-generated native view order writes'),
     proofFailure(latest.deletedViewRemoved, 'workspace.persistence.deleteView', 'Deleted native view files disappear from the mobile snapshot'),
+    proofFailure(latest.restoredViewHydrated, 'workspace.persistence.restoreView', 'Restored saved views rehydrate from undo/redo native view writes'),
     proofFailure(latest.folderRenameApplied, 'workspace.persistence.renameFolder', 'Renamed native folders rehydrate with the destination path'),
     proofFailure(latest.folderDeleteApplied, 'workspace.persistence.deleteFolder', 'Deleted native folders are absent from the mobile snapshot'),
+    proofFailure(latest.restoredFolderHydrated, 'workspace.persistence.restoreFolder', 'Restored folders rehydrate from undo/redo native folder writes'),
     proofFailure(latest.typeDefinitionHydrated, 'workspace.persistence.createType', 'Created Type documents hydrate mobile Type definitions'),
     proofFailure(latest.deletedTypeDefinitionRemoved, 'workspace.persistence.deleteType', 'Deleted Type documents are removed from mobile Type definitions'),
     proofFailure(latest.renamedTypeDefinitionHydrated, 'workspace.persistence.renameType', 'Renamed Type documents rehydrate from reducer-generated native writes'),
@@ -85,6 +91,8 @@ export function assertNativeWorkspacePersistenceProofs(
     proofFailure(latest.renamedTypeSchemaRefsHydrated, 'workspace.persistence.renameType.schemaRefs', 'Type schema relationship refs rehydrate with renamed Type wikilinks'),
     proofFailure(latest.updatedTypeDefinitionHydrated, 'workspace.persistence.updateType', 'Updated Type section metadata, schema, and templates rehydrate from reducer-generated native writes'),
     proofFailure(latest.reorderedTypeSectionHydrated, 'workspace.persistence.moveTypeSection', 'Moved Type section order rehydrates from reducer-generated native Type order writes'),
+    proofFailure(latest.restoredTypeDefinitionHydrated, 'workspace.persistence.restoreType', 'Restored Type documents rehydrate from undo/redo native Type writes'),
+    proofFailure(latest.restoredNoteHydrated, 'workspace.persistence.restoreNote', 'Restored notes rehydrate from undo/redo native note writes'),
     proofFailure(latest.vaultConfigHydrated, 'workspace.persistence.vaultConfig', 'Primary note-list config rehydrates from native vault-scoped config storage'),
   ].filter((failure): failure is NativeWorkspacePersistenceAssertionFailure => failure !== null)
 }
@@ -129,6 +137,10 @@ function parsedWorkspacePersistenceProof(value: unknown): NativeWorkspacePersist
     relationshipTargetHydrated: value.relationshipTargetHydrated,
     reorderedTypeSectionHydrated: value.reorderedTypeSectionHydrated,
     reorderedViewHydrated: value.reorderedViewHydrated,
+    restoredFolderHydrated: value.restoredFolderHydrated,
+    restoredNoteHydrated: value.restoredNoteHydrated,
+    restoredTypeDefinitionHydrated: value.restoredTypeDefinitionHydrated,
+    restoredViewHydrated: value.restoredViewHydrated,
     renamedTypeAssignedNoteHydrated: value.renamedTypeAssignedNoteHydrated,
     renamedTypeDefinitionHydrated: value.renamedTypeDefinitionHydrated,
     renamedTypeSchemaRefsHydrated: value.renamedTypeSchemaRefsHydrated,
@@ -163,6 +175,10 @@ const workspacePersistenceProofKeys = [
   'relationshipTargetHydrated',
   'reorderedTypeSectionHydrated',
   'reorderedViewHydrated',
+  'restoredFolderHydrated',
+  'restoredNoteHydrated',
+  'restoredTypeDefinitionHydrated',
+  'restoredViewHydrated',
   'renamedTypeAssignedNoteHydrated',
   'renamedTypeDefinitionHydrated',
   'renamedTypeSchemaRefsHydrated',
