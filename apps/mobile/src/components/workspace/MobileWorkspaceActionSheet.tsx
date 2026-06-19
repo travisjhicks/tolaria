@@ -1021,6 +1021,7 @@ function notePathValidationBlocksSubmit(status: MobileNotePathValidationStatus) 
 
 function MoreActionsContent(props: MobileWorkspaceActionSheetProps) {
   const { selectedNote } = props
+  const markdownSelected = selectedNote ? isMarkdownSelectedNote(selectedNote) : false
   return (
     <View style={styles.content}>
       {selectedNote ? <SelectedNoteSummary note={selectedNote} /> : null}
@@ -1050,32 +1051,42 @@ function MoreActionsContent(props: MobileWorkspaceActionSheetProps) {
           onUndoWorkspaceEdit={props.onUndoWorkspaceEdit}
         />
       ) : null}
-      <ActionRow
-        icon={<ListBullets color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
-        label={mobileText('tableOfContents.title')}
-        testID="workspace-action-table-of-contents"
-        onPress={props.onOpenTableOfContents}
-      />
-      <ActionRow
-        icon={<LinkSimple color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
-        label={mobileText('command.note.copyDeepLink')}
-        testID="workspace-action-copy-deep-link"
-        onPress={() => {
-          props.onCopyDeepLink()
-          props.onClose()
-        }}
-      />
-      <ActionRow
-        icon={<FilePlus color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
-        label={mobileText('command.note.exportPdf')}
-        testID="workspace-action-export-pdf"
-        onPress={() => {
-          props.onExportNoteAsPdf()
-          props.onClose()
-        }}
-      />
+      {markdownSelected ? (
+        <ActionRow
+          icon={<ListBullets color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
+          label={mobileText('tableOfContents.title')}
+          testID="workspace-action-table-of-contents"
+          onPress={props.onOpenTableOfContents}
+        />
+      ) : null}
+      {selectedNote ? (
+        <ActionRow
+          icon={<LinkSimple color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
+          label={mobileText('command.note.copyDeepLink')}
+          testID="workspace-action-copy-deep-link"
+          onPress={() => {
+            props.onCopyDeepLink()
+            props.onClose()
+          }}
+        />
+      ) : null}
+      {markdownSelected ? (
+        <ActionRow
+          icon={<FilePlus color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
+          label={mobileText('command.note.exportPdf')}
+          testID="workspace-action-export-pdf"
+          onPress={() => {
+            props.onExportNoteAsPdf()
+            props.onClose()
+          }}
+        />
+      ) : null}
     </View>
   )
+}
+
+function isMarkdownSelectedNote(note: MobileNote): boolean {
+  return (note.fileKind ?? 'markdown') === 'markdown'
 }
 
 function SelectedNoteSummary({ note }: { note: MobileNote }) {

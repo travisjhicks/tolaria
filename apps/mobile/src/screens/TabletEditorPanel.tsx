@@ -272,9 +272,17 @@ function EditorToolbarIcon({
 }
 
 function EditorToolbarActions(props: EditorToolbarProps) {
-  if (props.fileMode !== 'markdown') return null
+  if (props.fileMode !== 'markdown') return <FileToolbarActions {...props} />
 
   return <MarkdownToolbarActions {...props} />
+}
+
+function FileToolbarActions({ onOpenMoreActions }: EditorToolbarProps) {
+  return (
+    <MobileIconButton accessibilityLabel={mobileText('editor.toolbar.moreActions')} testID="editor-more-action" onPress={onOpenMoreActions}>
+      <DotsThree color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} weight="bold" />
+    </MobileIconButton>
+  )
 }
 
 function MarkdownToolbarActions({

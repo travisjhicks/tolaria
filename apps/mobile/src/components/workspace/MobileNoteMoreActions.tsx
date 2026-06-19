@@ -25,7 +25,7 @@ import { desktopToolbarActionParity } from '../../ui/desktopParity'
 import { mobileColors, mobileSpace, mobileType } from '../../ui/tokens'
 import type { MobileNote } from '../../workspace/mobileWorkspaceModel'
 
-export function NoteMoreActionRows(props: {
+type NoteMoreActionRowsProps = {
   canRedoWorkspaceEdit: boolean
   canUndoWorkspaceEdit: boolean
   note: MobileNote
@@ -48,8 +48,12 @@ export function NoteMoreActionRows(props: {
   onToggleFavorite: () => void
   onToggleNoteWidth: () => void
   onUndoWorkspaceEdit: () => void
-}) {
+}
+
+export function NoteMoreActionRows(props: NoteMoreActionRowsProps) {
   const { note } = props
+  if (!isMarkdownNote(note)) return <NonMarkdownFileActionRows {...props} />
+
   const wideNote = note.noteWidth === 'wide'
 
   return (
@@ -63,6 +67,20 @@ export function NoteMoreActionRows(props: {
       <NoteWidthActionRow noteWide={wideNote} onClose={props.onClose} onToggleNoteWidth={props.onToggleNoteWidth} />
       <DeleteActionRow onClose={props.onClose} onDeleteNote={props.onDeleteNote} />
     </>
+  )
+}
+
+function NonMarkdownFileActionRows({
+  onClose,
+  onCopyFilePath,
+  onRevealFile,
+}: Pick<NoteMoreActionRowsProps, 'onClose' | 'onCopyFilePath' | 'onRevealFile'>) {
+  return (
+    <NotePathActionRows
+      onClose={onClose}
+      onCopyFilePath={onCopyFilePath}
+      onRevealFile={onRevealFile}
+    />
   )
 }
 
@@ -281,6 +299,22 @@ function NoteFileActionRows({
         testID="workspace-action-move-note-folder"
         onPress={onOpenMoveNoteToFolder}
       />
+      <NotePathActionRows
+        onClose={onClose}
+        onCopyFilePath={onCopyFilePath}
+        onRevealFile={onRevealFile}
+      />
+    </>
+  )
+}
+
+function NotePathActionRows({
+  onClose,
+  onCopyFilePath,
+  onRevealFile,
+}: Pick<NoteMoreActionRowsProps, 'onClose' | 'onCopyFilePath' | 'onRevealFile'>) {
+  return (
+    <>
       <ActionRow
         icon={<ClipboardText color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
         label={mobileText('editor.toolbar.copyFilePath')}
@@ -394,6 +428,10 @@ function ActionRow({
       </View>
     </Pressable>
   )
+}
+
+function isMarkdownNote(note: MobileNote): boolean {
+  return (note.fileKind ?? 'markdown') === 'markdown'
 }
 
 const styles = StyleSheet.create({
