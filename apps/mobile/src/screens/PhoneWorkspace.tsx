@@ -368,7 +368,11 @@ function PhoneNoteListScreen({
           </MobileIconButton>
         )}
         neighborhood={controller.noteListNeighborhood}
+        noteListFilter={controller.noteListFilter}
+        noteListFilterCounts={controller.noteListFilterCounts}
+        noteListFilterVisible={controller.noteListFilterVisible}
         notes={controller.notes}
+        onNoteListFilterChange={controller.onNoteListFilterChange}
         searchQuery={controller.searchQuery || undefined}
         selectedNoteId={controller.selectedNoteId}
         subtitle={controller.noteListSubtitle}
@@ -412,7 +416,11 @@ function PhoneSidebarDrawer({
           fullWidth
           layoutProbe={layoutProbe}
           neighborhood={controller.noteListNeighborhood}
+          noteListFilter={controller.noteListFilter}
+          noteListFilterCounts={controller.noteListFilterCounts}
+          noteListFilterVisible={controller.noteListFilterVisible}
           notes={controller.notes}
+          onNoteListFilterChange={controller.onNoteListFilterChange}
           selectedNoteId={controller.selectedNoteId}
           subtitle={controller.noteListSubtitle}
           title={controller.noteListTitle}

@@ -1,5 +1,7 @@
 import type { MobileNote } from './mobileWorkspaceModel'
 
+export type MobileNoteListFilter = 'archived' | 'open'
+
 type MobileMarkdownCandidate = Pick<MobileNote, 'fileKind'>
 type MobileAllNotesCandidate = Pick<MobileNote, 'fileKind' | 'id' | 'path'>
 type MobileInboxCandidate = Pick<MobileNote, 'archived' | 'fileKind' | 'organized' | 'type'>

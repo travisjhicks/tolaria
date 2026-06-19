@@ -155,6 +155,9 @@ function TabletNoteListHost({
   gestures,
   layoutProbe,
   noteListNeighborhood,
+  noteListFilter,
+  noteListFilterCounts,
+  noteListFilterVisible,
   noteListProperties,
   noteListSubtitle,
   noteListTitle,
@@ -162,6 +165,7 @@ function TabletNoteListHost({
   onBulkArchiveNotes,
   onBulkDeleteNotes,
   onBulkOrganizeNotes,
+  onNoteListFilterChange,
   onOpenCreateNote,
   onOpenSearch,
   onSelectNote,
@@ -183,7 +187,11 @@ function TabletNoteListHost({
         displayPropertyKeys={noteListProperties}
         layoutProbe={layoutProbe}
         neighborhood={noteListNeighborhood}
+        noteListFilter={noteListFilter}
+        noteListFilterCounts={noteListFilterCounts}
+        noteListFilterVisible={noteListFilterVisible}
         notes={notes}
+        onNoteListFilterChange={onNoteListFilterChange}
         searchQuery={searchQuery || undefined}
         selectedNoteId={selectedNoteId}
         subtitle={noteListSubtitle}

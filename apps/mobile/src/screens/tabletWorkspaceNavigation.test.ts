@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   favoriteNeighborhoodSelectionForSidebarItem,
   filterNotesBySearch,
+  noteListFilterCountsForSelection,
   noteListPropertiesForSelection,
   notesForSidebarSelection,
   type TabletSidebarSelection,
@@ -26,6 +27,8 @@ describe('tablet workspace navigation', () => {
     }
 
     expect(notesForSidebarSelection(snapshot, selection).map((candidate) => candidate.id)).toEqual(['high', 'low'])
+    expect(noteListFilterCountsForSelection(snapshot, selection)).toEqual({ archived: 1, open: 2 })
+    expect(notesForSidebarSelection(snapshot, selection, { noteListFilter: 'archived' }).map((candidate) => candidate.id)).toEqual(['archived'])
     expect(noteListPropertiesForSelection(snapshot, selection)).toEqual(['Priority', 'belongs_to'])
   })
 
@@ -178,6 +181,12 @@ describe('tablet workspace navigation', () => {
       sectionId: 'primary',
     }).map((candidate) => candidate.id)).toEqual(['root'])
     expect(notesForSidebarSelection(snapshot, {
+      id: 'all-notes',
+      kind: 'item',
+      label: 'All Notes',
+      sectionId: 'primary',
+    }, { noteListFilter: 'archived' }).map((candidate) => candidate.id)).toEqual(['root'])
+    expect(notesForSidebarSelection(snapshot, {
       id: 'archive',
       kind: 'item',
       label: 'Archive',
@@ -204,6 +213,16 @@ describe('tablet workspace navigation', () => {
       kind: 'folder',
       label: 'Writing',
     }).map((candidate) => candidate.id)).toEqual(['writing-root', 'writing-project'])
+    expect(noteListFilterCountsForSelection(snapshot, {
+      id: 'Writing',
+      kind: 'folder',
+      label: 'Writing',
+    })).toEqual({ archived: 1, open: 2 })
+    expect(notesForSidebarSelection(snapshot, {
+      id: 'Writing',
+      kind: 'folder',
+      label: 'Writing',
+    }, { noteListFilter: 'archived' }).map((candidate) => candidate.id)).toEqual(['writing-archived'])
 
     expect(notesForSidebarSelection(snapshot, {
       id: 'Writing/Projects',

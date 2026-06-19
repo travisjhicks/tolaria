@@ -18,6 +18,7 @@ import type {
   MobileTypeSchemaRelationship,
 } from '../workspace/mobileTypeDefinitionSchema'
 import type { MobileNeighborhood } from '../workspace/mobileNeighborhood'
+import type { MobileNoteListFilter } from '../workspace/mobileNoteFilters'
 import type { MobilePropertyValueKind } from '../workspace/mobilePropertyValues'
 import type {
   NoteCountText,
@@ -93,6 +94,9 @@ export type TabletWorkspaceChromeProps = {
   layoutProbe?: boolean
   noteListProperties: string[]
   noteListNeighborhood: MobileNeighborhood | null
+  noteListFilter: MobileNoteListFilter
+  noteListFilterCounts: Record<MobileNoteListFilter, number>
+  noteListFilterVisible: boolean
   noteListSubtitle: NoteCountText
   noteListTitle: SidebarLabel
   notes: MobileNote[]
@@ -145,6 +149,7 @@ export type TabletWorkspaceChromeProps = {
   onOpenRenameNoteFile: () => void
   onOpenSetNoteIcon: () => void
   onOpenSearch: () => void
+  onNoteListFilterChange: (filter: MobileNoteListFilter) => void
   onRemoveRelationship: (noteId: NoteId, key: string, ref: string) => void
   onRenameFolder: () => void
   onSaveTypeDefinition: () => void
