@@ -21,6 +21,20 @@ test.describe('mobile command palette actions', () => {
     await expect(page.getByTestId('mobile-command-palette')).toBeHidden()
     await expect(page.getByTestId('workspace-move-folder-input')).toBeVisible()
   })
+
+  test('creates typed notes from desktop-style dynamic commands', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'tablet-landscape', 'Command palette action checks use the full-width tablet layout.')
+
+    await page.goto('/')
+    await openCommandPalette(page)
+    await runCommand(page, 'new essay', 'new-essay')
+
+    await expect(page.getByTestId('mobile-command-palette')).toBeHidden()
+    await expect(page.getByTestId('note-row-untitled.md')).toBeVisible()
+    await expect(page.getByTestId('editor-toolbar-title')).toHaveText('Untitled')
+    await expect(page.getByTestId('editor-title')).toBeHidden()
+    await expect(page.getByTestId('property-row-type-edit')).toHaveText('Essay')
+  })
 })
 
 async function openCommandPalette(page: Page) {
