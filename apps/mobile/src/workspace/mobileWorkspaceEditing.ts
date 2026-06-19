@@ -579,14 +579,25 @@ function addRelationshipRef(
   typeDefinitions?: MobileTypeDefinitions,
 ): MobileNote {
   const document = parseLocalVaultDocument(note.rawContent)
-  const currentRefs = frontmatterRelationships(document.frontmatter)[key] ?? []
+  const relationships = frontmatterRelationships(document.frontmatter)
+  const [writeKey, currentRefs] = relationshipEntryForKey(relationships, key)
   const nextRefs = currentRefs.includes(ref) ? currentRefs : [...currentRefs, ref]
 
   return deriveEditableNote({
     fallback: note,
-    rawContent: writeFrontmatterValue(note.rawContent, key, nextRefs),
+    rawContent: writeFrontmatterValue(note.rawContent, writeKey, nextRefs),
     typeDefinitions,
   }).note
+}
+
+function relationshipEntryForKey(
+  relationships: Record<FrontmatterKey, WikilinkRef[]>,
+  key: FrontmatterKey,
+): [FrontmatterKey, WikilinkRef[]] {
+  const normalizedKey = normalizedFrontmatterKey(key)
+  return Object.entries(relationships).find(([candidateKey]) => (
+    normalizedFrontmatterKey(candidateKey) === normalizedKey
+  )) ?? [key, []]
 }
 
 function removeRelationship(
@@ -595,12 +606,13 @@ function removeRelationship(
   ref: WikilinkRef,
 ): MobileNote {
   const document = parseLocalVaultDocument(note.rawContent)
-  const currentRefs = frontmatterRelationships(document.frontmatter)[key] ?? []
+  const relationships = frontmatterRelationships(document.frontmatter)
+  const [writeKey, currentRefs] = relationshipEntryForKey(relationships, key)
   const nextRefs = currentRefs.filter((candidate) => candidate !== ref)
 
   return deriveEditableNote({
     fallback: note,
-    rawContent: writeFrontmatterValue(note.rawContent, key, nextRefs.length > 0 ? nextRefs : null),
+    rawContent: writeFrontmatterValue(note.rawContent, writeKey, nextRefs.length > 0 ? nextRefs : null),
   }).note
 }
 

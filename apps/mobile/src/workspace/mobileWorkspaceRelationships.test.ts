@@ -129,6 +129,92 @@ describe('mobile workspace relationship editing', () => {
       },
     ])
   })
+
+  it('appends canonical relationship edits to existing desktop relationship labels', () => {
+    const base = workspaceScenarioForId('default')
+    const source = {
+      ...base.notes[0],
+      rawContent: [
+        '---',
+        'Related to:',
+        '  - "[[Old Project]]"',
+        '---',
+        '# Source',
+        '',
+        'Source body.',
+        '',
+      ].join('\n'),
+      relationships: [],
+    }
+    const result = applyMobileWorkspaceEditWithWrites({
+      ...base,
+      allNotes: [source, ...base.notes.slice(1)],
+      notes: [source, ...base.notes.slice(1)],
+    }, {
+      key: 'related_to',
+      noteId: source.id,
+      targetRef: '[[New Project]]',
+      targetTitle: 'New Project',
+      type: 'addRelationship',
+    })
+    const updatedSource = result.snapshot.notes.find((note) => note.id === source.id)
+
+    expect(updatedSource?.rawContent).toContain('Related to:\n  - "[[Old Project]]"\n  - "[[New Project]]"')
+    expect(updatedSource?.rawContent).not.toContain('related_to:')
+    expect(updatedSource?.relationships.find((relationship) => relationship.key === 'Related to')?.values).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ ref: '[[Old Project]]' }),
+        expect.objectContaining({ ref: '[[New Project]]' }),
+      ]),
+    )
+    expect(result.writes).toEqual([{
+      content: updatedSource?.rawContent,
+      kind: 'saveNote',
+      path: 'Tolaria/Mobile UI/Workflow Orchestration Essay.md',
+    }])
+  })
+
+  it('removes canonical relationship edits from existing desktop relationship labels', () => {
+    const base = workspaceScenarioForId('default')
+    const source = {
+      ...base.notes[0],
+      rawContent: [
+        '---',
+        'Related to:',
+        '  - "[[Old Project]]"',
+        '  - "[[New Project]]"',
+        '---',
+        '# Source',
+        '',
+        'Source body.',
+        '',
+      ].join('\n'),
+      relationships: [],
+    }
+    const result = applyMobileWorkspaceEditWithWrites({
+      ...base,
+      allNotes: [source, ...base.notes.slice(1)],
+      notes: [source, ...base.notes.slice(1)],
+    }, {
+      key: 'related_to',
+      noteId: source.id,
+      ref: '[[Old Project]]',
+      type: 'removeRelationship',
+    })
+    const updatedSource = result.snapshot.notes.find((note) => note.id === source.id)
+
+    expect(updatedSource?.rawContent).toContain('Related to:\n  - "[[New Project]]"')
+    expect(updatedSource?.rawContent).not.toContain('[[Old Project]]')
+    expect(updatedSource?.rawContent).not.toContain('related_to:')
+    expect(updatedSource?.relationships.find((relationship) => relationship.key === 'Related to')?.values).toEqual([
+      expect.objectContaining({ ref: '[[New Project]]' }),
+    ])
+    expect(result.writes).toEqual([{
+      content: updatedSource?.rawContent,
+      kind: 'saveNote',
+      path: 'Tolaria/Mobile UI/Workflow Orchestration Essay.md',
+    }])
+  })
 })
 
 function duplicateReference(
