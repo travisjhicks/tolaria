@@ -83,6 +83,8 @@ The same Playwright suite also compares the primary tablet-landscape screen agai
 
 `pnpm mobile:qa:ios-layout` opens the native Expo Go deep link with `layoutProbe=1`, reads `TOLARIA_MOBILE_LAYOUT_METRIC` lines from the iPad Simulator logs, and fails when native React Native row boxes drift from the desktop parity contract. This is mandatory for padding, margin, row-height, indentation, text line boxes, text vertical centering, and count-pill alignment because the Expo web/browser lane can pass while the iPad simulator renders differently.
 
+`pnpm mobile:qa:ios-workspace-persistence` and `pnpm mobile:qa:ios-phone-workspace-persistence` exercise reducer write plans through the native Expo filesystem repository. The proof must cover note create/save/move/delete, folder and saved-view writes, Type definition changes, relationship target creation and wikilink rewrites, note metadata, vault-scoped config, and property display-mode hydration.
+
 `pnpm mobile:qa:ios-simulator` opens the native Expo Go deep link with `layoutProbe=1`, sets the currently booted iPad Simulator to landscape, and captures it into:
 
 ```text
@@ -174,22 +176,22 @@ TOLARIA_MOBILE_FULL_GATE=1 git push
 | P1 | Create note/type/status/property actions | Native modal/sheet controls | valid input, invalid input, type selection, typed property values, collision | Controls use Tolaria primitives; disabled/loading/error states are visible |
 | P2 | Phone shell | Reduced navigation and panels | list-only, editor-only, properties sheet, back stack | Phone removes surfaces deliberately after tablet parity is established |
 
-## Read-Only Interaction Boundary
+## Writable Interaction Boundary
 
-The tablet shell is clickable before it is writable. These interactions are intentionally state-local and do not persist to the vault:
+The tablet and phone shells route editing actions through reducer-owned write plans and the workspace repository boundary. Fixture and web-host runs may stay process-local for QA isolation, but `source=native` runs persist through the Expo filesystem repository.
 
 | Flow | Current behavior |
 | --- | --- |
-| Sidebar sections and folders | Filter the note list and select the first visible note |
+| Sidebar sections and folders | Filter the note list, select the first visible note, and expose folder create/rename/delete/move actions |
 | Note rows | Select the note and refresh editor/properties |
 | Search | Opens a desktop-parity sheet, filters the visible note list, and lets touch or keyboard-selected results select a note |
-| Create note | Opens a localized title form with disabled create state until a title exists |
-| Add property | Opens localized property name/value fields |
-| Add relationship | Opens localized relationship name/note-title fields |
-| Favorite | Toggles local star state only |
-| More actions | Opens localized note actions without persistence |
+| Create note/type/view | Opens localized forms, applies desktop-compatible defaults, and writes Markdown or view files |
+| Add/edit property | Opens typed property controls, updates frontmatter, and persists configured display modes in vault-scoped mobile config |
+| Add/remove relationship | Uses note suggestions or creates a target note, then persists wikilink frontmatter |
+| Favorite, archive, organize, delete, move, rename | Apply reducer write plans and persist note/frontmatter/file-path changes |
+| Editor content | Uses WYSIWYG or source editing over a single Markdown document; no mobile-only title/body split |
 
-Persistence should be added later behind the same action boundaries. Do not wire direct vault writes into presentation components.
+Do not wire direct vault writes into presentation components. New mutations should stay behind `MobileWorkspaceEdit` and `MobileWorkspaceWrite`, then prove native persistence through the focused iOS probes when the behavior touches repository writes.
 
 ## Mobile Primitive Layer
 
