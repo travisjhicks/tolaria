@@ -4,6 +4,7 @@ import {
   formatNativeWysiwygMarkdownBlockFailures,
   nativeWysiwygMarkdownBlockLogLine,
   nativeWysiwygMarkdownBlockProbeEnabled,
+  nativeWysiwygMarkdownBlockProbePlainTextPayload,
   nativeWysiwygMarkdownBlockProbePayloads,
   nativeWysiwygMarkdownBlockProof,
   parseNativeWysiwygMarkdownBlockProofs,
@@ -11,6 +12,7 @@ import {
 
 describe('native WYSIWYG markdown block probe', () => {
   it('uses the canonical native markdown block payloads', () => {
+    expect(nativeWysiwygMarkdownBlockProbePlainTextPayload()).toEqual({ text: 'Plain\nClipboard' })
     expect(nativeWysiwygMarkdownBlockProbePayloads()).toEqual([
       { action: 'divider' },
       { action: 'codeBlock' },
@@ -25,6 +27,9 @@ describe('native WYSIWYG markdown block probe', () => {
     expect(nativeWysiwygMarkdownBlockProof({
       content: [
         '# Note',
+        '',
+        'Plain  ',
+        'Clipboard',
         '',
         '---',
         '',
@@ -56,6 +61,7 @@ describe('native WYSIWYG markdown block probe', () => {
       mathBlockSaved: true,
       mermaidSaved: true,
       noteId: 'note.md',
+      plainTextSaved: true,
       tableSaved: true,
       whiteboardSaved: true,
     })
@@ -67,6 +73,9 @@ describe('native WYSIWYG markdown block probe', () => {
         '---',
         'title: Note',
         '---',
+        '',
+        'Plain  ',
+        'Clipboard',
         '',
         '```text',
         'code',
@@ -95,6 +104,7 @@ describe('native WYSIWYG markdown block probe', () => {
       dividerSaved: false,
       mathBlockSaved: true,
       mermaidSaved: true,
+      plainTextSaved: true,
       tableSaved: true,
       whiteboardSaved: true,
     })
@@ -104,6 +114,9 @@ describe('native WYSIWYG markdown block probe', () => {
     const proof = nativeWysiwygMarkdownBlockProof({
       content: [
         'Intro',
+        '',
+        'Plain  ',
+        'Clipboard',
         '',
         '---',
         '',
@@ -142,6 +155,10 @@ describe('native WYSIWYG markdown block probe', () => {
     expect(assertNativeWysiwygMarkdownBlockProofs([
       nativeWysiwygMarkdownBlockProof({ content: '# Note', noteId: 'note.md' }),
     ])).toEqual([
+      {
+        id: 'editor.wysiwyg.markdownBlocks.plainText',
+        message: 'Native WYSIWYG paste-as-plain-text insertion saves unformatted clipboard text',
+      },
       {
         id: 'editor.wysiwyg.markdownBlocks.divider',
         message: 'Native WYSIWYG divider insertion saves as desktop horizontal-rule markdown',

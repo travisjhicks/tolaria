@@ -1,4 +1,7 @@
-import type { NativeWysiwygMarkdownBlockPayload } from '../components/workspace/MobileWysiwygWikilinkBridgeModel'
+import type {
+  NativeWysiwygMarkdownBlockPayload,
+  NativeWysiwygPlainTextPayload,
+} from '../components/workspace/MobileWysiwygWikilinkBridgeModel'
 
 type MarkdownContent = string
 type NoteId = string
@@ -12,6 +15,7 @@ export type NativeWysiwygMarkdownBlockProof = {
   mathBlockSaved: boolean
   mermaidSaved: boolean
   noteId: NoteId
+  plainTextSaved: boolean
   tableSaved: boolean
   whiteboardSaved: boolean
 }
@@ -32,6 +36,7 @@ type ProofFieldMap = {
 const expectedDivider = '---'
 const expectedCodeBlock = '```text\ncode\n```'
 const expectedMathBlock = '$$\n\\sqrt{a^2 + b^2}\n$$'
+const expectedPlainText = 'Plain  \nClipboard'
 const expectedMermaid = [
   '```mermaid',
   'flowchart TD',
@@ -52,6 +57,7 @@ const proofFieldTypes = {
   mathBlockSaved: 'boolean',
   mermaidSaved: 'boolean',
   noteId: 'string',
+  plainTextSaved: 'boolean',
   tableSaved: 'boolean',
   whiteboardSaved: 'boolean',
 } as const satisfies Record<ProofFieldName, ProofFieldType>
@@ -67,6 +73,10 @@ export function nativeWysiwygMarkdownBlockProbePayloads(): NativeWysiwygMarkdown
     { action: 'table' },
     { action: 'whiteboard' },
   ]
+}
+
+export function nativeWysiwygMarkdownBlockProbePlainTextPayload(): NativeWysiwygPlainTextPayload {
+  return { text: 'Plain\nClipboard' }
 }
 
 export function nativeWysiwygMarkdownBlockProof({
@@ -85,6 +95,7 @@ export function nativeWysiwygMarkdownBlockProof({
     mathBlockSaved: normalizedContent.includes(expectedMathBlock),
     mermaidSaved: normalizedContent.includes(expectedMermaid),
     noteId,
+    plainTextSaved: normalizedContent.includes(expectedPlainText),
     tableSaved: normalizedContent.includes(expectedTable),
     whiteboardSaved: expectedWhiteboardFence.test(normalizedContent),
   }
@@ -117,6 +128,11 @@ export function assertNativeWysiwygMarkdownBlockProofs(
   }
 
   return [
+    proofFailure(
+      latest.plainTextSaved,
+      'editor.wysiwyg.markdownBlocks.plainText',
+      'Native WYSIWYG paste-as-plain-text insertion saves unformatted clipboard text',
+    ),
     proofFailure(
       latest.dividerSaved,
       'editor.wysiwyg.markdownBlocks.divider',
@@ -183,6 +199,7 @@ function parsedProof(value: unknown): NativeWysiwygMarkdownBlockProof | null {
     mathBlockSaved: value.mathBlockSaved,
     mermaidSaved: value.mermaidSaved,
     noteId: value.noteId,
+    plainTextSaved: value.plainTextSaved,
     tableSaved: value.tableSaved,
     whiteboardSaved: value.whiteboardSaved,
   }

@@ -69,6 +69,7 @@ import {
 import {
   nativeWysiwygMarkdownBlockLogLine,
   nativeWysiwygMarkdownBlockProbePayloads,
+  nativeWysiwygMarkdownBlockProbePlainTextPayload,
   nativeWysiwygMarkdownBlockProof,
 } from '../../qa/nativeWysiwygMarkdownBlockProbe'
 
@@ -909,6 +910,13 @@ async function insertMarkdownBlocksIntoNativeEditor(
   if (!isJsonReadableEditorBridge(editor) || !isContentSettableEditorBridge(editor)) return false
 
   let nextJson: unknown = await editor.getJSON()
+  const plainTextJson = nativeWysiwygDocumentWithInsertedPlainText({
+    json: nextJson,
+    payload: nativeWysiwygMarkdownBlockProbePlainTextPayload(),
+  })
+  if (!plainTextJson) return false
+
+  nextJson = plainTextJson
   for (const payload of payloads) {
     const insertedJson = nativeWysiwygDocumentWithInsertedMarkdownBlock({ json: nextJson, payload })
     if (!insertedJson) return false
