@@ -35,6 +35,33 @@ test.describe('mobile non-markdown file action parity', () => {
       revealNoteId: 'Files/diagram.png',
     })
   })
+
+  test('exposes active file actions from the phone editor more sheet', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'phone-portrait', 'Phone file entry action checks use the phone editor shell.')
+
+    await installFileEntryHostWorkspace(page)
+    await page.goto('/?source=host-vault')
+    await openPhoneFolder(page, 'Files')
+
+    await page.getByTestId('note-row-Files/config.yml').click()
+    await expect(page.getByTestId('phone-editor-screen')).toBeVisible()
+    await expect(page.getByTestId('editor-text-file-input')).toBeVisible()
+    await assertFileActionSheet(page, {
+      copiedPath: 'Files/config.yml',
+      fileTitle: 'Mobile Config',
+      revealNoteId: 'Files/config.yml',
+    })
+
+    await page.getByTestId('phone-back-action').click()
+    await page.getByTestId('note-row-Files/diagram.png').click()
+    await expect(page.getByTestId('phone-editor-screen')).toBeVisible()
+    await expect(page.getByTestId('file-preview-fallback')).toBeVisible()
+    await assertFileActionSheet(page, {
+      copiedPath: 'Files/diagram.png',
+      fileTitle: 'diagram.png',
+      revealNoteId: 'Files/diagram.png',
+    })
+  })
 })
 
 async function assertFileActionSheet(
@@ -119,6 +146,14 @@ async function installFileEntryHostWorkspace(page: Page) {
       value: JSON.stringify(snapshot),
     },
   )
+}
+
+async function openPhoneFolder(page: Page, folderName: string) {
+  await page.getByTestId('phone-sidebar-action').click()
+  await expect(page.getByTestId('phone-sidebar-screen')).toBeVisible()
+  await page.getByRole('button', { exact: true, name: folderName }).click()
+  await expect(page.getByTestId('phone-note-list-screen')).toBeVisible()
+  await expect(page.getByTestId('note-list-toolbar-title')).toHaveText(folderName)
 }
 
 function vaultFile(relativePath: string, content: string, index: number): LocalVaultFile {
