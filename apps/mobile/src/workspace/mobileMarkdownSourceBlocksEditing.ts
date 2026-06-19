@@ -4,6 +4,7 @@ export type MobileMarkdownEditableSourceBlock = {
   content: string
   endLine: number
   fence: string
+  infoSuffix: string
   key: string
   kind: MobileMarkdownEditableSourceBlockKind
   language: string
@@ -24,6 +25,7 @@ type SourceBlockMatch = {
 
 type FenceMatch = {
   fence: string
+  infoSuffix: string
   language: string
 }
 
@@ -64,6 +66,7 @@ export function updateMobileMarkdownEditableSourceBlock({
   const nextSource = mobileMarkdownEditableSourceBlockSource({
     content: update.content,
     fence: block.fence,
+    infoSuffix: block.infoSuffix,
     kind: update.kind,
     language: update.language,
   })
@@ -81,17 +84,22 @@ export function updateMobileMarkdownEditableSourceBlock({
 export function mobileMarkdownEditableSourceBlockSource({
   content,
   fence,
+  infoSuffix = '',
   kind,
   language,
 }: {
   content: string
   fence: string
+  infoSuffix?: string
   kind: MobileMarkdownEditableSourceBlockKind
   language: string
 }): string {
   if (kind === 'mathBlock') return `$$\n${content.trimEnd()}\n$$`
-  const blockLanguage = kind === 'mermaid' ? 'mermaid' : language.trim()
-  return `${fence}${blockLanguage}\n${content.trimEnd()}\n${fence}`
+  const blockInfo = sourceBlockInfo({
+    infoSuffix,
+    language: kind === 'mermaid' ? 'mermaid' : language,
+  })
+  return `${fence}${blockInfo}\n${content.trimEnd()}\n${fence}`
 }
 
 function readSourceBlockAt({
@@ -124,6 +132,7 @@ function readMathBlockAt({
       content: lines.slice(lineNumber + 1, closingLine).join('\n'),
       endLine: closingLine,
       fence: '$$',
+      infoSuffix: '',
       key: `line:${lineNumber}`,
       kind: 'mathBlock',
       language: '',
@@ -154,6 +163,7 @@ function readFencedBlockAt({
       content: lines.slice(lineNumber + 1, closingLine).join('\n'),
       endLine: closingLine,
       fence: match.fence,
+      infoSuffix: match.infoSuffix,
       key: `line:${lineNumber}`,
       kind: normalizedLanguageName(match.language) === 'mermaid' ? 'mermaid' : 'codeBlock',
       language: match.language,
@@ -166,9 +176,11 @@ function readFencedBlockAt({
 function openingFence({ line }: { line: string }): FenceMatch | null {
   const match = /^(`{3,}|~{3,})(.*)$/u.exec(line.trim())
   if (!match) return null
+  const info = sourceBlockInfoParts({ info: match[2] ?? '' })
   return {
     fence: match[1] ?? '```',
-    language: (match[2] ?? '').trim(),
+    infoSuffix: info.suffix,
+    language: info.language,
   }
 }
 
@@ -217,6 +229,27 @@ function isClosingFenceLine({
 
 function normalizedLanguageName(language: string): string {
   return language.trim().split(/\s+/u)[0]?.toLowerCase() ?? ''
+}
+
+function sourceBlockInfo({
+  infoSuffix,
+  language,
+}: {
+  infoSuffix: string
+  language: string
+}): string {
+  return [language.trim(), infoSuffix.trim()].filter(Boolean).join(' ')
+}
+
+function sourceBlockInfoParts({ info }: { info: string }): { language: string; suffix: string } {
+  const trimmed = info.trim()
+  if (!trimmed) return { language: '', suffix: '' }
+
+  const [language = '', ...suffixParts] = trimmed.split(/\s+/u)
+  return {
+    language,
+    suffix: suffixParts.join(' '),
+  }
 }
 
 function markdownLines({ markdown }: { markdown: string }): string[] {

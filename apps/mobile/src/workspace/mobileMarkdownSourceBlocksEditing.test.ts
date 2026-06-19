@@ -29,6 +29,7 @@ describe('mobile markdown source block editing', () => {
         content: 'const answer = 42',
         endLine: 4,
         fence: '```',
+        infoSuffix: '',
         key: 'line:2',
         kind: 'codeBlock',
         language: 'ts',
@@ -38,6 +39,7 @@ describe('mobile markdown source block editing', () => {
         content: 'flowchart LR\n  A --> B',
         endLine: 9,
         fence: '```',
+        infoSuffix: '',
         key: 'line:6',
         kind: 'mermaid',
         language: 'mermaid',
@@ -47,6 +49,7 @@ describe('mobile markdown source block editing', () => {
         content: 'a^2 + b^2 = c^2',
         endLine: 13,
         fence: '$$',
+        infoSuffix: '',
         key: 'line:11',
         kind: 'mathBlock',
         language: '',
@@ -88,6 +91,45 @@ describe('mobile markdown source block editing', () => {
     ].join('\n'))
   })
 
+  it('preserves desktop code-fence metadata when editing code content or language', () => {
+    const markdown = [
+      'Intro',
+      '',
+      '```ts title="Mobile editor" {1,3}',
+      'const previous = true',
+      '```',
+      '',
+      'Tail',
+    ].join('\n')
+
+    const [block] = readMobileMarkdownEditableSourceBlocks({ markdown })
+    expect(block).toMatchObject({
+      infoSuffix: 'title="Mobile editor" {1,3}',
+      language: 'ts',
+    })
+
+    const result = updateMobileMarkdownEditableSourceBlock({
+      markdown,
+      update: {
+        content: 'const next = true',
+        key: 'line:2',
+        kind: 'codeBlock',
+        language: 'tsx',
+      },
+    })
+
+    expect(result.updated).toBe(true)
+    expect(result.markdown).toBe([
+      'Intro',
+      '',
+      '```tsx title="Mobile editor" {1,3}',
+      'const next = true',
+      '```',
+      '',
+      'Tail',
+    ].join('\n'))
+  })
+
   it('skips tldraw fences so whiteboards keep their dedicated editor', () => {
     const blocks = readMobileMarkdownEditableSourceBlocks({ markdown: [
       '```tldraw id="board"',
@@ -114,9 +156,10 @@ describe('mobile markdown source block editing', () => {
     expect(mobileMarkdownEditableSourceBlockSource({
       content: 'flowchart TD\n  A --> B',
       fence: '```',
+      infoSuffix: 'title="Flow"',
       kind: 'mermaid',
       language: 'ignored',
-    })).toBe('```mermaid\nflowchart TD\n  A --> B\n```')
+    })).toBe('```mermaid title="Flow"\nflowchart TD\n  A --> B\n```')
   })
 
   it('leaves content unchanged when the target block is missing', () => {
