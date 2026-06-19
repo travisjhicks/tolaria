@@ -109,6 +109,35 @@ test.describe('mobile command palette actions', () => {
     await expect(page.getByTestId(rowTestId)).toBeHidden()
   })
 
+  test('dispatches workspace commands from the phone command palette', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'phone-portrait', 'Phone command palette checks run on the phone shell.')
+
+    const title = 'Phone Reloadable Command Draft'
+    const rowTestId = `note-row-${noteRowSlug(title)}.md`
+
+    await page.goto('/')
+    await openPhoneCommandPalette(page)
+    await runCommand(page, 'wide default', 'set-default-note-width-wide')
+    await expect(page.getByTestId('mobile-command-palette')).toBeHidden()
+
+    await openPhoneCommandPalette(page)
+    await page.getByTestId('mobile-command-palette-input').fill('normal default')
+    await expect(page.getByTestId('mobile-command-palette-command-set-default-note-width-normal')).toBeVisible()
+    await page.getByTestId('mobile-command-palette-command-set-default-note-width-normal').click()
+    await expect(page.getByTestId('mobile-command-palette')).toBeHidden()
+
+    await page.getByTestId('note-list-create-action').click()
+    await page.getByTestId('workspace-create-note-title-input').fill(title)
+    await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { exact: true, name: 'Create' }).click()
+    await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+    await expect(page.getByTestId(rowTestId)).toBeVisible()
+
+    await openPhoneCommandPalette(page)
+    await runCommand(page, 'reload vault', 'vault-reload')
+    await expect(page.getByTestId('mobile-command-palette')).toBeHidden()
+    await expect(page.getByTestId(rowTestId)).toBeHidden()
+  })
+
   test('dispatches selected-folder commands from the tablet command palette', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'tablet-landscape', 'Command palette action checks use the full-width tablet layout.')
 
@@ -147,6 +176,12 @@ test.describe('mobile command palette actions', () => {
 
 async function openCommandPalette(page: Page) {
   await page.getByTestId('sidebar-command-palette-action').click()
+  await expect(page.getByTestId('mobile-command-palette')).toBeVisible()
+  await expect(page.getByTestId('mobile-command-palette-input')).toBeFocused()
+}
+
+async function openPhoneCommandPalette(page: Page) {
+  await page.getByTestId('phone-command-palette-action').click()
   await expect(page.getByTestId('mobile-command-palette')).toBeVisible()
   await expect(page.getByTestId('mobile-command-palette-input')).toBeFocused()
 }
