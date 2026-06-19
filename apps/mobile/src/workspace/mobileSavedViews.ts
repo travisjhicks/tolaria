@@ -1181,7 +1181,7 @@ function compareSavedViews(left: MobileSavedView, right: MobileSavedView) {
   if (typeof leftOrder === 'number' && typeof rightOrder === 'number') return leftOrder - rightOrder
   if (typeof leftOrder === 'number') return -1
   if (typeof rightOrder === 'number') return 1
-  return left.definition.name.localeCompare(right.definition.name)
+  return left.filename.localeCompare(right.filename)
 }
 
 function savedViewIndex(views: MobileSavedView[], viewId: string): number {

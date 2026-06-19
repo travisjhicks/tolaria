@@ -5,6 +5,7 @@ import {
   moveMobileSavedView,
   nextMobileSavedViewOrder,
   evaluateMobileSavedView,
+  orderedMobileSavedViews,
   parseMobileSavedViewFile,
   serializeMobileSavedViewDefinition,
 } from './mobileSavedViews'
@@ -583,6 +584,20 @@ filters:
       viewFixture('alpha.yml', 'Alpha', null),
       viewFixture('beta.yml', 'Beta', null),
     ])).toBe(2)
+  })
+
+  it('orders saved views by desktop order and filename instead of display name', () => {
+    expect(orderedMobileSavedViews([
+      viewFixture('zeta.yml', 'Alpha', null),
+      viewFixture('alpha.yml', 'Zeta', null),
+      viewFixture('middle.yml', 'Middle', 20),
+      viewFixture('first.yml', 'First', 10),
+    ]).map((view) => view.filename)).toEqual([
+      'first.yml',
+      'middle.yml',
+      'alpha.yml',
+      'zeta.yml',
+    ])
   })
 
   it('moves saved views and builds dense desktop order updates', () => {
