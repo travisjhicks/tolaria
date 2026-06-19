@@ -8,6 +8,16 @@ test.describe('phone workspace editing parity', () => {
     await createEditAndDeletePhoneSavedView(page)
     await customizePhoneTypeSectionAndCreateTemplateNote(page)
   })
+
+  test('exercises relationship suggestion and target creation flows', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'phone-portrait', 'Phone relationship checks run on the phone properties surface.')
+
+    await createPhoneSourceNoteProperties(page, 'Phone Relationship Source')
+    await addSuggestedPhoneRelationship(page)
+
+    await createPhoneSourceNoteProperties(page, 'Phone Target Source')
+    await createPhoneRelationshipTarget(page)
+  })
 })
 
 async function createEditAndDeletePhoneSavedView(page: Page) {
@@ -76,6 +86,66 @@ async function customizePhoneTypeSectionAndCreateTemplateNote(page: Page) {
   await page.getByTestId('phone-properties-action').click()
   await expect(page.getByTestId('property-row-priority')).toContainText('High')
   await expect(page.getByTestId('relationship-row-workflow-orchestration-essay')).toBeVisible()
+}
+
+async function addSuggestedPhoneRelationship(page: Page) {
+  await expect(page.getByTestId('phone-properties-screen')).toBeVisible()
+  await page.getByTestId('property-action-add-relationship').click()
+  await page.getByTestId('workspace-relationship-key-suggestion-related-to').click()
+  await expect(page.getByTestId('workspace-relationship-name-input')).toHaveValue('related_to')
+  await page.getByTestId('workspace-relationship-note-title-input').fill('Open Source')
+  await expect(page.getByTestId('workspace-relationship-note-suggestion-open-source-project')).toBeVisible()
+  await expect(page.getByTestId('workspace-relationship-create-target')).toBeHidden()
+  await page.getByTestId('workspace-relationship-note-suggestion-open-source-project').click()
+  await page.getByTestId('workspace-action-sheet-addRelationship').getByRole('button', { name: 'Add' }).click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+  await expect(page.getByTestId('relationship-row-how-i-run-an-open-source-project')).toBeVisible()
+
+  await page.getByTestId('relationship-row-how-i-run-an-open-source-project-open').click()
+  await expect(page.getByTestId('phone-editor-screen')).toBeVisible()
+  await expect(page.getByTestId('editor-title')).toHaveText('How I Run an Open Source Project')
+}
+
+async function createPhoneSourceNoteProperties(page: Page, title: string) {
+  await page.goto('/')
+  await page.getByTestId('note-list-create-action').click()
+  await page.getByTestId('workspace-create-note-title-input').fill(title)
+  await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { exact: true, name: 'Create' }).click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+  await page.getByTestId(`note-row-${noteRowSlug(title)}.md`).click()
+  await expect(page.getByTestId('phone-editor-screen')).toBeVisible()
+  await expectBodyOnlyPhoneNote(page, title)
+  await page.getByTestId('phone-properties-action').click()
+  await expect(page.getByTestId('phone-properties-screen')).toBeVisible()
+}
+
+async function createPhoneRelationshipTarget(page: Page) {
+  await expect(page.getByTestId('phone-properties-screen')).toBeVisible()
+  await page.getByTestId('property-action-add-relationship').click()
+  await page.getByTestId('workspace-relationship-key-suggestion-related-to').click()
+  await page.getByTestId('workspace-relationship-note-title-input').fill('Brand New Phone Target')
+  await expect(page.getByTestId('workspace-relationship-create-target')).toContainText('Brand New Phone Target')
+  await page.getByTestId('workspace-relationship-create-target').click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+  await expect(page.getByTestId('phone-editor-screen')).toBeVisible()
+  await expectBodyOnlyPhoneNote(page, 'Brand New Phone Target')
+
+  await page.getByTestId('phone-back-action').click()
+  await expect(page.getByTestId('phone-note-list-screen')).toBeVisible()
+  await page.getByTestId('note-row-phone-target-source.md').click()
+  await expect(page.getByTestId('phone-editor-screen')).toBeVisible()
+  await expectBodyOnlyPhoneNote(page, 'Phone Target Source')
+  await page.getByTestId('phone-properties-action').click()
+  await expect(page.getByTestId('relationship-row-brand-new-phone-target')).toBeVisible()
+}
+
+async function expectBodyOnlyPhoneNote(page: Page, title: string) {
+  await expect(page.getByTestId('editor-toolbar-title')).toHaveText(title)
+  await expect(page.getByTestId('editor-title')).toBeHidden()
+}
+
+function noteRowSlug(title: string) {
+  return title.trim().toLowerCase().replace(/\s+/gu, '-')
 }
 
 async function openPhoneSidebar(page: Page) {

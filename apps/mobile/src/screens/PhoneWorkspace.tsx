@@ -67,6 +67,10 @@ export function PhoneWorkspace({
     if (noteId) controller.onSelectNote(noteId)
     setPhoneState('editor')
   }, [controller, setPhoneState])
+  const createRelationshipTargetAndOpenEditor = useCallback(() => {
+    controller.onCreateRelationshipTarget()
+    setPhoneState('editor')
+  }, [controller, setPhoneState])
   const transitionSwipeHandlers = usePhoneSwipeHandlers({
     openEditor,
     openList,
@@ -123,6 +127,7 @@ export function PhoneWorkspace({
         initialEditorEditing={initialEditorEditing}
         layoutProbe={layoutProbe}
         suggestionNotes={suggestionNotes}
+        onCreateRelationshipTarget={createRelationshipTargetAndOpenEditor}
       />
       <MobileSyncStatusBar sync={controller.snapshot.sync} onOpenLocalVault={onOpenNativeVault} />
     </View>
