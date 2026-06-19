@@ -35,6 +35,11 @@ import {
   nativeWysiwygMutationProof,
 } from '../../qa/nativeWysiwygMutationProbe'
 import {
+  nativeWysiwygFormatCommandLogLine,
+  nativeWysiwygFormatCommandProbeActions,
+  nativeWysiwygFormatCommandProof,
+} from '../../qa/nativeWysiwygFormatCommandProbe'
+import {
   nativeWysiwygAutocompleteLogLine,
   nativeWysiwygAutocompleteProbeSteps,
   nativeWysiwygAutocompleteProof,
@@ -56,6 +61,7 @@ type MobileWysiwygMarkdownEditorProps = {
   onUpdateContent: (noteId: string, content: string) => void
   vaultRootUri?: string | null
   wysiwygAutocompleteProbe?: boolean
+  wysiwygFormatCommandProbe?: boolean
   wysiwygWikilinkInsertProbe?: boolean
   wysiwygMutationProbe?: boolean
 }
@@ -141,6 +147,7 @@ export function MobileWysiwygMarkdownEditor({
   onUpdateContent,
   vaultRootUri = null,
   wysiwygAutocompleteProbe = false,
+  wysiwygFormatCommandProbe = false,
   wysiwygWikilinkInsertProbe = false,
   wysiwygMutationProbe = false,
 }: MobileWysiwygMarkdownEditorProps) {
@@ -168,6 +175,7 @@ export function MobileWysiwygMarkdownEditor({
     onUpdateContent,
     vaultRootUri,
     wysiwygAutocompleteProbe,
+    wysiwygFormatCommandProbe,
     wysiwygWikilinkInsertProbe,
     wysiwygMutationProbe,
   })
@@ -276,6 +284,7 @@ function useNativeTentapEditorBridge({
   onUpdateContent,
   vaultRootUri = null,
   wysiwygAutocompleteProbe = false,
+  wysiwygFormatCommandProbe = false,
   wysiwygWikilinkInsertProbe = false,
   wysiwygMutationProbe = false,
 }: NativeTentapEditorBridgeOptions) {
@@ -312,6 +321,7 @@ function useNativeTentapEditorBridge({
   useEditableContentRef({ blocks, bullets, note, refs })
   useResetEditorChangeGate({ initialContent, noteId: note.id, refs })
   useNativeWysiwygAutocompleteProbe({ enabled: wysiwygAutocompleteProbe, refs })
+  useNativeWysiwygFormatCommandProbe({ enabled: wysiwygFormatCommandProbe, refs })
   useNativeWysiwygWikilinkInsertProbe({ enabled: wysiwygWikilinkInsertProbe, flushEditorDocument, refs })
   useNativeWysiwygMutationProbe({ enabled: wysiwygMutationProbe, flushEditorDocument, refs, vaultRootUri })
   useFlushOnUnmount(refs, flushEditorDocument)
@@ -525,6 +535,45 @@ function useNativeWysiwygAutocompleteProbe({
     return () => {
       if (detectTimer) clearTimeout(detectTimer)
       if (nextStepTimer) clearTimeout(nextStepTimer)
+      if (probeTimer) clearTimeout(probeTimer)
+    }
+  }, [enabled, refs])
+}
+
+function useNativeWysiwygFormatCommandProbe({
+  enabled,
+  refs,
+}: {
+  enabled: boolean
+  refs: NativeTentapEditorRefs
+}) {
+  const hasRunProbeRef = useRef(false)
+
+  useEffect(() => {
+    if (!enabled) {
+      hasRunProbeRef.current = false
+      return undefined
+    }
+    if (hasRunProbeRef.current) return undefined
+
+    let probeTimer: TimerHandle | null = null
+    const runProbe = () => {
+      if (!refs.acceptsEditorChangesRef.current) {
+        probeTimer = setTimeout(runProbe, 250)
+        return
+      }
+
+      const editor = refs.editorRef.current
+      hasRunProbeRef.current = true
+      for (const action of nativeWysiwygFormatCommandProbeActions) {
+        if (editor) applyNativeWysiwygFormat(editor as NativeWysiwygCommandBridge, action)
+        console.info(nativeWysiwygFormatCommandLogLine(nativeWysiwygFormatCommandProof({ action, editor })))
+      }
+    }
+
+    probeTimer = setTimeout(runProbe, 500)
+
+    return () => {
       if (probeTimer) clearTimeout(probeTimer)
     }
   }, [enabled, refs])

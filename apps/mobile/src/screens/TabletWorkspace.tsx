@@ -28,6 +28,7 @@ export function TabletWorkspace({
   sourceSelectionProbe = false,
   snapshot,
   wysiwygAutocompleteProbe = false,
+  wysiwygFormatCommandProbe = false,
   wysiwygWikilinkInsertProbe = false,
   wysiwygMutationProbe = false,
 }: {
@@ -40,6 +41,7 @@ export function TabletWorkspace({
   sourceSelectionProbe?: boolean
   snapshot: MobileWorkspaceSnapshot
   wysiwygAutocompleteProbe?: boolean
+  wysiwygFormatCommandProbe?: boolean
   wysiwygWikilinkInsertProbe?: boolean
   wysiwygMutationProbe?: boolean
 }) {
@@ -56,6 +58,7 @@ export function TabletWorkspace({
         layoutProbe={layoutProbe}
         sourceSelectionProbe={sourceSelectionProbe}
         wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
+        wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
         wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
         wysiwygMutationProbe={wysiwygMutationProbe}
         {...controller}
@@ -206,6 +209,7 @@ type TabletEditorPanelHostProps = Pick<
   | 'sourceSelectionProbe'
   | 'vaultRootUri'
   | 'wysiwygAutocompleteProbe'
+  | 'wysiwygFormatCommandProbe'
   | 'wysiwygWikilinkInsertProbe'
   | 'wysiwygMutationProbe'
 > & {
@@ -229,6 +233,7 @@ function TabletEditorPanelHost({
   suggestionNotes,
   vaultRootUri,
   wysiwygAutocompleteProbe,
+  wysiwygFormatCommandProbe,
   wysiwygWikilinkInsertProbe,
   wysiwygMutationProbe,
 }: TabletEditorPanelHostProps) {
@@ -249,6 +254,7 @@ function TabletEditorPanelHost({
       sourceSelectionProbe={sourceSelectionProbe}
       vaultRootUri={vaultRootUri}
       wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
+      wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
       wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
       wysiwygMutationProbe={wysiwygMutationProbe}
     />

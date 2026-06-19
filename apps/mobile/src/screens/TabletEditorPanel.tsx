@@ -48,6 +48,7 @@ type TabletEditorPanelProps = {
   sourceSelectionProbe?: boolean
   vaultRootUri?: string | null
   wysiwygAutocompleteProbe?: boolean
+  wysiwygFormatCommandProbe?: boolean
   wysiwygWikilinkInsertProbe?: boolean
   wysiwygMutationProbe?: boolean
 }
@@ -87,6 +88,7 @@ type EditorContentProps = {
   sourceSelectionProbe?: boolean
   vaultRootUri?: string | null
   wysiwygAutocompleteProbe?: boolean
+  wysiwygFormatCommandProbe?: boolean
   wysiwygWikilinkInsertProbe?: boolean
   wysiwygMutationProbe?: boolean
 }
@@ -111,6 +113,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
     sourceSelectionProbe = false,
     vaultRootUri = null,
     wysiwygAutocompleteProbe = false,
+    wysiwygFormatCommandProbe = false,
     wysiwygWikilinkInsertProbe = false,
     wysiwygMutationProbe = false,
   } = props
@@ -159,6 +162,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
     sourceSelectionProbe,
     vaultRootUri,
     wysiwygAutocompleteProbe,
+    wysiwygFormatCommandProbe,
     wysiwygMutationProbe,
     wysiwygWikilinkInsertProbe,
   }
@@ -334,6 +338,7 @@ function EditorContent({
   sourceSelectionProbe = false,
   vaultRootUri = null,
   wysiwygAutocompleteProbe = false,
+  wysiwygFormatCommandProbe = false,
   wysiwygWikilinkInsertProbe = false,
   wysiwygMutationProbe = false,
 }: EditorContentProps) {
@@ -368,6 +373,7 @@ function EditorContent({
         onUpdateContent={onUpdateContent}
         vaultRootUri={vaultRootUri}
         wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
+        wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
         wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
         wysiwygMutationProbe={wysiwygMutationProbe}
       />

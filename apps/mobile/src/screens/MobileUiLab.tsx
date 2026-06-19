@@ -22,6 +22,9 @@ import {
   nativeWysiwygAutocompleteProbeEnabled,
 } from '../qa/nativeWysiwygAutocompleteProbe'
 import {
+  nativeWysiwygFormatCommandProbeEnabled,
+} from '../qa/nativeWysiwygFormatCommandProbe'
+import {
   nativeWysiwygWikilinkInsertProbeEnabled,
 } from '../qa/nativeWysiwygWikilinkInsertProbe'
 import {
@@ -64,6 +67,7 @@ export function MobileUiLab() {
   const metricSinkUrl = layoutProbe ? searchParams.get('metricSink') : null
   const sourceSelectionProbe = nativeSourceSelectionProbeEnabled(searchParams)
   const wysiwygAutocompleteProbe = nativeWysiwygAutocompleteProbeEnabled(searchParams)
+  const wysiwygFormatCommandProbe = nativeWysiwygFormatCommandProbeEnabled(searchParams)
   const wysiwygWikilinkInsertProbe = nativeWysiwygWikilinkInsertProbeEnabled(searchParams)
   const wysiwygMutationProbe = nativeWysiwygMutationProbeEnabled(searchParams) || wysiwygPersistenceProbe
   const baseSnapshot = repository.readSnapshot(repositoryRequest)
@@ -81,6 +85,7 @@ export function MobileUiLab() {
     sourceSelectionProbe,
     workspacePersistenceProbe,
     wysiwygAutocompleteProbe,
+    wysiwygFormatCommandProbe,
     wysiwygWikilinkInsertProbe,
     wysiwygMutationProbe,
     wysiwygPersistenceProbe,
@@ -108,6 +113,7 @@ export function MobileUiLab() {
         sourceSelectionProbe={sourceSelectionProbe}
         snapshot={snapshot}
         wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
+        wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
         wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
         wysiwygMutationProbe={wysiwygMutationProbe}
       />
@@ -240,6 +246,7 @@ function mobileWorkspaceKey({
   sourceSelectionProbe,
   workspacePersistenceProbe,
   wysiwygAutocompleteProbe,
+  wysiwygFormatCommandProbe,
   wysiwygWikilinkInsertProbe,
   wysiwygMutationProbe,
   wysiwygPersistenceProbe,
@@ -254,6 +261,7 @@ function mobileWorkspaceKey({
   sourceSelectionProbe: boolean
   workspacePersistenceProbe: boolean
   wysiwygAutocompleteProbe: boolean
+  wysiwygFormatCommandProbe: boolean
   wysiwygWikilinkInsertProbe: boolean
   wysiwygMutationProbe: boolean
   wysiwygPersistenceProbe: boolean
@@ -269,6 +277,7 @@ function mobileWorkspaceKey({
     flagKey(sourceSelectionProbe, 'source-selection-probe', 'no-source-selection-probe'),
     flagKey(workspacePersistenceProbe, 'workspace-persistence-probe', 'no-workspace-persistence-probe'),
     flagKey(wysiwygAutocompleteProbe, 'wysiwyg-autocomplete-probe', 'no-wysiwyg-autocomplete-probe'),
+    flagKey(wysiwygFormatCommandProbe, 'wysiwyg-format-command-probe', 'no-wysiwyg-format-command-probe'),
     flagKey(wysiwygWikilinkInsertProbe, 'wysiwyg-wikilink-insert-probe', 'no-wysiwyg-wikilink-insert-probe'),
     flagKey(wysiwygMutationProbe, 'wysiwyg-mutation-probe', 'no-wysiwyg-mutation-probe'),
     flagKey(wysiwygPersistenceProbe, 'wysiwyg-persistence-probe', 'no-wysiwyg-persistence-probe'),

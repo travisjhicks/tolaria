@@ -210,6 +210,7 @@ export type TabletWorkspaceChromeProps = {
   snapshot: MobileWorkspaceSnapshot
   vaultRootUri: string | null
   wysiwygAutocompleteProbe?: boolean
+  wysiwygFormatCommandProbe?: boolean
   wysiwygWikilinkInsertProbe?: boolean
   typePropertyOptions: string[]
   typeRelationshipTargetOptions: MobileWorkspaceSuggestionItem[]
