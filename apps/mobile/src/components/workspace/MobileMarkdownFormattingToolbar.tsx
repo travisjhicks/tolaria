@@ -1,6 +1,7 @@
 import {
   Code,
   CodeBlock,
+  ClipboardText,
   LinkSimple,
   ListBullets,
   ListChecks,
@@ -41,6 +42,12 @@ const formattingCommands: FormattingCommand[] = [
     icon: (color) => <Paperclip color={color} size={desktopToolbarActionParity.iconSize} />,
     label: mobileText('editor.formatting.attachment'),
     testID: 'editor-format-attachment',
+  },
+  {
+    action: 'pastePlainText',
+    icon: (color) => <ClipboardText color={color} size={desktopToolbarActionParity.iconSize} />,
+    label: mobileText('command.note.pastePlainText'),
+    testID: 'editor-format-paste-plain-text',
   },
   {
     action: 'bold',

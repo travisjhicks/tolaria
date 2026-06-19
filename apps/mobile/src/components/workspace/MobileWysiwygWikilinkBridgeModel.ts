@@ -49,6 +49,9 @@ export type NativeWysiwygAttachmentPayload = MobileAttachmentImport
 export type NativeWysiwygMarkdownBlockPayload = {
   action: NativeWysiwygMarkdownBlockAction
 }
+export type NativeWysiwygPlainTextPayload = {
+  text: string
+}
 
 export function nativeWysiwygWikilinkContent(
   payload: NativeWysiwygWikilinkPayload,
@@ -119,6 +122,34 @@ export function nativeWysiwygDocumentWithInsertedMarkdownBlock({
   if (!isTiptapDocument(json)) return null
 
   return insertBlockAfterSelection(json, nativeWysiwygMarkdownBlockNode(payload.action), selection).node
+}
+
+export function nativeWysiwygDocumentWithInsertedPlainText({
+  json,
+  payload,
+  selection,
+}: {
+  json: unknown
+  payload: NativeWysiwygPlainTextPayload
+  selection?: NativeWysiwygSelection
+}): TiptapJsonNode | null {
+  if (!isTiptapDocument(json)) return null
+
+  const content = nativeWysiwygPlainTextContent(payload)
+  if (!content) return null
+
+  return insertInlineContentWithFallback(json, content, selection)
+}
+
+export function nativeWysiwygPlainTextContent(
+  payload: NativeWysiwygPlainTextPayload,
+): TiptapJsonNode[] | null {
+  if (!payload.text) return null
+
+  return payload.text.split('\n').flatMap((line, index): TiptapJsonNode[] => [
+    ...(index > 0 ? [{ type: 'hardBreak' }] : []),
+    ...(line ? [{ text: line, type: 'text' }] : []),
+  ])
 }
 
 function nativeWysiwygImageAttachmentContent(payload: NativeWysiwygAttachmentPayload): TiptapJsonNode[] | null {

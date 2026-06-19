@@ -30,6 +30,7 @@ export type NativeWysiwygMarkdownBlockAction = typeof nativeWysiwygMarkdownBlock
 
 export const nativeWysiwygFormattingActions = [
   'attachment',
+  'pastePlainText',
   'bold',
   'italic',
   'strike',

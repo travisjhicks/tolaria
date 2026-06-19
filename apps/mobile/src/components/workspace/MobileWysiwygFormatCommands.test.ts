@@ -49,12 +49,12 @@ describe('native WYSIWYG format commands', () => {
     expect(nativeWysiwygFormattingActions).toContain('wikilink')
   })
 
-  it('keeps attachment visible as a native picker action without mapping it to a TenTap command', () => {
+  it.each(['attachment', 'pastePlainText'] as const)('keeps %s visible as a native editor-side action without mapping it to a TenTap command', (action) => {
     const editor = fakeEditor()
 
-    applyNativeWysiwygFormat(editor, 'attachment')
+    applyNativeWysiwygFormat(editor, action)
 
-    expect(nativeWysiwygFormattingActions).toContain('attachment')
+    expect(nativeWysiwygFormattingActions).toContain(action)
     expect(calledMethods(editor)).toEqual([])
   })
 })

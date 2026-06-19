@@ -16,9 +16,11 @@ import {
 } from '../../workspace/mobileWikilinkAutocomplete'
 import {
   applyMobileMarkdownFormat,
+  insertMobileMarkdownPlainText,
   insertMobileMarkdownText,
   type MobileMarkdownFormatAction,
 } from '../../workspace/mobileMarkdownFormatting'
+import { readMobileClipboardText } from '../../workspace/mobileClipboard'
 import {
   mobileAttachmentMarkdown,
   type MobileAttachmentImport,
@@ -300,6 +302,21 @@ function useMarkdownInlineAutocomplete({
     setControlledSelection(activeAutocomplete ? nextSelection : undefined)
   }, [content, noteId, onUpdateContent, selection])
   const applyFormat = useCallback(async (action: MobileMarkdownFormatAction) => {
+    if (action === 'pastePlainText') {
+      const text = await readMobileClipboardText()
+      if (!text) return
+
+      const result = insertMobileMarkdownPlainText({
+        selection,
+        text: content,
+        value: text,
+      })
+      onUpdateContent(noteId, result.text)
+      setSelection(result.selection)
+      setControlledSelection(result.selection)
+      return
+    }
+
     if (action === 'attachment') {
       const attachment = await onImportAttachment?.()
       if (!attachment) return

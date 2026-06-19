@@ -4,8 +4,10 @@ import {
   nativeWysiwygDocumentWithInsertedWikilink,
   nativeWysiwygDocumentWithInsertedAttachment,
   nativeWysiwygDocumentWithInsertedMarkdownBlock,
+  nativeWysiwygDocumentWithInsertedPlainText,
   nativeWysiwygInlineAutocompleteAtSelection,
   nativeWysiwygAttachmentContent,
+  nativeWysiwygPlainTextContent,
   nativeWysiwygWikilinkContent,
   type NativeWysiwygSelection,
   type NativeWysiwygWikilinkPayload,
@@ -51,6 +53,14 @@ describe('native WYSIWYG wikilink bridge', () => {
         type: 'text',
       },
       { text: ' ', type: 'text' },
+    ])
+  })
+
+  it('builds unmarked TenTap content for paste without formatting', () => {
+    expect(nativeWysiwygPlainTextContent({ text: 'Plain\nText' })).toEqual([
+      { text: 'Plain', type: 'text' },
+      { type: 'hardBreak' },
+      { text: 'Text', type: 'text' },
     ])
   })
 
@@ -116,6 +126,16 @@ describe('native WYSIWYG wikilink bridge', () => {
       selection: { from: 6, to: 10 },
       text: 'Read this note.',
     })).toBe('Read [[AI Ops Guide]] note.')
+  })
+
+  it('replaces selected native editor text with unformatted clipboard text', () => {
+    const nextDocument = nativeWysiwygDocumentWithInsertedPlainText({
+      json: documentNode(paragraphNode('Paste rich here.')),
+      payload: { text: 'Plain\nText' },
+      selection: { from: 7, to: 11 },
+    })
+
+    expect(tiptapJsonToMobileMarkdown(nextDocument)).toBe('Paste Plain  \nText here.')
   })
 
   it('falls back to appending to the first paragraph when native selection is unavailable', () => {

@@ -14,6 +14,7 @@ export type MobileMarkdownFormatAction =
   | 'highlight'
   | 'italic'
   | 'orderedList'
+  | 'pastePlainText'
   | 'quote'
   | 'strike'
   | 'table'
@@ -106,6 +107,14 @@ export function insertMobileMarkdownText({
   return new MarkdownEditSession({ action: 'attachment', selection, text }).insertText(value)
 }
 
+export function insertMobileMarkdownPlainText({
+  selection,
+  text,
+  value,
+}: MarkdownInsertionRequest): MobileMarkdownFormatResult {
+  return new MarkdownEditSession({ action: 'pastePlainText', selection, text }).insertPlainText(value)
+}
+
 class MarkdownEditSession {
   private readonly action: MobileMarkdownFormatAction
   private readonly range: MobileMarkdownSelection
@@ -138,6 +147,13 @@ class MarkdownEditSession {
     return {
       selection: collapsedSelection(this.range.start + replacement.length),
       text: this.replaceRange({ value: replacement }),
+    }
+  }
+
+  insertPlainText(value: string): MobileMarkdownFormatResult {
+    return {
+      selection: collapsedSelection(this.range.start + value.length),
+      text: this.replaceRange({ value }),
     }
   }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyMobileMarkdownFormat } from './mobileMarkdownFormatting'
+import { applyMobileMarkdownFormat, insertMobileMarkdownPlainText } from './mobileMarkdownFormatting'
 
 describe('mobile markdown formatting', () => {
   it('wraps selected inline text and collapses after the inserted marker', () => {
@@ -82,6 +82,17 @@ describe('mobile markdown formatting', () => {
     expect(applyMobileMarkdownFormat('Intro', { start: 5, end: 5 }, 'table')).toEqual({
       selection: { start: 9, end: 15 },
       text: 'Intro\n\n| Column | Value |\n| --- | --- |\n| Item | Detail |',
+    })
+  })
+
+  it('inserts clipboard text exactly at the current source selection', () => {
+    expect(insertMobileMarkdownPlainText({
+      selection: { start: 7, end: 11 },
+      text: 'Before rich text',
+      value: 'Plain\nText',
+    })).toEqual({
+      selection: { start: 17, end: 17 },
+      text: 'Before Plain\nText text',
     })
   })
 })

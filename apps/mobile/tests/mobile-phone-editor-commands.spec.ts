@@ -70,6 +70,12 @@ async function applyPhoneFormattingCommands(page: Page) {
   await page.getByTestId('editor-format-heading-2').click()
   await expect(input).toHaveValue(/## Section title/u)
 
+  await input.fill('# Phone Editor Commands\n\nPaste: ')
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
+  await page.evaluate(() => navigator.clipboard.writeText('Plain\nClipboard'))
+  await page.getByTestId('editor-format-paste-plain-text').click()
+  await expect(input).toHaveValue('# Phone Editor Commands\n\nPaste: Plain\nClipboard')
+
   await input.fill('# Phone Editor Commands\n\nFollow up')
   await page.getByTestId('editor-format-task-list').scrollIntoViewIfNeeded()
   await page.getByTestId('editor-format-task-list').click()

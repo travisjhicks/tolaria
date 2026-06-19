@@ -6,6 +6,7 @@ import {
   mobileMarkdownBodyToTentapHtml,
   mobileNoteEditableContent,
 } from '../../workspace/mobileDocumentContent'
+import { readMobileClipboardText } from '../../workspace/mobileClipboard'
 import { mobileHtmlWithResolvedAttachmentUris } from '../../workspace/mobileAttachmentUris'
 import type { MobileEditorBlock, MobileNote } from '../../workspace/mobileWorkspaceModel'
 import { probeProps, type MobileLayoutProbe } from '../../qa/mobileLayoutProbe'
@@ -24,11 +25,13 @@ import {
   nativeWysiwygDocumentWithInsertedWikilink,
   nativeWysiwygDocumentWithInsertedAttachment,
   nativeWysiwygDocumentWithInsertedMarkdownBlock,
+  nativeWysiwygDocumentWithInsertedPlainText,
   nativeWysiwygInlineAutocompleteAtSelection,
   type NativeWysiwygAttachmentPayload,
   type NativeWysiwygInlineAutocomplete,
   type NativeWysiwygInlineAutocompleteKind,
   type NativeWysiwygMarkdownBlockPayload,
+  type NativeWysiwygPlainTextPayload,
   type NativeWysiwygSelection,
   type NativeWysiwygWikilinkPayload,
 } from './MobileWysiwygWikilinkBridgeModel'
@@ -103,6 +106,7 @@ type NativeTentapEditorSurfaceProps = {
   insertWikilink: (payload: NativeWysiwygWikilinkPayload, selection?: NativeWysiwygSelection) => void
   insertAttachment: (payload: NativeWysiwygAttachmentPayload, selection?: NativeWysiwygSelection) => void
   insertMarkdownBlock: (payload: NativeWysiwygMarkdownBlockPayload, selection?: NativeWysiwygSelection) => void
+  insertPlainText: (payload: NativeWysiwygPlainTextPayload, selection?: NativeWysiwygSelection) => void
   layoutProbe?: MobileLayoutProbe
   notes: MobileNote[]
   onCloseWikilinkPicker: () => void
@@ -211,6 +215,7 @@ function NativeTentapEditorSurface({
   injectEditorCss,
   insertAttachment,
   insertMarkdownBlock,
+  insertPlainText,
   insertWikilink,
   layoutProbe,
   notes,
@@ -220,27 +225,14 @@ function NativeTentapEditorSurface({
   pickerState,
   sourceNote,
 }: NativeTentapEditorSurfaceProps) {
-  const handleFormat = useCallback(async (action: Parameters<typeof applyNativeWysiwygFormat>[1]) => {
-    if (action === 'attachment') {
-      const attachment = await onImportAttachment?.()
-      if (!attachment) return
-
-      insertAttachment(attachment)
-      return
-    }
-
-    if (action === 'wikilink') {
-      onOpenToolbarWikilinkPicker()
-      return
-    }
-
-    if (isNativeWysiwygMarkdownBlockAction(action)) {
-      insertMarkdownBlock({ action })
-      return
-    }
-
-    applyNativeWysiwygFormat(editor as NativeWysiwygCommandBridge, action)
-  }, [editor, insertAttachment, insertMarkdownBlock, onImportAttachment, onOpenToolbarWikilinkPicker])
+  const handleFormat = useNativeWysiwygToolbarHandler({
+    editor,
+    insertAttachment,
+    insertMarkdownBlock,
+    insertPlainText,
+    onImportAttachment,
+    onOpenToolbarWikilinkPicker,
+  })
   const handleInsertWikilink = useCallback((payload: NativeWysiwygWikilinkPayload) => {
     insertWikilink(payload, pickerState?.replacementRange)
     onCloseWikilinkPicker()
@@ -280,6 +272,42 @@ function NativeTentapEditorSurface({
       ) : null}
     </View>
   )
+}
+
+function useNativeWysiwygToolbarHandler({
+  editor,
+  insertAttachment,
+  insertMarkdownBlock,
+  insertPlainText,
+  onImportAttachment,
+  onOpenToolbarWikilinkPicker,
+}: Pick<
+  NativeTentapEditorSurfaceProps,
+  'editor' | 'insertAttachment' | 'insertMarkdownBlock' | 'insertPlainText' | 'onImportAttachment' | 'onOpenToolbarWikilinkPicker'
+>) {
+  return useCallback(async (action: Parameters<typeof applyNativeWysiwygFormat>[1]) => {
+    if (action === 'attachment') return insertImportedAttachment(onImportAttachment, insertAttachment)
+    if (action === 'pastePlainText') return insertClipboardPlainText(insertPlainText)
+    if (action === 'wikilink') return onOpenToolbarWikilinkPicker()
+    if (isNativeWysiwygMarkdownBlockAction(action)) return insertMarkdownBlock({ action })
+
+    applyNativeWysiwygFormat(editor as NativeWysiwygCommandBridge, action)
+  }, [editor, insertAttachment, insertMarkdownBlock, insertPlainText, onImportAttachment, onOpenToolbarWikilinkPicker])
+}
+
+async function insertImportedAttachment(
+  onImportAttachment: NativeTentapEditorSurfaceProps['onImportAttachment'],
+  insertAttachment: NativeTentapEditorSurfaceProps['insertAttachment'],
+) {
+  const attachment = await onImportAttachment?.()
+  if (attachment) insertAttachment(attachment)
+}
+
+async function insertClipboardPlainText(
+  insertPlainText: NativeTentapEditorSurfaceProps['insertPlainText'],
+) {
+  const text = await readMobileClipboardText()
+  if (text) insertPlainText({ text })
 }
 
 function initialNativeEditorContent(
@@ -346,6 +374,12 @@ function useNativeTentapEditorBridge({
     refs,
     warning: '[mobile-editor] Failed to insert native WYSIWYG markdown block:',
   })
+  const insertPlainText = useNativeWysiwygInserter({
+    flushEditorDocument,
+    insertIntoEditor: insertPlainTextIntoNativeEditor,
+    refs,
+    warning: '[mobile-editor] Failed to insert native WYSIWYG plain text:',
+  })
 
   const editor = useEditorBridge({
     avoidIosKeyboard: true,
@@ -376,7 +410,7 @@ function useNativeTentapEditorBridge({
   useNativeWysiwygMutationProbe({ enabled: wysiwygMutationProbe, flushEditorDocument, refs, vaultRootUri })
   useFlushOnUnmount(refs, flushEditorDocument)
 
-  return { editor, injectEditorCss, insertAttachment, insertMarkdownBlock, insertWikilink }
+  return { editor, injectEditorCss, insertAttachment, insertMarkdownBlock, insertPlainText, insertWikilink }
 }
 
 function useNativeTentapEditorRefs(initialDocumentContent: string): NativeTentapEditorRefs {
@@ -715,6 +749,14 @@ async function insertMarkdownBlockIntoNativeEditor(
   selection?: NativeWysiwygSelection,
 ): Promise<boolean> {
   return insertPayloadIntoNativeEditor(editor, payload, selection, nativeWysiwygDocumentWithInsertedMarkdownBlock)
+}
+
+async function insertPlainTextIntoNativeEditor(
+  editor: EditorBridge | null,
+  payload: NativeWysiwygPlainTextPayload,
+  selection?: NativeWysiwygSelection,
+): Promise<boolean> {
+  return insertPayloadIntoNativeEditor(editor, payload, selection, nativeWysiwygDocumentWithInsertedPlainText)
 }
 
 async function insertMarkdownBlocksIntoNativeEditor(
