@@ -38,6 +38,7 @@ import {
   mobileRelationshipKeySuggestions,
   mobileRelationshipTargetSuggestions,
   mobileTypeSuggestions,
+  shouldShowMobileRelationshipCreateTarget,
 } from '../../workspace/mobileWorkspaceSuggestions'
 import { MobileTypeIcon } from './MobileWorkspaceIcons'
 import { MobileMetadataPicker } from './MobileMetadataPicker'
@@ -743,7 +744,7 @@ function AddRelationshipContent({
     selectedNote,
   })
   const createTargetTitle = relationshipNoteTitle.trim()
-  const showCreateTarget = shouldShowRelationshipCreateTarget(createTargetTitle, suggestions)
+  const showCreateTarget = shouldShowMobileRelationshipCreateTarget(notes, createTargetTitle)
 
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" style={styles.scrollArea}>
@@ -1008,10 +1009,6 @@ function NoteRowChips({ note }: { note: MobileNote }) {
       {note.tags.slice(0, 1).map((tag) => <MobileChip density="list" key={tag} label={tag} tone={tagTone(tag)} />)}
     </View>
   )
-}
-
-function shouldShowRelationshipCreateTarget(title: string, suggestions: MobileNote[]) {
-  return title.trim().length > 0 && suggestions.length === 0
 }
 
 function actionTitle(action: MobileWorkspaceAction, propertyName: string) {

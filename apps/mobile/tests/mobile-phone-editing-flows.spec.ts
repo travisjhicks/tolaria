@@ -112,7 +112,7 @@ async function addSuggestedPhoneRelationship(page: Page) {
   await expect(page.getByTestId('workspace-relationship-name-input')).toHaveValue('related_to')
   await page.getByTestId('workspace-relationship-note-title-input').fill('Open Source')
   await expect(page.getByTestId('workspace-relationship-note-suggestion-open-source-project')).toBeVisible()
-  await expect(page.getByTestId('workspace-relationship-create-target')).toBeHidden()
+  await expect(page.getByTestId('workspace-relationship-create-target')).toContainText('Open Source')
   await page.getByTestId('workspace-relationship-note-suggestion-open-source-project').click()
   await page.getByTestId('workspace-action-sheet-addRelationship').getByRole('button', { name: 'Add' }).click()
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()

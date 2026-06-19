@@ -14,6 +14,7 @@ import {
   mobileViewFieldSuggestions,
   mobileViewValueSuggestionItems,
   mobileViewValueSuggestions,
+  shouldShowMobileRelationshipCreateTarget,
 } from './mobileWorkspaceSuggestions'
 
 describe('mobile workspace suggestions', () => {
@@ -154,6 +155,15 @@ describe('mobile workspace suggestions', () => {
     expect(mobileRelationshipTargetSuggestions(notes, 'cafe-notes.md').map((note) => note.id)).toEqual(['journal/cafe-notes.md'])
     expect(mobileRelationshipTargetSuggestions(notes, 'travel').map((note) => note.id)).toEqual(['journal/cafe-notes.md'])
     expect(mobileRelationshipTargetSuggestions(notes, 'archived weekly')).toEqual([])
+  })
+
+  it('shows relationship target creation only when the title does not resolve to an existing note', () => {
+    const notes = workspaceScenarioForId('default').notes
+
+    expect(shouldShowMobileRelationshipCreateTarget(notes, '')).toBe(false)
+    expect(shouldShowMobileRelationshipCreateTarget(notes, 'Open Source')).toBe(true)
+    expect(shouldShowMobileRelationshipCreateTarget(notes, 'How I Run an Open Source Project')).toBe(false)
+    expect(shouldShowMobileRelationshipCreateTarget(notes, 'Tolaria/Mobile UI/How I Run an Open Source Project')).toBe(false)
   })
 
   it('suggests active relationship targets before typing and excludes existing targets', () => {

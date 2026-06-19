@@ -106,6 +106,11 @@ export function mobileRelationshipTargetSuggestions(
     .slice(0, 6)
 }
 
+export function shouldShowMobileRelationshipCreateTarget(notes: MobileNote[], title: SuggestionText): boolean {
+  const trimmedTitle = title.trim()
+  return trimmedTitle.length > 0 && mobileNoteForWikilinkTarget(notes, trimmedTitle) === null
+}
+
 export function mobileTypeSuggestions(
   notes: MobileNote[],
   selectedNote: MobileNote | null,
