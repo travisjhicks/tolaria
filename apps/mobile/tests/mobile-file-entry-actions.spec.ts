@@ -34,6 +34,7 @@ test.describe('mobile non-markdown file action parity', () => {
       fileTitle: 'diagram.png',
       revealNoteId: 'Files/diagram.png',
     })
+    await deleteSelectedFileFromMoreSheet(page, 'note-row-Files/diagram.png')
   })
 
   test('exposes active file actions from the phone editor more sheet', async ({ page }, testInfo) => {
@@ -61,6 +62,9 @@ test.describe('mobile non-markdown file action parity', () => {
       fileTitle: 'diagram.png',
       revealNoteId: 'Files/diagram.png',
     })
+    await deleteSelectedFileFromMoreSheet(page, 'note-row-Files/diagram.png')
+    await page.getByTestId('phone-back-action').click()
+    await expect(page.getByTestId('note-row-Files/diagram.png')).toBeHidden()
   })
 })
 
@@ -81,6 +85,7 @@ async function assertFileActionSheet(
   await expect(page.getByTestId('workspace-action-open-default-app')).toBeVisible()
   await expect(page.getByTestId('workspace-action-reveal-file')).toBeVisible()
   await expect(page.getByTestId('workspace-action-copy-deep-link')).toBeVisible()
+  await expect(page.getByTestId('workspace-action-delete-note')).toBeVisible()
   await expect(page.getByTestId('workspace-action-table-of-contents')).toBeHidden()
   await expect(page.getByTestId('workspace-action-export-pdf')).toBeHidden()
 
@@ -105,6 +110,13 @@ async function assertFileActionSheet(
     path: copiedPath,
     title: fileTitle,
   })
+}
+
+async function deleteSelectedFileFromMoreSheet(page: Page, rowTestId: string) {
+  await page.getByTestId('editor-more-action').click()
+  await page.getByTestId('workspace-action-delete-note').click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+  await expect(page.getByTestId(rowTestId)).toBeHidden()
 }
 
 function latestGlobalEntry(page: Page, key: string) {
