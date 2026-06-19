@@ -88,6 +88,18 @@ async function setAndRemovePhoneNoteIcon(page: Page) {
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
   await expect(page.getByTestId('editor-toolbar-note-icon')).toBeVisible()
 
+  await page.getByTestId('phone-properties-action').click()
+  await expect(page.getByTestId('property-row-icon')).toContainText('rocket')
+  await page.getByTestId('property-row-icon-edit').click()
+  await expect(page.getByTestId('workspace-property-name-input')).toHaveValue('icon')
+  await expect(page.getByTestId('workspace-property-value-input')).toHaveValue('rocket')
+  await page.getByTestId('workspace-property-value-input').fill('sparkle')
+  await page.getByTestId('workspace-action-sheet-editProperty').getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+  await expect(page.getByTestId('property-row-icon')).toContainText('sparkle')
+  await page.getByTestId('phone-back-action').click()
+  await expect(page.getByTestId('phone-editor-screen')).toBeVisible()
+
   await page.getByTestId('editor-more-action').click()
   await expect(page.getByTestId('workspace-action-remove-note-icon')).toBeVisible()
   await page.getByTestId('workspace-action-remove-note-icon').click()

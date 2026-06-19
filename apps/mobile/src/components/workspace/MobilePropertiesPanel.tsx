@@ -133,6 +133,14 @@ function NoteProperties({
         />
       </PropertySection>
       <MobilePropertyRow label="Links" testID="property-row-links" value={`${note.links}`} />
+      {note.icon ? (
+        <EditablePropertyRow
+          noteId={note.id}
+          property={{ key: 'icon', label: 'Icon', value: note.icon }}
+          onDeleteProperty={onDeleteProperty}
+          onEditProperty={onEditProperty}
+        />
+      ) : null}
       {note.properties?.map((property) => (
         <EditablePropertyRow
           key={property.key}
