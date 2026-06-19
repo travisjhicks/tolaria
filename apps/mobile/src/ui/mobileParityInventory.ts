@@ -113,11 +113,11 @@ export const mobileParityInventory = [
     surface: 'Workspace type icons',
   },
   {
-    assertions: ['search/create/properties/more user-flow checks', 'source-backed tldraw whiteboard metadata and snapshot edit checks'],
+    assertions: ['search/create/properties/more writable user-flow checks', 'source-backed tldraw whiteboard metadata and snapshot edit checks'],
     contracts: ['desktopPanelParity', 'desktopPropertyParity', 'desktopToolbarActionParity'],
     desktopSource: 'Desktop command dialogs, note-list search, inspector property forms, and tldraw fenced markdown persistence',
     mobileFile: 'src/components/workspace/MobileWorkspaceActionSheet.tsx',
-    surface: 'Read-only workspace action sheets',
+    surface: 'Writable workspace action sheets',
   },
   {
     assertions: ['command-palette model tests for desktop command IDs, grouping, filtering, enabled-state, and callback dispatch'],
