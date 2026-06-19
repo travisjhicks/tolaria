@@ -1,6 +1,7 @@
 import type {
   MobileAllNotesFileVisibility,
   MobileNote,
+  MobileNoteWidth,
   MobileSavedView,
   MobileTypeDefinition,
   MobileWorkspaceSnapshot,
@@ -10,7 +11,10 @@ import {
   type MobileWorkspaceEdit,
 } from '../workspace/mobileWorkspaceEditing'
 import { mobileNoteEditableContent } from '../workspace/mobileDocumentContent'
-import { mobileAllNotesFileVisibilityFromVaultConfig } from '../workspace/mobileVaultConfig'
+import {
+  mobileAllNotesFileVisibilityFromVaultConfig,
+  mobileDefaultNoteWidthFromVaultConfig,
+} from '../workspace/mobileVaultConfig'
 import { mobileWorkspacePathHistoryEntry } from './tabletWorkspacePathHistory'
 
 type WorkspaceHistoryEdit = MobileWorkspaceEdit
@@ -40,6 +44,8 @@ export function mobileWorkspaceHistoryEntry(
   if (sourceEdit && !historyRecordsEdit(sourceEdit)) return null
   const pathHistoryEntry = mobileWorkspacePathHistoryEntry(previousSnapshot, nextSnapshot, sourceEdit)
   if (pathHistoryEntry) return pathHistoryEntry
+  const defaultNoteWidthHistory = defaultNoteWidthHistoryEntry(previousSnapshot, nextSnapshot, sourceEdit)
+  if (defaultNoteWidthHistory) return defaultNoteWidthHistory
   const primaryListHistoryEntry = primaryNoteListPropertiesHistoryEntry(previousSnapshot, nextSnapshot, sourceEdit)
   if (primaryListHistoryEntry) return primaryListHistoryEntry
 
@@ -207,6 +213,23 @@ function primaryNoteListPropertiesHistoryEntry(
   }
 }
 
+function defaultNoteWidthHistoryEntry(
+  previousSnapshot: MobileWorkspaceSnapshot,
+  nextSnapshot: MobileWorkspaceSnapshot,
+  sourceEdit: MobileWorkspaceEdit | undefined,
+): MobileWorkspaceHistoryEntry | null {
+  if (sourceEdit?.type !== 'setDefaultNoteWidth') return null
+
+  const previousMode = defaultNoteWidthHistoryMode(previousSnapshot)
+  const nextMode = defaultNoteWidthHistoryMode(nextSnapshot)
+  if (previousMode === nextMode) return null
+
+  return {
+    redoEdits: [{ mode: nextMode, type: 'setDefaultNoteWidth' }],
+    undoEdits: [{ mode: previousMode, type: 'setDefaultNoteWidth' }],
+  }
+}
+
 function reversibleContentChange({
   nextNote,
   nextSnapshot,
@@ -350,6 +373,10 @@ function primaryNoteListProperties(
   target: 'allNotes' | 'inbox',
 ): string[] {
   return normalizedDisplayProperties(snapshot.noteListPropertyOverrides?.[target] ?? [])
+}
+
+function defaultNoteWidthHistoryMode(snapshot: MobileWorkspaceSnapshot): MobileNoteWidth {
+  return mobileDefaultNoteWidthFromVaultConfig(snapshot.vaultConfig) ?? 'normal'
 }
 
 function primaryNoteListSettings(

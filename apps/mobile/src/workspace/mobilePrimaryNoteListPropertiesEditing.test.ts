@@ -51,6 +51,7 @@ describe('primary note-list property overrides', () => {
           fileVisibility: { images: true, pdfs: false, unsupported: true },
           noteListProperties: ['tags'],
         },
+        defaultNoteWidth: 'wide' as const,
         inbox: { explicitOrganization: true, noteListProperties: ['status'] },
       },
     }
@@ -68,6 +69,7 @@ describe('primary note-list property overrides', () => {
           fileVisibility: { images: true, pdfs: false, unsupported: true },
           noteListProperties: ['tags'],
         },
+        defaultNoteWidth: 'wide',
         inbox: { explicitOrganization: true, noteListProperties: null },
       },
       kind: 'saveVaultConfig',
@@ -102,6 +104,7 @@ describe('primary note-list property overrides', () => {
         fileVisibility: { images: true, pdfs: false, unsupported: true },
         noteListProperties: ['status'],
       },
+      defaultNoteWidth: 'wide',
     })
 
     expect(parseMobileVaultConfig(serialized)).toEqual({
@@ -109,11 +112,13 @@ describe('primary note-list property overrides', () => {
         fileVisibility: { images: true, pdfs: false, unsupported: true },
         noteListProperties: ['status'],
       },
+      defaultNoteWidth: 'wide',
     })
     expect(parseMobileVaultConfig(JSON.stringify({
       allNotes: {
         fileVisibility: { images: 1, pdfs: true },
       },
+      defaultNoteWidth: 'expanded',
     }))).toEqual({
       allNotes: {
         fileVisibility: { images: false, pdfs: true, unsupported: false },

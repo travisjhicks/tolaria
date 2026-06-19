@@ -6,6 +6,7 @@ import type {
 } from '../components/workspace/MobileWorkspaceSidebar'
 import type {
   MobileNote,
+  MobileNoteWidth,
   MobileSidebarFolder,
   MobileSidebarItem,
   MobileWorkspaceSnapshot,
@@ -41,6 +42,7 @@ export type MobileCommandPaletteHandlers = {
   canMoveSelectedViewUp?: boolean
   canRedoWorkspaceEdit: boolean
   canUndoWorkspaceEdit: boolean
+  defaultNoteWidth?: MobileNoteWidth | null
   onCreateNote?: (titleOverride?: string) => void
   onCreateNoteOfType?: (typeName: string) => void
   onOpenBacklinks?: () => void
@@ -80,6 +82,7 @@ export type MobileCommandPaletteHandlers = {
   onRevealFile?: () => void
   onSelectSidebarItem: (selection: MobileSidebarItemSelection) => void
   onSetArchived: (archived: boolean) => void
+  onSetDefaultNoteWidth?: (mode: MobileNoteWidth) => void
   onSetOrganized: (organized: boolean) => void
   onToggleFavorite: () => void
   onToggleNoteWidth?: () => void
@@ -721,8 +724,33 @@ function viewCommands(handlers: MobileCommandPaletteHandlers): MobileCommandPale
       label: mobileText('command.view.toggleRaw'),
     }),
     ...selectedViewMoveCommands(handlers),
+    ...defaultNoteWidthCommands(handlers),
     customizeNoteListColumnsCommand(handlers),
   ]
+}
+
+function defaultNoteWidthCommands(handlers: MobileCommandPaletteHandlers): MobileCommandPaletteCommand[] {
+  return [
+    defaultNoteWidthCommand('normal', 'command.view.defaultNoteWidthNormal', handlers),
+    defaultNoteWidthCommand('wide', 'command.view.defaultNoteWidthWide', handlers),
+  ]
+}
+
+function defaultNoteWidthCommand(
+  mode: MobileNoteWidth,
+  labelKey: MobileTextKey,
+  handlers: MobileCommandPaletteHandlers,
+): MobileCommandPaletteCommand {
+  const activeMode = handlers.defaultNoteWidth ?? 'normal'
+
+  return dynamicCommand({
+    enabled: Boolean(handlers.onSetDefaultNoteWidth && activeMode !== mode),
+    execute: () => handlers.onSetDefaultNoteWidth?.(mode),
+    group: 'View',
+    id: `set-default-note-width-${mode}`,
+    keywords: ['layout', 'note', 'column', 'width', mode, 'default', 'reading'],
+    label: mobileText(labelKey),
+  })
 }
 
 function selectedViewMoveCommands(handlers: MobileCommandPaletteHandlers): MobileCommandPaletteCommand[] {

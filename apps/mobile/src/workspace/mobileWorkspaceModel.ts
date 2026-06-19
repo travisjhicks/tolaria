@@ -217,6 +217,7 @@ export type MobileVaultPrimaryNoteListConfig = {
 
 export type MobileVaultConfig = {
   allNotes?: MobileVaultPrimaryNoteListConfig | null
+  defaultNoteWidth?: MobileNoteWidth | null
   inbox?: MobileVaultPrimaryNoteListConfig | null
 }
 

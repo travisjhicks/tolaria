@@ -75,6 +75,7 @@ type: Project
           fileVisibility: { images: true, pdfs: true, unsupported: false },
           noteListProperties: ['status', 'belongs_to'],
         },
+        defaultNoteWidth: 'wide',
         inbox: { explicitOrganization: true, noteListProperties: ['tags'] },
       },
       kind: 'saveVaultConfig',
@@ -89,6 +90,7 @@ type: Project
           fileVisibility: { images: true, pdfs: true, unsupported: false },
           noteListProperties: ['status', 'belongs_to'],
         },
+        defaultNoteWidth: 'wide',
         inbox: { explicitOrganization: true, noteListProperties: ['tags'] },
       },
     })
@@ -102,6 +104,7 @@ type: Project
           fileVisibility: { images: true, pdfs: true, unsupported: false },
           noteListProperties: ['status', 'belongs_to'],
         },
+        defaultNoteWidth: 'wide',
         inbox: { explicitOrganization: true, noteListProperties: ['tags'] },
       },
     })

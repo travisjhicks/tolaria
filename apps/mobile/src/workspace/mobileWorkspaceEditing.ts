@@ -23,6 +23,7 @@ import type {
   MobileAllNotesFileVisibility,
   MobileCreateNoteDefaults,
   MobileNote,
+  MobileNoteWidth,
   MobileProperty,
   MobilePropertyValue,
   MobileRelationship,
@@ -79,7 +80,9 @@ import {
 } from './mobileWikilinks'
 import {
   mobileAllNotesFileVisibilityFromVaultConfig,
+  mobileDefaultNoteWidthFromVaultConfig,
   mobileNoteListPropertyOverridesFromVaultConfig,
+  mobileVaultConfigWithDefaultNoteWidth,
   mobileVaultConfigWithPrimaryNoteListProperties,
 } from './mobileVaultConfig'
 import type { MobileTypeDefinitionPatch } from './mobileTypeDefinitions'
@@ -129,6 +132,7 @@ export type MobileWorkspaceEdit =
   | { direction: MobileViewMoveDirection; noteId: NoteId; type: 'moveFavorite' }
   | { archived: boolean; noteId: NoteId; type: 'setArchived' }
   | { noteId: NoteId; organized: boolean; type: 'setOrganized' }
+  | { mode: MobileNoteWidth; type: 'setDefaultNoteWidth' }
   | { definition: MobileViewDefinition; type: 'createView' }
   | { definition: MobileViewDefinition; viewId: string; type: 'updateView' }
   | { viewId: string; type: 'deleteView' }
@@ -145,10 +149,10 @@ type MobileViewEdit = Extract<MobileWorkspaceEdit, { type: 'createView' | 'delet
 type MobileTypeEdit = Extract<MobileWorkspaceEdit, { type: 'createTypeDefinition' | 'deleteTypeDefinition' | 'moveTypeSection' | 'renameTypeDefinition' | 'updateTypeDefinition' }>
 type MobileFolderEdit = Extract<MobileWorkspaceEdit, { type: 'createFolder' | 'deleteFolder' | 'renameFolder' }>
 type MobileFavoriteEdit = Extract<MobileWorkspaceEdit, { type: 'moveFavorite' }>
-type MobilePrimaryNoteListEdit = Extract<MobileWorkspaceEdit, { type: 'updatePrimaryNoteListProperties' }>
+type MobileVaultConfigEdit = Extract<MobileWorkspaceEdit, { type: 'setDefaultNoteWidth' | 'updatePrimaryNoteListProperties' }>
 type MobileRestorationEdit = Extract<MobileWorkspaceEdit, { type: 'restoreFolder' | 'restoreNote' | 'restoreTypeDefinition' | 'restoreView' }>
 type MobileSnapshotEdit = Extract<MobileWorkspaceEdit, { type: 'createRelationshipTarget' | 'deleteNote' | 'moveNoteToFolder' | 'renameNoteFile' }>
-type MobileNoteEdit = Exclude<MobileWorkspaceEdit, MobileFavoriteEdit | MobileFolderEdit | MobilePrimaryNoteListEdit | MobileRestorationEdit | MobileSnapshotEdit | MobileTypeEdit | MobileViewEdit | { type: 'bulkEdit' | 'createNote' }>
+type MobileNoteEdit = Exclude<MobileWorkspaceEdit, MobileFavoriteEdit | MobileFolderEdit | MobileRestorationEdit | MobileSnapshotEdit | MobileTypeEdit | MobileVaultConfigEdit | MobileViewEdit | { type: 'bulkEdit' | 'createNote' }>
 type MobileWorkspaceResultHandlerMap = {
   [Type in MobileWorkspaceEdit['type']]?: (
     snapshot: MobileWorkspaceSnapshot,
@@ -286,6 +290,7 @@ const mobileWorkspaceResultHandlers: MobileWorkspaceResultHandlerMap = {
   restoreNote: (snapshot, edit) => applyMobileRestorationEdit(snapshot, edit, rebuildSnapshot),
   restoreTypeDefinition: (snapshot, edit) => applyMobileRestorationEdit(snapshot, edit, rebuildSnapshot),
   restoreView: (snapshot, edit) => applyMobileRestorationEdit(snapshot, edit, rebuildSnapshot),
+  setDefaultNoteWidth: (snapshot, edit) => setDefaultNoteWidth(snapshot, edit.mode),
   updatePrimaryNoteListProperties: (snapshot, edit) => updatePrimaryNoteListProperties(snapshot, edit),
   updateTypeDefinition: (snapshot, edit) => applyMobileTypeEdit(snapshot, edit, rebuildSnapshot),
   updateProperty: (snapshot, edit) => updateMobileNoteProperty(snapshot, edit),
@@ -1023,6 +1028,24 @@ function updatePrimaryNoteListProperties(
     snapshot: {
       ...snapshot,
       noteListPropertyOverrides: mobileNoteListPropertyOverridesFromVaultConfig(vaultConfig),
+      vaultConfig,
+    },
+    writes: [{ config: vaultConfig, kind: 'saveVaultConfig' }],
+  }
+}
+
+function setDefaultNoteWidth(
+  snapshot: MobileWorkspaceSnapshot,
+  mode: MobileNoteWidth,
+): MobileWorkspaceEditResult {
+  const vaultConfig = mobileVaultConfigWithDefaultNoteWidth(snapshot.vaultConfig, mode)
+  if (mobileDefaultNoteWidthFromVaultConfig(snapshot.vaultConfig) === vaultConfig.defaultNoteWidth) {
+    return { snapshot, writes: [] }
+  }
+
+  return {
+    snapshot: {
+      ...snapshot,
       vaultConfig,
     },
     writes: [{ config: vaultConfig, kind: 'saveVaultConfig' }],

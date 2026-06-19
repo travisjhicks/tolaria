@@ -227,6 +227,38 @@ describe('mobile command palette', () => {
     expect(handlers.onMoveSelectedViewDown).toHaveBeenCalledOnce()
   })
 
+  it('exposes desktop default note-width commands through the mobile command palette', () => {
+    const handlers = commandHandlers({ defaultNoteWidth: 'normal' })
+    const setWide = enabledCommand(handlers, 'set-default-note-width-wide')
+    const commandIds = mobileCommandPaletteResults(buildMobileCommandPaletteCommands(handlers), '')
+      .flatList
+      .map((command) => command.id)
+
+    expect(setWide).toMatchObject({
+      group: 'View',
+      label: 'Use Wide Note Width by Default',
+    })
+    expect(commandIds).not.toContain('set-default-note-width-normal')
+
+    setWide.execute()
+
+    expect(handlers.onSetDefaultNoteWidth).toHaveBeenCalledWith('wide')
+  })
+
+  it('offers normal default note width when the persisted default is wide', () => {
+    const handlers = commandHandlers({ defaultNoteWidth: 'wide' })
+    const setNormal = enabledCommand(handlers, 'set-default-note-width-normal')
+
+    expect(setNormal).toMatchObject({
+      group: 'View',
+      label: 'Use Normal Note Width by Default',
+    })
+
+    setNormal.execute()
+
+    expect(handlers.onSetDefaultNoteWidth).toHaveBeenCalledWith('normal')
+  })
+
   it('exposes selected markdown note utility commands through the palette', () => {
     const handlers = commandHandlers()
     const commandIds = mobileCommandPaletteResults(buildMobileCommandPaletteCommands(handlers), '')
@@ -374,6 +406,7 @@ function commandHandlers(
     onRevealSelectedFolder: vi.fn(),
     onSelectSidebarItem: vi.fn(),
     onSetArchived: vi.fn(),
+    onSetDefaultNoteWidth: vi.fn(),
     onSetOrganized: vi.fn(),
     onToggleFavorite: vi.fn(),
     onToggleNoteWidth: vi.fn(),

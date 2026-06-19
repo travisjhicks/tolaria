@@ -6,6 +6,7 @@ import type {
   MobileWorkspaceSnapshot,
 } from './mobileWorkspaceModel'
 import { DEFAULT_MOBILE_ALL_NOTES_FILE_VISIBILITY } from './mobileNoteFilters'
+import { normalizeMobileNoteWidth } from './mobileNoteWidth'
 
 type PrimaryNoteListTarget = keyof MobilePrimaryNoteListPropertyOverrides
 type PrimaryNoteListSettings = {
@@ -65,6 +66,22 @@ export function mobileAllNotesFileVisibilityFromVaultConfig(
   return normalizeMobileVaultConfig(config).allNotes?.fileVisibility ?? DEFAULT_MOBILE_ALL_NOTES_FILE_VISIBILITY
 }
 
+export function mobileDefaultNoteWidthFromVaultConfig(
+  config: MobileVaultConfig | null | undefined,
+) {
+  return normalizeMobileVaultConfig(config).defaultNoteWidth ?? null
+}
+
+export function mobileVaultConfigWithDefaultNoteWidth(
+  config: MobileVaultConfig | null | undefined,
+  defaultNoteWidth: unknown,
+): MobileVaultConfig {
+  return {
+    ...normalizeMobileVaultConfig(config),
+    defaultNoteWidth: normalizeMobileNoteWidth(defaultNoteWidth) ?? 'normal',
+  }
+}
+
 export function snapshotWithMobileVaultConfig(
   snapshot: MobileWorkspaceSnapshot,
   config: MobileVaultConfig | null | undefined,
@@ -95,10 +112,12 @@ export function normalizeMobileVaultConfig(value: unknown): MobileVaultConfig {
   if (!isRecord(value)) return {}
 
   const allNotes = normalizePrimaryNoteListConfig(value.allNotes)
+  const defaultNoteWidth = normalizeMobileNoteWidth(value.defaultNoteWidth)
   const inbox = normalizePrimaryNoteListConfig(value.inbox)
   const config: MobileVaultConfig = {}
 
   if (allNotes) config.allNotes = allNotes
+  if (defaultNoteWidth) config.defaultNoteWidth = defaultNoteWidth
   if (inbox) config.inbox = inbox
 
   return config

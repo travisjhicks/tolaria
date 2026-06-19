@@ -72,6 +72,23 @@ test.describe('mobile command palette actions', () => {
     await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('All Notes')
   })
 
+  test('dispatches default note-width commands from the tablet command palette', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'tablet-landscape', 'Command palette action checks use the full-width tablet layout.')
+
+    await page.goto('/')
+    await openCommandPalette(page)
+    await runCommand(page, 'wide default', 'set-default-note-width-wide')
+
+    await expect(page.getByTestId('mobile-command-palette')).toBeHidden()
+
+    await openCommandPalette(page)
+    await page.getByTestId('mobile-command-palette-input').fill('normal default')
+
+    await expect(page.getByTestId('mobile-command-palette-command-set-default-note-width-normal')).toBeVisible()
+    await page.getByTestId('mobile-command-palette-command-set-default-note-width-normal').click()
+    await expect(page.getByTestId('mobile-command-palette')).toBeHidden()
+  })
+
   test('dispatches selected-folder commands from the tablet command palette', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'tablet-landscape', 'Command palette action checks use the full-width tablet layout.')
 

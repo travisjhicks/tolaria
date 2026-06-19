@@ -35,10 +35,7 @@ describe('mobile desktop command parity', () => {
     expect(entries.every((entry) => entry.evidence.length > 0)).toBe(true)
   })
 
-  it('keeps known dynamic command deferrals explicit', () => {
-    expect(mobileDesktopDynamicCommandParityGaps().map((entry) => entry.desktopId)).toEqual([
-      'set-default-note-width-normal',
-      'set-default-note-width-wide',
-    ])
+  it('keeps mobile-relevant desktop dynamic command deferrals closed', () => {
+    expect(mobileDesktopDynamicCommandParityGaps()).toEqual([])
   })
 })

@@ -67,8 +67,8 @@ const dynamicCommandDefinitions = {
     implemented('toggle-raw-editor', 'edit-toggle-raw-editor', 'mobile editor toolbar toggles source/WYSIWYG mode'),
     implemented('set-note-width-normal', 'set-note-width-normal', 'mobile note commands persist normal width on the active note'),
     implemented('set-note-width-wide', 'set-note-width-wide', 'mobile note commands persist wide width on the active note'),
-    deferred('set-default-note-width-normal', 'mobile has no app-settings persistence boundary for desktop default note width yet'),
-    deferred('set-default-note-width-wide', 'mobile has no app-settings persistence boundary for desktop default note width yet'),
+    implemented('set-default-note-width-normal', 'set-default-note-width-normal', 'mobile command palette persists normal default note width through vault config'),
+    implemented('set-default-note-width-wide', 'set-default-note-width-wide', 'mobile command palette persists wide default note width through vault config'),
     outOfScope('toggle-ai-panel', 'AI is explicitly excluded from the mobile editing foundation'),
     outOfScope('new-ai-chat', 'AI is explicitly excluded from the mobile editing foundation'),
     implemented('toggle-table-of-contents', 'view-toggle-table-of-contents', 'mobile editor actions open the Table of Contents sheet'),
@@ -109,10 +109,6 @@ function adapted(
   evidence: string,
 ): MobileDesktopDynamicCommandDefinition {
   return { desktopId, evidence, mobileId, status: 'mobile-adapted' }
-}
-
-function deferred(desktopId: string, evidence: string): MobileDesktopDynamicCommandDefinition {
-  return { desktopId, evidence, status: 'deferred' }
 }
 
 function outOfScope(desktopId: string, evidence: string): MobileDesktopDynamicCommandDefinition {

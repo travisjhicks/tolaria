@@ -7,6 +7,7 @@ import type {
 import type {
   MobileEditorBlock,
   MobileNote,
+  MobileNoteWidth,
   MobilePropertyValue,
   MobileSidebarIcon,
   MobileTone,
@@ -97,6 +98,7 @@ export type TabletWorkspaceChromeProps = {
   canDeleteType: boolean
   compactTablet: boolean
   defaultPropertiesVisible: boolean
+  defaultNoteWidth: MobileNoteWidth | null
   editorBlocks: MobileEditorBlock[]
   editorBullets: string[]
   initialEditorEditing?: boolean
@@ -235,6 +237,7 @@ export type TabletWorkspaceChromeProps = {
   onSelectNote: (noteId: NoteId) => void
   onSelectSidebarItem: (selection: MobileSidebarItemSelection) => void
   onSetArchived: (archived: boolean) => void
+  onSetDefaultNoteWidth: (mode: MobileNoteWidth) => void
   onSetOrganized: (organized: boolean) => void
   onToggleFavorite: () => void
   onToggleNoteWidth: () => void

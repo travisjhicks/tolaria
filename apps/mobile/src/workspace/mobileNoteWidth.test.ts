@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { workspaceScenarioForId } from '../fixtures/workspaceFixtures'
-import { applyMobileWorkspaceEdit } from './mobileWorkspaceEditing'
-import { normalizeMobileNoteWidth, toggleMobileNoteWidth } from './mobileNoteWidth'
+import { applyMobileWorkspaceEdit, applyMobileWorkspaceEditWithWrites } from './mobileWorkspaceEditing'
+import {
+  mobileNoteWithResolvedWidth,
+  normalizeMobileNoteWidth,
+  resolveMobileNoteWidth,
+  toggleMobileNoteWidth,
+} from './mobileNoteWidth'
 
 describe('normalizeMobileNoteWidth', () => {
   it.each([
@@ -24,6 +29,22 @@ describe('toggleMobileNoteWidth', () => {
     ['wide', 'normal'],
   ] as const)('toggles %s to %s', (value, expected) => {
     expect(toggleMobileNoteWidth(value)).toBe(expected)
+  })
+})
+
+describe('resolveMobileNoteWidth', () => {
+  it('prefers explicit note width over the persisted default', () => {
+    expect(resolveMobileNoteWidth('normal', 'wide')).toBe('normal')
+    expect(resolveMobileNoteWidth(null, 'wide')).toBe('wide')
+    expect(resolveMobileNoteWidth(null, null)).toBe('normal')
+  })
+
+  it('resolves note objects without mutating the source note', () => {
+    const note = workspaceScenarioForId('default').notes[0]!
+    const resolved = mobileNoteWithResolvedWidth(note, 'wide')
+
+    expect(note.noteWidth).toBeUndefined()
+    expect(resolved.noteWidth).toBe('wide')
   })
 })
 
@@ -50,5 +71,18 @@ describe('mobile note width metadata', () => {
     const note = result.notes.find((candidate) => candidate.id === 'workflow-orchestration')
     expect(note?.rawContent).toContain('_width: wide')
     expect(note?.noteWidth).toBe('wide')
+  })
+
+  it('persists desktop-compatible default note width through vault config writes', () => {
+    const result = applyMobileWorkspaceEditWithWrites(workspaceScenarioForId('default'), {
+      mode: 'wide',
+      type: 'setDefaultNoteWidth',
+    })
+
+    expect(result.snapshot.vaultConfig).toEqual({ defaultNoteWidth: 'wide' })
+    expect(result.writes).toEqual([{
+      config: { defaultNoteWidth: 'wide' },
+      kind: 'saveVaultConfig',
+    }])
   })
 })

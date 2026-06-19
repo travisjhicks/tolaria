@@ -25,7 +25,9 @@ import type {
   ReadOnlyWorkspaceRequest,
 } from '../workspace/readOnlyWorkspaceRepository'
 import { isMobileMarkdownNote } from '../workspace/mobileNoteFilters'
+import { mobileNoteWithResolvedWidth } from '../workspace/mobileNoteWidth'
 import { canMoveMobileSavedView, evaluateMobileSavedView } from '../workspace/mobileSavedViews'
+import { mobileDefaultNoteWidthFromVaultConfig } from '../workspace/mobileVaultConfig'
 import {
   removeTypeSchemaPropertyAt,
   removeTypeSchemaRelationshipAt,
@@ -177,7 +179,11 @@ export function useTabletWorkspaceController({
   const { readOnlyForm, resetForm, updateReadOnlyForm } = useReadOnlyFormState()
   const [searchQuery, setSearchQuery] = useState('')
   const navigation = useTabletWorkspaceNavigation(workspaceSnapshot, searchQuery)
-  const { selectedNote, setSelectedNoteId } = navigation
+  const { setSelectedNoteId } = navigation
+  const defaultNoteWidth = mobileDefaultNoteWidthFromVaultConfig(workspaceSnapshot.vaultConfig)
+  const selectedNote = navigation.selectedNote
+    ? mobileNoteWithResolvedWidth(navigation.selectedNote, defaultNoteWidth)
+    : null
   const applyEdit = useControllerApplyEdit({ applyWorkspaceEdit, navigation, setSelectedNoteId })
   const closeAction = useCloseWorkspaceAction({ resetForm, setOpenAction })
   const saveSelectedEdit = useSaveSelectedEdit({ applyEdit, closeAction, selectedNote })
@@ -252,7 +258,9 @@ export function useTabletWorkspaceController({
     openAction,
     readOnlyForm,
     searchQuery,
+    defaultNoteWidth,
     snapshot: workspaceSnapshot,
+    selectedNote,
     vaultRootUri: repositoryRequest?.vaultRootUri ?? null,
     canRedoWorkspaceEdit,
     canUndoWorkspaceEdit,

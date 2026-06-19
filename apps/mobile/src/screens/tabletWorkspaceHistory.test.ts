@@ -515,6 +515,25 @@ describe('tablet workspace editing history', () => {
     }])
   })
 
+  it('undoes and redoes persisted default note width', () => {
+    const previousSnapshot = workspaceScenarioForId('default')
+    const { redoWrites, redoneSnapshot, undoWrites, undoneSnapshot } = historyRoundTripWithWrites(previousSnapshot, {
+      mode: 'wide',
+      type: 'setDefaultNoteWidth',
+    })
+
+    expect(undoneSnapshot.vaultConfig).toEqual({ defaultNoteWidth: 'normal' })
+    expect(undoWrites).toEqual([{
+      config: undoneSnapshot.vaultConfig,
+      kind: 'saveVaultConfig',
+    }])
+    expect(redoneSnapshot.vaultConfig).toEqual({ defaultNoteWidth: 'wide' })
+    expect(redoWrites).toEqual([{
+      config: redoneSnapshot.vaultConfig,
+      kind: 'saveVaultConfig',
+    }])
+  })
+
   it('undoes primary note-list display resets back to the previous persisted override', () => {
     const previousSnapshot = {
       ...workspaceScenarioForId('default'),
