@@ -9,6 +9,7 @@ import {
   CheckCircle,
   FolderOpen,
   MagnifyingGlass,
+  MapTrifold,
   PencilSimple,
   Smiley,
   Star,
@@ -28,6 +29,7 @@ export function NoteMoreActionRows(props: {
   note: MobileNote
   onClose: () => void
   onDeleteNote: () => void
+  onEnterNeighborhood: (noteId: string) => void
   onOpenChangeNoteType: () => void
   onOpenFindInNote: () => void
   onOpenMoveNoteToFolder: () => void
@@ -50,6 +52,7 @@ export function NoteMoreActionRows(props: {
     <>
       <NoteStateActionRows {...props} />
       <NoteEditorActionRows {...props} />
+      <NoteNavigationActionRows {...props} />
       <NoteHistoryActionRows {...props} />
       <NoteIconActionRows {...props} />
       <NoteFileActionRows {...props} />
@@ -174,6 +177,28 @@ function NoteEditorActionRows({
         onPress={onOpenReplaceInNote}
       />
     </>
+  )
+}
+
+function NoteNavigationActionRows({
+  note,
+  onClose,
+  onEnterNeighborhood,
+}: {
+  note: MobileNote
+  onClose: () => void
+  onEnterNeighborhood: (noteId: string) => void
+}) {
+  return (
+    <ActionRow
+      icon={<MapTrifold color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
+      label={mobileText('editor.toolbar.openNeighborhood')}
+      testID="workspace-action-open-neighborhood"
+      onPress={() => {
+        onEnterNeighborhood(note.id)
+        onClose()
+      }}
+    />
   )
 }
 

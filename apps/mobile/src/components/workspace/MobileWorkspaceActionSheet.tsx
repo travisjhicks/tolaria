@@ -120,6 +120,7 @@ type MobileWorkspaceActionSheetProps = {
   onCreateView: () => void
   onDeleteFolder: () => void
   onDeleteNote: () => void
+  onEnterNeighborhood: (noteId: string) => void
   onExportNoteAsPdf: () => void
   onDeleteType: () => void
   onDeleteView: () => void
@@ -1028,6 +1029,7 @@ function MoreActionsContent(props: MobileWorkspaceActionSheetProps) {
           canUndoWorkspaceEdit={props.canUndoWorkspaceEdit}
           onClose={props.onClose}
           onDeleteNote={props.onDeleteNote}
+          onEnterNeighborhood={props.onEnterNeighborhood}
           onOpenChangeNoteType={props.onOpenChangeNoteType}
           onOpenFindInNote={props.onOpenFindInNote}
           onOpenMoveNoteToFolder={props.onOpenMoveNoteToFolder}
