@@ -89,6 +89,7 @@ Workspace surfaces now sit one level above those primitives:
 | `PhoneWorkspace` | Phone shell that reuses the tablet controller/repository boundary while adapting navigation to list, sidebar, editor, and properties screens |
 | `MobileWorkspaceSidebar` | Sidebar groups, counts, and folder tree |
 | `MobileNoteListPanel` | Note-list toolbar, rows, chips, and empty state |
+| `MobileCommandPalette` / `mobileCommandPalette.ts` | Desktop-ID-preserving mobile command search over existing workspace callbacks |
 | `MobileWorkspaceActionSheet` | Search, create, property, relationship, and more-action sheets |
 | `TabletEditorPanel` | Editor rendering plus full raw markdown/frontmatter editing with wikilink suggestions |
 | `MobilePropertiesPanel` | Scalar properties, tags, and typed relationship display/removal |

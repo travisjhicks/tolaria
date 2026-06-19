@@ -120,6 +120,13 @@ export const mobileParityInventory = [
     surface: 'Read-only workspace action sheets',
   },
   {
+    assertions: ['command-palette model tests for desktop command IDs, grouping, filtering, enabled-state, and callback dispatch'],
+    contracts: ['desktopPanelParity', 'desktopToolbarActionParity'],
+    desktopSource: 'CommandPalette.tsx, appCommandManifest.json, and desktop command registry builders',
+    mobileFile: 'src/components/workspace/MobileCommandPalette.tsx',
+    surface: 'Workspace command palette',
+  },
+  {
     assertions: ['note-more action user-flow checks', 'source-backed markdown table and tldraw edit checks'],
     contracts: ['desktopPanelParity', 'desktopToolbarActionParity'],
     desktopSource: 'Desktop note context menu, BreadcrumbBar note actions, editor command actions, markdown tables, and tldraw fenced markdown persistence',

@@ -39,7 +39,7 @@ const parityDefinitions = {
   viewToggleAiChat: outOfScope('AI is explicitly excluded from the mobile editing foundation'),
   viewToggleTableOfContents: implemented('mobile Table of Contents sheet'),
   viewToggleBacklinks: adapted('mobile properties reference groups expose backlinks and inverse refs'),
-  viewCommandPalette: gap('mobile needs a command-palette surface over the existing action callbacks'),
+  viewCommandPalette: implemented('mobile command palette surface uses shared desktop command IDs over existing mobile callbacks'),
   viewZoomIn: outOfScope('desktop window zoom is installation chrome, not vault editing logic'),
   viewZoomOut: outOfScope('desktop window zoom is installation chrome, not vault editing logic'),
   viewZoomReset: outOfScope('desktop window zoom is installation chrome, not vault editing logic'),
@@ -105,8 +105,4 @@ function adapted(evidence: string): MobileDesktopCommandParityDefinition {
 
 function outOfScope(evidence: string): MobileDesktopCommandParityDefinition {
   return { evidence, status: 'out-of-scope' }
-}
-
-function gap(evidence: string): MobileDesktopCommandParityDefinition {
-  return { evidence, status: 'gap' }
 }

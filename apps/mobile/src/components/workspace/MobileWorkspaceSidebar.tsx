@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import {
   Archive,
   CaretDown,
+  Command,
   FileText,
   FolderOpen,
   Eye,
@@ -61,6 +62,7 @@ type MobileWorkspaceSidebarProps = {
   onCreateView?: () => void
   onOpenFolderActions?: (selection: MobileSidebarFolderSelection) => void
   onOpenFavoriteActions?: (selection: MobileSidebarItemSelection) => void
+  onOpenCommandPalette?: () => void
   onOpenPrimaryActions?: (selection: MobileSidebarItemSelection) => void
   onOpenTypeVisibility?: () => void
   onOpenTypeActions?: (selection: MobileSidebarItemSelection) => void
@@ -96,6 +98,7 @@ export function MobileWorkspaceSidebar(props: MobileWorkspaceSidebarProps) {
     onCreateView,
     onOpenFolderActions,
     onOpenFavoriteActions,
+    onOpenCommandPalette,
     onOpenPrimaryActions,
     onOpenTypeVisibility,
     onOpenTypeActions,
@@ -114,6 +117,17 @@ export function MobileWorkspaceSidebar(props: MobileWorkspaceSidebarProps) {
           <SidebarSimple color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />
         </MobileIconButton>
         <Text numberOfLines={1} style={styles.vaultTitle} testID="sidebar-toolbar-title">{title}</Text>
+        {onOpenCommandPalette ? (
+          <View style={styles.toolbarActions}>
+            <MobileIconButton
+              accessibilityLabel={mobileText('menu.view.commandPalette')}
+              testID="sidebar-command-palette-action"
+              onPress={onOpenCommandPalette}
+            >
+              <Command color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />
+            </MobileIconButton>
+          </View>
+        ) : null}
       </MobileToolbar>
       <ScrollView {...layoutProbe.probe('sidebar.scroll')} contentContainerStyle={styles.content}>
         {sections.map((section) => (
@@ -580,6 +594,9 @@ const panelStyles = StyleSheet.create({
     paddingTop: desktopSidebarParity.topNavPadding.top,
   },
   section: { borderBottomColor: mobileColors.border, borderBottomWidth: StyleSheet.hairlineWidth },
+  toolbarActions: {
+    marginLeft: 'auto',
+  },
   vaultTitle: {
     flex: 1,
     color: mobileColors.text,

@@ -168,6 +168,8 @@ Mobile note PDF export follows that same boundary. `apps/mobile/src/workspace/mo
 
 Mobile attachment import and opening also follow the controller/editor callback boundary. `apps/mobile/src/workspace/mobileAttachmentImport.native.ts` uses `expo-document-picker` plus the Expo FileSystem object API to copy selected files into the active vault's `attachments/` directory, while `mobileAttachments.ts` owns safe filenames and portable Markdown image/link serialization. `apps/mobile/src/workspace/mobileAttachmentUris.ts` is the native-boundary adapter that resolves portable `attachments/...` Markdown targets to Expo file URIs for TenTap/link opening, then converts vault-local file URIs back to portable Markdown before save. Source and WYSIWYG editor surfaces receive importer/open-link callbacks and attachment payloads instead of importing native picker, sharing, or filesystem modules directly.
 
+The mobile command palette mirrors the desktop command boundary without importing desktop React hooks. `apps/mobile/src/workspace/mobileCommandPalette.ts` builds enabled mobile command rows from existing workspace callbacks, preserving shared IDs from `src/shared/appCommandManifest.json` when a command is manifest-backed and using desktop dynamic command-palette IDs for rows such as note retargeting. `apps/mobile/src/components/workspace/MobileCommandPalette.tsx` owns only the native searchable/grouped surface; create/search/navigation/note/view/settings execution remains in the reducer/controller callbacks.
+
 ## System Overview
 
 ```mermaid

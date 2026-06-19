@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
   CaretLeft,
+  Command,
   Info,
   List,
 } from 'phosphor-react-native'
@@ -22,6 +23,8 @@ import {
   type ReadOnlyWorkspaceRepository,
   type ReadOnlyWorkspaceRequest,
 } from '../workspace/readOnlyWorkspaceRepository'
+import { MobileCommandPalette } from '../components/workspace/MobileCommandPalette'
+import { buildMobileCommandPaletteCommands } from '../workspace/mobileCommandPalette'
 import { TabletEditorPanel } from './TabletEditorPanel'
 import type { EditorEditingMode } from './TabletEditorPanel'
 import { WorkspaceActionSheetHost } from './TabletWorkspace'
@@ -82,6 +85,15 @@ export function PhoneWorkspace({
     if (noteId) controller.onSelectNote(noteId)
     setPhoneState('editor')
   }, [controller, setPhoneState])
+  const commandPalette = usePhoneCommandPalette({
+    controller,
+    onOpenNativeVault,
+    openEditor,
+    openList,
+    openProperties,
+    openSidebar,
+    phoneState,
+  })
   const openNeighborhoodList = useCallback((noteId: string) => {
     controller.onEnterNeighborhood(noteId)
     setPhoneState('list')
@@ -104,12 +116,12 @@ export function PhoneWorkspace({
     initialEditorEditing,
     initialEditorEditingMode,
     openEditor,
+    openCommandPalette: commandPalette.open,
     openList,
     openProperties,
     openSidebar,
     suggestionNotes,
   })
-
   return (
     <View {...phoneLayoutProbe.probe('phone.root')} style={styles.root}>
       <PhoneWorkspaceTransition
@@ -125,6 +137,7 @@ export function PhoneWorkspace({
           initialEditorEditingMode={initialEditorEditingMode}
           layoutProbe={layoutProbe}
           openEditor={openEditor}
+          openCommandPalette={commandPalette.open}
           openList={openList}
           openProperties={openProperties}
           openSidebar={openSidebar}
@@ -152,8 +165,49 @@ export function PhoneWorkspace({
         onEnterNeighborhood={openNeighborhoodList}
       />
       <MobileSyncStatusBar sync={controller.snapshot.sync} onOpenLocalVault={onOpenNativeVault} />
+      {commandPalette.element}
     </View>
   )
+}
+
+function usePhoneCommandPalette({
+  controller,
+  onOpenNativeVault,
+  openEditor,
+  openList,
+  openProperties,
+  openSidebar,
+  phoneState,
+}: {
+  controller: PhoneWorkspaceController
+  onOpenNativeVault?: () => void
+  openEditor: (noteId?: string) => void
+  openList: () => void
+  openProperties: () => void
+  openSidebar: () => void
+  phoneState: PhoneWorkspaceState
+}) {
+  const [visible, setVisible] = useState(false)
+  const open = useCallback(() => setVisible(true), [])
+  const close = useCallback(() => setVisible(false), [])
+  const toggleProperties = useCallback(() => {
+    if (phoneState === 'properties') openEditor()
+    else openProperties()
+  }, [openEditor, openProperties, phoneState])
+  const commands = useMemo(() => buildMobileCommandPaletteCommands({
+    ...controller,
+    onOpenBacklinks: openProperties,
+    onOpenNativeVault,
+    onToggleProperties: toggleProperties,
+    onViewAll: openSidebar,
+    onViewEditorList: openList,
+    onViewEditorOnly: openEditor,
+  }), [controller, onOpenNativeVault, openEditor, openList, openProperties, openSidebar, toggleProperties])
+
+  return {
+    element: visible ? <MobileCommandPalette commands={commands} onClose={close} /> : null,
+    open,
+  }
 }
 
 function usePhoneState(initialState: PhoneWorkspaceState) {
@@ -266,6 +320,7 @@ function phoneWorkspaceDragPreview({
   initialEditorEditing,
   initialEditorEditingMode,
   openEditor,
+  openCommandPalette,
   openList,
   openProperties,
   openSidebar,
@@ -276,6 +331,7 @@ function phoneWorkspaceDragPreview({
   initialEditorEditing: boolean
   initialEditorEditingMode: EditorEditingMode
   openEditor: (noteId?: string) => void
+  openCommandPalette: () => void
   openList: () => void
   openProperties: () => void
   openSidebar: () => void
@@ -290,6 +346,7 @@ function phoneWorkspaceDragPreview({
       initialEditorEditingMode={initialEditorEditingMode}
       layoutProbe={false}
       openEditor={openEditor}
+      openCommandPalette={openCommandPalette}
       openList={openList}
       openProperties={openProperties}
       openSidebar={openSidebar}
@@ -314,6 +371,7 @@ type PhoneWorkspaceStateViewProps = {
   initialEditorEditingMode: EditorEditingMode
   layoutProbe: boolean
   openEditor: (noteId?: string) => void
+  openCommandPalette: () => void
   openList: () => void
   openProperties: () => void
   openSidebar: () => void
@@ -351,6 +409,7 @@ function phoneSwipePreviewHandlers(phoneSwipePreview: PhoneSwipePreview) {
 function PhoneNoteListScreen({
   controller,
   layoutProbe,
+  openCommandPalette,
   openEditor,
   openSidebar,
   phoneLayoutProbe,
@@ -374,9 +433,12 @@ function PhoneNoteListScreen({
         fullWidth
         layoutProbe={layoutProbe}
         leading={(
-          <MobileIconButton accessibilityLabel={mobileText('sidebar.action.expand')} testID="phone-sidebar-action" onPress={openSidebar}>
-            <List color={mobileColors.textMuted} size={18} />
-          </MobileIconButton>
+          <View style={styles.leadingActions}>
+            <MobileIconButton accessibilityLabel={mobileText('sidebar.action.expand')} testID="phone-sidebar-action" onPress={openSidebar}>
+              <List color={mobileColors.textMuted} size={18} />
+            </MobileIconButton>
+            <PhoneCommandPaletteButton onPress={openCommandPalette} />
+          </View>
         )}
         neighborhood={controller.noteListNeighborhood}
         noteListFilter={controller.noteListFilter}
@@ -400,6 +462,7 @@ function PhoneNoteListScreen({
 function PhoneSidebarDrawer({
   controller,
   layoutProbe,
+  openCommandPalette,
   openEditor,
   openList,
   phoneLayoutProbe,
@@ -459,6 +522,7 @@ function PhoneSidebarDrawer({
           onOpenViewActions={controller.onOpenViewActions}
           onSelectFolder={selectFolder}
           onSelectItem={selectItem}
+          onOpenCommandPalette={openCommandPalette}
           onCollapse={openList}
         />
       </View>
@@ -472,6 +536,7 @@ function PhoneEditorScreen({
   initialEditorEditingMode,
   layoutProbe,
   openList,
+  openCommandPalette,
   openProperties,
   phoneLayoutProbe,
   phoneSwipePreview,
@@ -496,6 +561,7 @@ function PhoneEditorScreen({
       <PhoneEditorTopBar
         title={controller.selectedNote?.title ?? ''}
         onBack={openList}
+        onOpenCommandPalette={openCommandPalette}
         onOpenProperties={openProperties}
       />
       <PhoneEditorBody
@@ -519,10 +585,12 @@ function PhoneEditorScreen({
 
 function PhoneEditorTopBar({
   onBack,
+  onOpenCommandPalette,
   onOpenProperties,
   title,
 }: {
   onBack: () => void
+  onOpenCommandPalette: () => void
   onOpenProperties: () => void
   title: string
 }) {
@@ -535,6 +603,7 @@ function PhoneEditorTopBar({
       >
         <Info color={mobileColors.textMuted} size={18} />
       </MobileIconButton>
+      <PhoneCommandPaletteButton onPress={onOpenCommandPalette} />
     </PhoneTopBar>
   )
 }
@@ -597,6 +666,7 @@ function PhoneEditorBody({
 function PhonePropertiesScreen({
   controller,
   openEditor,
+  openCommandPalette,
   openList,
   phoneLayoutProbe,
   phoneSwipePreview,
@@ -614,7 +684,9 @@ function PhonePropertiesScreen({
 
   return (
     <View {...swipeHandlers} {...probeProps(phoneLayoutProbe, 'phone.properties.screen')} style={styles.screen} testID="phone-properties-screen">
-      <PhoneTopBar title={mobileText('inspector.title.properties')} onBack={returnToEditor} />
+      <PhoneTopBar title={mobileText('inspector.title.properties')} onBack={returnToEditor}>
+        <PhoneCommandPaletteButton onPress={openCommandPalette} />
+      </PhoneTopBar>
       <MobilePropertiesPanel
         compact
         fullWidth
@@ -631,6 +703,18 @@ function PhonePropertiesScreen({
         onSelectNote={openEditor}
       />
     </View>
+  )
+}
+
+function PhoneCommandPaletteButton({ onPress }: { onPress: () => void }) {
+  return (
+    <MobileIconButton
+      accessibilityLabel={mobileText('menu.view.commandPalette')}
+      testID="phone-command-palette-action"
+      onPress={onPress}
+    >
+      <Command color={mobileColors.textMuted} size={18} />
+    </MobileIconButton>
   )
 }
 
@@ -700,6 +784,11 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: mobileColors.app,
+  },
+  leadingActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: mobileSpace.xs,
   },
   screen: {
     flex: 1,

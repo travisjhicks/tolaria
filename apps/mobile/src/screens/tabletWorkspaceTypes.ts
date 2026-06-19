@@ -159,6 +159,7 @@ export type TabletWorkspaceChromeProps = {
   onOpenTypeVisibility: () => void
   onOpenViewActions: (selection: MobileSidebarItemSelection) => void
   onOpenMoreActions: () => void
+  onOpenNativeVault?: () => void
   onOpenReplaceInNote: () => void
   onOpenRenameNoteFile: () => void
   onOpenSetNoteIcon: () => void

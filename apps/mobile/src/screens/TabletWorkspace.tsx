@@ -1,5 +1,6 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Dimensions, Platform, StyleSheet, useWindowDimensions, View } from 'react-native'
+import { MobileCommandPalette } from '../components/workspace/MobileCommandPalette'
 import { MobileNoteListPanel } from '../components/workspace/MobileNoteListPanel'
 import { MobilePropertiesPanel } from '../components/workspace/MobilePropertiesPanel'
 import { MobileSyncStatusBar } from '../components/workspace/MobileSyncStatusBar'
@@ -14,6 +15,7 @@ import {
 import { mobileColors } from '../ui/tokens'
 import { useHorizontalSwipe } from '../ui/useHorizontalSwipe'
 import { mobileNoteIdForWikilinkTarget } from '../workspace/mobileWikilinks'
+import { buildMobileCommandPaletteCommands } from '../workspace/mobileCommandPalette'
 import { TabletEditorPanel } from './TabletEditorPanel'
 import type { TabletPanel, TabletWorkspaceChromeProps } from './tabletWorkspaceTypes'
 import { useTabletWorkspaceController } from './useTabletWorkspaceController'
@@ -61,6 +63,7 @@ export function TabletWorkspace({
         initialEditorEditing={initialEditorEditing}
         initialEditorEditingMode={initialEditorEditingMode}
         layoutProbe={layoutProbe}
+        onOpenNativeVault={onOpenNativeVault}
         sourceSelectionProbe={sourceSelectionProbe}
         wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
         wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
@@ -88,9 +91,21 @@ function useTabletScreenMode() {
 }
 
 function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
-  const { compactTablet, defaultPropertiesVisible, onSelectNote, snapshot } = props
+  const { compactTablet, defaultPropertiesVisible, onOpenNativeVault, onSelectNote, snapshot } = props
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const gestures = useTabletPanelGestures(compactTablet, defaultPropertiesVisible)
   const suggestionNotes = snapshot.allNotes ?? snapshot.notes
+  const openCommandPalette = useCallback(() => setCommandPaletteOpen(true), [])
+  const closeCommandPalette = useCallback(() => setCommandPaletteOpen(false), [])
+  const commandPaletteCommands = useMemo(() => buildMobileCommandPaletteCommands({
+    ...props,
+    onOpenBacklinks: gestures.showProperties,
+    onOpenNativeVault,
+    onToggleProperties: gestures.toggleProperties,
+    onViewAll: gestures.showAllPanels,
+    onViewEditorList: gestures.showEditorList,
+    onViewEditorOnly: gestures.showEditorOnly,
+  }), [gestures, onOpenNativeVault, props])
   const handleNavigateWikilink = useCallback((target: string) => {
     const noteId = mobileNoteIdForWikilinkTarget(suggestionNotes, target)
     if (noteId) onSelectNote(noteId)
@@ -98,7 +113,7 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
 
   return (
     <View style={styles.shell}>
-      <TabletSidebarHost {...props} gestures={gestures} />
+      <TabletSidebarHost {...props} gestures={gestures} onOpenCommandPalette={openCommandPalette} />
       <TabletNoteListHost {...props} gestures={gestures} />
       <TabletEditorPanelHost
         {...props}
@@ -107,12 +122,14 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
       />
       <TabletPropertiesPanelHost {...props} gestures={gestures} />
       <WorkspaceActionSheetHost {...props} suggestionNotes={suggestionNotes} />
+      {commandPaletteOpen ? <MobileCommandPalette commands={commandPaletteCommands} onClose={closeCommandPalette} /> : null}
     </View>
   )
 }
 
 type TabletPanelGestures = ReturnType<typeof useTabletPanelGestures>
 type TabletPanelHostProps = TabletWorkspaceChromeProps & { gestures: TabletPanelGestures }
+type TabletSidebarHostProps = TabletPanelHostProps & { onOpenCommandPalette: () => void }
 
 function TabletSidebarHost({
   activeFolderId,
@@ -124,6 +141,7 @@ function TabletSidebarHost({
   onOpenCreateView,
   onOpenFolderActions,
   onOpenFavoriteActions,
+  onOpenCommandPalette,
   onOpenPrimaryActions,
   onOpenTypeActions,
   onOpenTypeVisibility,
@@ -131,7 +149,7 @@ function TabletSidebarHost({
   onSelectFolder,
   onSelectSidebarItem,
   snapshot,
-}: TabletPanelHostProps) {
+}: TabletSidebarHostProps) {
   if (!gestures.showSidebar) return <SwipeRail edge="left" swipeHandlers={gestures.sidebarRevealSwipe} />
 
   return (
@@ -147,6 +165,7 @@ function TabletSidebarHost({
         onCreateView={onOpenCreateView}
         onOpenFolderActions={onOpenFolderActions}
         onOpenFavoriteActions={onOpenFavoriteActions}
+        onOpenCommandPalette={onOpenCommandPalette}
         onOpenPrimaryActions={onOpenPrimaryActions}
         onOpenTypeActions={onOpenTypeActions}
         onOpenTypeVisibility={onOpenTypeVisibility}
@@ -563,6 +582,26 @@ function useTabletPanelGestures(compactTablet: boolean, defaultPropertiesVisible
   const showSidebar = !compactTablet && sidebarVisible
 
   return {
+    showAllPanels: useCallback(() => {
+      showPanel('sidebar')
+      showPanel('noteList')
+      showPanel('properties')
+    }, [showPanel]),
+    showEditorList: useCallback(() => {
+      hidePanel('sidebar')
+      showPanel('noteList')
+      hidePanel('properties')
+    }, [hidePanel, showPanel]),
+    showEditorOnly: useCallback(() => {
+      hidePanel('sidebar')
+      hidePanel('noteList')
+      hidePanel('properties')
+    }, [hidePanel]),
+    showProperties: useCallback(() => showPanel('properties'), [showPanel]),
+    toggleProperties: useCallback(() => {
+      if (propertiesVisible) hidePanel('properties')
+      else showPanel('properties')
+    }, [hidePanel, propertiesVisible, showPanel]),
     noteListRevealSwipe: useHorizontalSwipe({
       disabled: noteListVisible,
       onSwipeRight: () => showPanel('noteList'),
