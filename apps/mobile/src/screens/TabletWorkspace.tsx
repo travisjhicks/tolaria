@@ -370,6 +370,9 @@ function actionSheetValues(props: ActionSheetHostProps) {
 
 function actionSheetFormValues(readOnlyForm: ActionSheetHostProps['readOnlyForm']) {
   return {
+    allNotesShowImages: readOnlyForm.allNotesShowImages,
+    allNotesShowPdfs: readOnlyForm.allNotesShowPdfs,
+    allNotesShowUnsupported: readOnlyForm.allNotesShowUnsupported,
     createTitle: readOnlyForm.createTitle,
     filenameStem: readOnlyForm.filenameStem,
     folderName: readOnlyForm.folderName,
@@ -377,6 +380,7 @@ function actionSheetFormValues(readOnlyForm: ActionSheetHostProps['readOnlyForm'
     noteIcon: readOnlyForm.noteIcon,
     noteType: readOnlyForm.noteType,
     primaryDisplayProperties: readOnlyForm.primaryDisplayProperties,
+    primaryItemId: readOnlyForm.primaryItemId,
     primaryPropertyQuery: readOnlyForm.primaryPropertyQuery,
     propertyName: readOnlyForm.propertyName,
     propertyValue: readOnlyForm.propertyValue,
@@ -442,6 +446,9 @@ function actionSheetHandlers(props: ActionSheetHostProps) {
     onOpenReplaceInNote: props.onOpenReplaceInNote,
     onOpenRenameNoteFile: props.onOpenRenameNoteFile,
     onOpenSetNoteIcon: props.onOpenSetNoteIcon,
+    onPrimaryAllNotesShowImagesChange: props.onPrimaryAllNotesShowImagesChange,
+    onPrimaryAllNotesShowPdfsChange: props.onPrimaryAllNotesShowPdfsChange,
+    onPrimaryAllNotesShowUnsupportedChange: props.onPrimaryAllNotesShowUnsupportedChange,
     onPrimaryDisplayPropertiesChange: props.onPrimaryDisplayPropertiesChange,
     onPrimaryPropertyQueryChange: props.onPrimaryPropertyQueryChange,
     onPropertyNameChange: props.onPropertyNameChange,

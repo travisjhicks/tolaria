@@ -490,6 +490,38 @@ describe('tablet workspace editing history', () => {
     }])
   })
 
+  it('undoes and redoes All Notes file visibility with primary note-list settings', () => {
+    const previousSnapshot = workspaceScenarioForId('default')
+    const { redoWrites, redoneSnapshot, undoWrites, undoneSnapshot } = historyRoundTripWithWrites(previousSnapshot, {
+      allNotesFileVisibility: { images: true, pdfs: true, unsupported: false },
+      listPropertiesDisplay: ['status'],
+      target: 'allNotes',
+      type: 'updatePrimaryNoteListProperties',
+    })
+
+    expect(undoneSnapshot.vaultConfig).toEqual({
+      allNotes: {
+        fileVisibility: { images: false, pdfs: false, unsupported: false },
+        noteListProperties: null,
+      },
+    })
+    expect(undoWrites).toEqual([{
+      config: undoneSnapshot.vaultConfig,
+      kind: 'saveVaultConfig',
+    }])
+    expect(redoneSnapshot.noteListPropertyOverrides).toEqual({ allNotes: ['status'] })
+    expect(redoneSnapshot.vaultConfig).toEqual({
+      allNotes: {
+        fileVisibility: { images: true, pdfs: true, unsupported: false },
+        noteListProperties: ['status'],
+      },
+    })
+    expect(redoWrites).toEqual([{
+      config: redoneSnapshot.vaultConfig,
+      kind: 'saveVaultConfig',
+    }])
+  })
+
   it('records bulk note edits as one reversible history entry', () => {
     const previousSnapshot = snapshotWithEditableNotes([
       ['workflow-orchestration', '# Workflow Orchestration Essay\n\nBulk organize.\n'],

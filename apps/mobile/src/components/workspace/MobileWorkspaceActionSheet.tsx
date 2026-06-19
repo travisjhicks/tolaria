@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Pressable, ScrollView, StyleSheet, View, type NativeSyntheticEvent, type TextInputKeyPressEventData } from 'react-native'
-import { FilePlus, FolderOpen, LinkSimple, Star, Trash } from 'phosphor-react-native'
+import { CheckCircle, FilePlus, FolderOpen, LinkSimple, Star, Trash } from 'phosphor-react-native'
 import { Text } from '../ui/text'
 import { mobileText } from '../../i18n/mobileText'
 import { MobileButton } from '../../ui/MobileButton'
@@ -77,6 +77,9 @@ export type MobileWorkspaceAction =
 
 type MobileWorkspaceActionSheetProps = {
   action: MobileWorkspaceAction
+  allNotesShowImages: boolean
+  allNotesShowPdfs: boolean
+  allNotesShowUnsupported: boolean
   canMoveTypeDown: boolean
   canMoveTypeUp: boolean
   canMoveViewDown: boolean
@@ -95,6 +98,7 @@ type MobileWorkspaceActionSheetProps = {
   noteIcon: string
   noteType: string
   primaryDisplayProperties: string[]
+  primaryItemId: string
   primaryPropertyOptions: string[]
   primaryPropertyQuery: string
   onChangeNoteType: () => void
@@ -128,6 +132,9 @@ type MobileWorkspaceActionSheetProps = {
   onOpenReplaceInNote: () => void
   onOpenRenameNoteFile: () => void
   onOpenSetNoteIcon: () => void
+  onPrimaryAllNotesShowImagesChange: (value: boolean) => void
+  onPrimaryAllNotesShowPdfsChange: (value: boolean) => void
+  onPrimaryAllNotesShowUnsupportedChange: (value: boolean) => void
   onPrimaryDisplayPropertiesChange: (value: string[]) => void
   onPrimaryPropertyQueryChange: (value: string) => void
   onPropertyNameChange: (value: string) => void
@@ -658,11 +665,83 @@ function PrimaryListPropertiesContent(props: MobileWorkspaceActionSheetProps) {
         onQueryChange={props.onPrimaryPropertyQueryChange}
         onSelectedPropertiesChange={props.onPrimaryDisplayPropertiesChange}
       />
+      {props.primaryItemId === 'all-notes' ? <AllNotesFileVisibilityContent {...props} /> : null}
       <SheetFooter>
         <MobileButton label={mobileText('common.cancel')} variant="ghost" onPress={props.onClose} />
         <MobileButton label={mobileText('common.save')} variant="primary" onPress={props.onSavePrimaryNoteListProperties} />
       </SheetFooter>
     </ScrollView>
+  )
+}
+
+function AllNotesFileVisibilityContent({
+  allNotesShowImages,
+  allNotesShowPdfs,
+  allNotesShowUnsupported,
+  onPrimaryAllNotesShowImagesChange,
+  onPrimaryAllNotesShowPdfsChange,
+  onPrimaryAllNotesShowUnsupportedChange,
+}: MobileWorkspaceActionSheetProps) {
+  return (
+    <View style={styles.visibilitySection} testID="workspace-all-notes-file-visibility">
+      <View style={styles.visibilityHeader}>
+        <Text style={styles.visibilityTitle}>{mobileText('settings.allNotesVisibility.title')}</Text>
+        <Text style={styles.visibilityDescription}>{mobileText('settings.allNotesVisibility.description')}</Text>
+      </View>
+      <VisibilitySwitchRow
+        active={allNotesShowPdfs}
+        description={mobileText('settings.allNotesVisibility.pdfsDescription')}
+        label={mobileText('settings.allNotesVisibility.pdfs')}
+        testID="workspace-all-notes-show-pdfs"
+        onChange={onPrimaryAllNotesShowPdfsChange}
+      />
+      <VisibilitySwitchRow
+        active={allNotesShowImages}
+        description={mobileText('settings.allNotesVisibility.imagesDescription')}
+        label={mobileText('settings.allNotesVisibility.images')}
+        testID="workspace-all-notes-show-images"
+        onChange={onPrimaryAllNotesShowImagesChange}
+      />
+      <VisibilitySwitchRow
+        active={allNotesShowUnsupported}
+        description={mobileText('settings.allNotesVisibility.unsupportedDescription')}
+        label={mobileText('settings.allNotesVisibility.unsupported')}
+        testID="workspace-all-notes-show-unsupported"
+        onChange={onPrimaryAllNotesShowUnsupportedChange}
+      />
+    </View>
+  )
+}
+
+function VisibilitySwitchRow({
+  active,
+  description,
+  label,
+  onChange,
+  testID,
+}: {
+  active: boolean
+  description: string
+  label: string
+  onChange: (value: boolean) => void
+  testID: string
+}) {
+  return (
+    <Pressable
+      accessibilityLabel={label}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: active }}
+      aria-checked={active}
+      style={({ pressed }) => [styles.visibilityRow, pressed ? styles.visibilityRowPressed : null]}
+      testID={testID}
+      onPress={() => onChange(!active)}
+    >
+      <CheckCircle color={active ? mobileColors.primary : mobileColors.textFaint} size={16} weight={active ? 'fill' : 'regular'} />
+      <View style={styles.visibilityText}>
+        <Text style={styles.visibilityLabel}>{label}</Text>
+        <Text style={styles.visibilityDescription}>{description}</Text>
+      </View>
+    </Pressable>
   )
 }
 
@@ -1102,6 +1181,45 @@ const styles = StyleSheet.create({
     flex: 1,
     color: mobileColors.text,
     fontSize: mobileType.body,
+    fontWeight: '500',
+  },
+  visibilityDescription: {
+    color: mobileColors.textMuted,
+    fontSize: mobileType.caption,
+    lineHeight: 16,
+  },
+  visibilityHeader: {
+    gap: mobileSpace.xs,
+  },
+  visibilityLabel: {
+    color: mobileColors.text,
+    fontSize: mobileType.body,
+    fontWeight: '500',
+  },
+  visibilityRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: mobileSpace.sm,
+    borderRadius: 6,
+    padding: mobileSpace.sm,
+  },
+  visibilityRowPressed: {
+    backgroundColor: mobileColors.control,
+  },
+  visibilitySection: {
+    gap: mobileSpace.xs,
+    borderColor: mobileColors.border,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: mobileSpace.md,
+  },
+  visibilityText: {
+    minWidth: 0,
+    flex: 1,
+    gap: 2,
+  },
+  visibilityTitle: {
+    color: mobileColors.textMuted,
+    fontSize: mobileType.caption,
     fontWeight: '500',
   },
   sheet: {

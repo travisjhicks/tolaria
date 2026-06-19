@@ -31,6 +31,9 @@ import type { EditorEditingMode } from './TabletEditorPanel'
 
 export type TabletPanel = 'noteList' | 'properties' | 'sidebar'
 export type TabletReadOnlyForm = {
+  allNotesShowImages: boolean
+  allNotesShowPdfs: boolean
+  allNotesShowUnsupported: boolean
   createTitle: ReadOnlyFormValue
   editingFolderPath: ReadOnlyFormValue
   editingViewId: ReadOnlyFormValue
@@ -150,6 +153,9 @@ export type TabletWorkspaceChromeProps = {
   onOpenSetNoteIcon: () => void
   onOpenSearch: () => void
   onNoteListFilterChange: (filter: MobileNoteListFilter) => void
+  onPrimaryAllNotesShowImagesChange: (value: boolean) => void
+  onPrimaryAllNotesShowPdfsChange: (value: boolean) => void
+  onPrimaryAllNotesShowUnsupportedChange: (value: boolean) => void
   onRemoveRelationship: (noteId: NoteId, key: string, ref: string) => void
   onRenameFolder: () => void
   onSaveTypeDefinition: () => void

@@ -20,6 +20,7 @@ import {
   localVaultSnippet,
 } from './localVaultMarkdown'
 import type {
+  MobileAllNotesFileVisibility,
   MobileCreateNoteDefaults,
   MobileNote,
   MobileProperty,
@@ -131,7 +132,7 @@ export type MobileWorkspaceEdit =
   | { viewId: string; type: 'deleteView' }
   | { view: MobileSavedView; viewIndex?: number; type: 'restoreView' }
   | { direction: MobileViewMoveDirection; viewId: string; type: 'moveView' }
-  | { listPropertiesDisplay: string[]; target: 'allNotes' | 'inbox'; type: 'updatePrimaryNoteListProperties' }
+  | { allNotesFileVisibility?: MobileAllNotesFileVisibility; listPropertiesDisplay: string[]; target: 'allNotes' | 'inbox'; type: 'updatePrimaryNoteListProperties' }
   | { direction: MobileViewMoveDirection; type: 'moveTypeSection'; typeName: NoteTitle }
   | { type: 'createTypeDefinition'; typeName: NoteTitle }
   | { type: 'deleteTypeDefinition'; typeName: NoteTitle }
@@ -991,6 +992,7 @@ function updatePrimaryNoteListProperties(
     snapshot.vaultConfig,
     edit.target,
     edit.listPropertiesDisplay,
+    { allNotesFileVisibility: edit.allNotesFileVisibility },
   )
 
   return {

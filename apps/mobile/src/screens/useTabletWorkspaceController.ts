@@ -77,6 +77,9 @@ import { typeDefinitionSaveEdit } from './tabletWorkspaceTypeDefinitionSave'
 import { createViewInitialFilters } from './tabletWorkspaceViewHelpers'
 
 const emptyReadOnlyForm: TabletReadOnlyForm = {
+  allNotesShowImages: false,
+  allNotesShowPdfs: false,
+  allNotesShowUnsupported: false,
   createTitle: '',
   editingFolderPath: '',
   editingViewId: '',

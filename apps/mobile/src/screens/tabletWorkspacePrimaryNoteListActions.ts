@@ -1,6 +1,7 @@
 import type { MobileWorkspaceAction } from '../components/workspace/MobileWorkspaceActionSheet'
 import type { MobileSidebarItemSelection } from '../components/workspace/MobileWorkspaceSidebar'
 import type {
+  MobileAllNotesFileVisibility,
   MobileNote,
   MobileWorkspaceSnapshot,
 } from '../workspace/mobileWorkspaceModel'
@@ -8,6 +9,7 @@ import {
   normalizedDisplayProperties,
   type MobileWorkspaceEdit,
 } from '../workspace/mobileWorkspaceEditing'
+import { mobileAllNotesFileVisibilityFromVaultConfig } from '../workspace/mobileVaultConfig'
 import {
   mobileDefaultListPropertyDisplay,
   mobileListPropertySuggestions,
@@ -39,11 +41,15 @@ export function primaryNoteListWorkspaceActions({
   workspaceSnapshot: MobileWorkspaceSnapshot
 }) {
   return {
+    onPrimaryAllNotesShowImagesChange: (value: boolean) => updateReadOnlyForm('allNotesShowImages', value),
+    onPrimaryAllNotesShowPdfsChange: (value: boolean) => updateReadOnlyForm('allNotesShowPdfs', value),
+    onPrimaryAllNotesShowUnsupportedChange: (value: boolean) => updateReadOnlyForm('allNotesShowUnsupported', value),
     onPrimaryDisplayPropertiesChange: (value: string[]) => updateReadOnlyForm('primaryDisplayProperties', value),
     onPrimaryPropertyQueryChange: (value: string) => updateReadOnlyForm('primaryPropertyQuery', value),
     onSavePrimaryNoteListProperties: () => updatePrimaryNoteListProperties({
       applyEdit,
       closeAction,
+      allNotesFileVisibility: allNotesFileVisibilityForSave(readOnlyForm),
       displayProperties: readOnlyForm.primaryDisplayProperties,
       itemId: readOnlyForm.primaryItemId,
     }),
@@ -78,11 +84,13 @@ export function openPrimaryListProperties({
 
 function updatePrimaryNoteListProperties({
   applyEdit,
+  allNotesFileVisibility,
   closeAction,
   displayProperties,
   itemId,
 }: {
   applyEdit: ApplyWorkspaceEdit
+  allNotesFileVisibility?: MobileAllNotesFileVisibility
   closeAction: () => void
   displayProperties: string[]
   itemId: string
@@ -91,6 +99,7 @@ function updatePrimaryNoteListProperties({
   if (!target) return
 
   applyEdit({
+    allNotesFileVisibility,
     listPropertiesDisplay: normalizedDisplayProperties(displayProperties),
     target,
     type: 'updatePrimaryNoteListProperties',
@@ -117,11 +126,25 @@ function primaryListPropertyFields(
   selection: MobileSidebarItemSelection,
   snapshot: MobileWorkspaceSnapshot,
 ): ReadOnlyFormField[] {
+  const fileVisibility = mobileAllNotesFileVisibilityFromVaultConfig(snapshot.vaultConfig)
   return [
+    { key: 'allNotesShowImages', value: selection.id === 'all-notes' && fileVisibility.images },
+    { key: 'allNotesShowPdfs', value: selection.id === 'all-notes' && fileVisibility.pdfs },
+    { key: 'allNotesShowUnsupported', value: selection.id === 'all-notes' && fileVisibility.unsupported },
     { key: 'primaryDisplayProperties', value: primaryDisplayPropertiesForEdit(selection, snapshot) },
     { key: 'primaryItemId', value: selection.id },
     { key: 'primaryPropertyQuery', value: '' },
   ]
+}
+
+function allNotesFileVisibilityForSave(readOnlyForm: TabletReadOnlyForm): MobileAllNotesFileVisibility | undefined {
+  if (readOnlyForm.primaryItemId !== 'all-notes') return undefined
+
+  return {
+    images: readOnlyForm.allNotesShowImages,
+    pdfs: readOnlyForm.allNotesShowPdfs,
+    unsupported: readOnlyForm.allNotesShowUnsupported,
+  }
 }
 
 function primaryDisplayPropertiesForEdit(

@@ -1,4 +1,5 @@
 import type {
+  MobileAllNotesFileVisibility,
   MobileNote,
   MobileSavedView,
   MobileTypeDefinition,
@@ -9,6 +10,7 @@ import {
   type MobileWorkspaceEdit,
 } from '../workspace/mobileWorkspaceEditing'
 import { mobileNoteEditableContent } from '../workspace/mobileDocumentContent'
+import { mobileAllNotesFileVisibilityFromVaultConfig } from '../workspace/mobileVaultConfig'
 import { mobileWorkspacePathHistoryEntry } from './tabletWorkspacePathHistory'
 
 type WorkspaceHistoryEdit = MobileWorkspaceEdit
@@ -194,21 +196,14 @@ function primaryNoteListPropertiesHistoryEntry(
 ): MobileWorkspaceHistoryEntry | null {
   if (sourceEdit?.type !== 'updatePrimaryNoteListProperties') return null
 
-  const previousProperties = primaryNoteListProperties(previousSnapshot, sourceEdit.target)
-  const nextProperties = primaryNoteListProperties(nextSnapshot, sourceEdit.target)
-  if (sameList(previousProperties, nextProperties)) return null
+  const includeVisibility = shouldRecordAllNotesFileVisibility(previousSnapshot, nextSnapshot, sourceEdit)
+  const previousSettings = primaryNoteListSettings(previousSnapshot, sourceEdit.target, includeVisibility)
+  const nextSettings = primaryNoteListSettings(nextSnapshot, sourceEdit.target, includeVisibility)
+  if (samePrimaryNoteListSettings(previousSettings, nextSettings)) return null
 
   return {
-    redoEdits: [{
-      listPropertiesDisplay: nextProperties,
-      target: sourceEdit.target,
-      type: 'updatePrimaryNoteListProperties',
-    }],
-    undoEdits: [{
-      listPropertiesDisplay: previousProperties,
-      target: sourceEdit.target,
-      type: 'updatePrimaryNoteListProperties',
-    }],
+    redoEdits: [primaryNoteListHistoryEdit(sourceEdit.target, nextSettings)],
+    undoEdits: [primaryNoteListHistoryEdit(sourceEdit.target, previousSettings)],
   }
 }
 
@@ -355,6 +350,61 @@ function primaryNoteListProperties(
   target: 'allNotes' | 'inbox',
 ): string[] {
   return normalizedDisplayProperties(snapshot.noteListPropertyOverrides?.[target] ?? [])
+}
+
+function primaryNoteListSettings(
+  snapshot: MobileWorkspaceSnapshot,
+  target: 'allNotes' | 'inbox',
+  includeVisibility: boolean,
+) {
+  return {
+    allNotesFileVisibility: target === 'allNotes' && includeVisibility
+      ? mobileAllNotesFileVisibilityFromVaultConfig(snapshot.vaultConfig)
+      : undefined,
+    listPropertiesDisplay: primaryNoteListProperties(snapshot, target),
+  }
+}
+
+function primaryNoteListHistoryEdit(
+  target: 'allNotes' | 'inbox',
+  settings: ReturnType<typeof primaryNoteListSettings>,
+): WorkspaceHistoryEdit {
+  const edit: Extract<WorkspaceHistoryEdit, { type: 'updatePrimaryNoteListProperties' }> = {
+    listPropertiesDisplay: settings.listPropertiesDisplay,
+    target,
+    type: 'updatePrimaryNoteListProperties',
+  }
+  if (settings.allNotesFileVisibility) edit.allNotesFileVisibility = settings.allNotesFileVisibility
+  return edit
+}
+
+function shouldRecordAllNotesFileVisibility(
+  previousSnapshot: MobileWorkspaceSnapshot,
+  nextSnapshot: MobileWorkspaceSnapshot,
+  sourceEdit: Extract<MobileWorkspaceEdit, { type: 'updatePrimaryNoteListProperties' }>,
+) {
+  return sourceEdit.target === 'allNotes'
+    && (
+      sourceEdit.allNotesFileVisibility !== undefined
+      || previousSnapshot.vaultConfig?.allNotes?.fileVisibility !== undefined
+      || nextSnapshot.vaultConfig?.allNotes?.fileVisibility !== undefined
+    )
+}
+
+function samePrimaryNoteListSettings(
+  left: ReturnType<typeof primaryNoteListSettings>,
+  right: ReturnType<typeof primaryNoteListSettings>,
+) {
+  return sameList(left.listPropertiesDisplay, right.listPropertiesDisplay)
+    && sameAllNotesFileVisibility(left.allNotesFileVisibility, right.allNotesFileVisibility)
+}
+
+function sameAllNotesFileVisibility(
+  left: MobileAllNotesFileVisibility | undefined,
+  right: MobileAllNotesFileVisibility | undefined,
+) {
+  if (!left || !right) return left === right
+  return left.images === right.images && left.pdfs === right.pdfs && left.unsupported === right.unsupported
 }
 
 function sameList(left: string[], right: string[]): boolean {

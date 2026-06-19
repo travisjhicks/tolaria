@@ -8,6 +8,10 @@ import type {
 import { DEFAULT_MOBILE_ALL_NOTES_FILE_VISIBILITY } from './mobileNoteFilters'
 
 type PrimaryNoteListTarget = keyof MobilePrimaryNoteListPropertyOverrides
+type PrimaryNoteListSettings = {
+  allNotesFileVisibility?: MobileAllNotesFileVisibility
+  displayProperties: string[]
+}
 
 export function normalizedDisplayProperties(displayProperties: string[]) {
   const seen = new Set<string>()
@@ -25,16 +29,21 @@ export function mobileVaultConfigWithPrimaryNoteListProperties(
   config: MobileVaultConfig | null | undefined,
   target: PrimaryNoteListTarget,
   displayProperties: string[],
+  settings: Pick<PrimaryNoteListSettings, 'allNotesFileVisibility'> = {},
 ): MobileVaultConfig {
   const normalizedConfig = normalizeMobileVaultConfig(config)
   const nextProperties = normalizedDisplayProperties(displayProperties)
+  const nextTargetConfig: MobileVaultPrimaryNoteListConfig = {
+    ...(normalizedConfig[target] ?? {}),
+    noteListProperties: nextProperties.length > 0 ? nextProperties : null,
+  }
+  if (target === 'allNotes' && settings.allNotesFileVisibility) {
+    nextTargetConfig.fileVisibility = settings.allNotesFileVisibility
+  }
 
   return {
     ...normalizedConfig,
-    [target]: {
-      ...(normalizedConfig[target] ?? {}),
-      noteListProperties: nextProperties.length > 0 ? nextProperties : null,
-    },
+    [target]: nextTargetConfig,
   }
 }
 

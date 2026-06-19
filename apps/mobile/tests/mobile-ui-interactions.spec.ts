@@ -664,12 +664,21 @@ async function customizeAllNotesColumns(page: PageLike) {
   await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('All Notes')
   await longPress(page, 'sidebar-item-all-notes')
   await expect(page.getByTestId('workspace-action-sheet-editPrimaryListProperties')).toBeVisible()
+  await expect(page.getByTestId('workspace-all-notes-file-visibility')).toBeVisible()
+  await expect(page.getByTestId('workspace-all-notes-show-pdfs')).not.toHaveAttribute('aria-checked', 'true')
+  await page.getByTestId('workspace-all-notes-show-pdfs').click()
+  await page.getByTestId('workspace-all-notes-show-images').click()
   await page.getByTestId('workspace-primary-property-search-input').fill('Pri')
   await page.getByTestId('workspace-primary-property-option-priority').click()
   await page.getByTestId('workspace-action-sheet-editPrimaryListProperties').getByRole('button', { name: 'Save' }).click()
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
   await expect(page.getByTestId('note-row-workflow-orchestration').getByText('2')).toBeVisible()
   await expect(page.getByTestId('note-row-open-source-project').getByText('1')).toBeVisible()
+  await longPress(page, 'sidebar-item-all-notes')
+  await expect(page.getByTestId('workspace-all-notes-show-pdfs')).toHaveAttribute('aria-checked', 'true')
+  await expect(page.getByTestId('workspace-all-notes-show-images')).toHaveAttribute('aria-checked', 'true')
+  await expect(page.getByTestId('workspace-all-notes-show-unsupported')).not.toHaveAttribute('aria-checked', 'true')
+  await page.getByTestId('workspace-action-sheet-toolbar').getByRole('button', { name: 'Cancel' }).click()
 }
 
 async function addPrioritySortFixtures(page: PageLike) {

@@ -74,6 +74,28 @@ describe('primary note-list property overrides', () => {
     }])
   })
 
+  it('persists All Notes file visibility with primary note-list display overrides', () => {
+    const base = workspaceScenarioForId('default')
+    const result = applyMobileWorkspaceEditWithWrites(base, {
+      allNotesFileVisibility: { images: true, pdfs: true, unsupported: false },
+      listPropertiesDisplay: ['status'],
+      target: 'allNotes',
+      type: 'updatePrimaryNoteListProperties',
+    })
+
+    expect(result.snapshot.noteListPropertyOverrides).toEqual({ allNotes: ['status'] })
+    expect(result.snapshot.vaultConfig).toEqual({
+      allNotes: {
+        fileVisibility: { images: true, pdfs: true, unsupported: false },
+        noteListProperties: ['status'],
+      },
+    })
+    expect(result.writes).toEqual([{
+      config: result.snapshot.vaultConfig,
+      kind: 'saveVaultConfig',
+    }])
+  })
+
   it('round-trips All Notes file visibility through vault config serialization', () => {
     const serialized = serializeMobileVaultConfig({
       allNotes: {
