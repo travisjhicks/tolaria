@@ -6,6 +6,7 @@ import {
   replaceTrailingWikilinkQuery,
   trailingWikilinkQuery,
 } from './mobileWorkspaceEditing'
+import { evaluateMobileSavedView } from './mobileSavedViews'
 import type { MobileNote, MobileSidebarFolder, MobileWorkspaceSnapshot } from './mobileWorkspaceModel'
 
 const typeSchemaDefaultsPatch = {
@@ -882,6 +883,53 @@ describe('applyMobileWorkspaceEdit', () => {
         viewId: 'view-procedures',
       }),
     )
+  })
+
+  it('keeps user-created saved views on desktop field semantics', () => {
+    const base = workspaceScenarioForId('default')
+    const customPropertyMatch: MobileNote = {
+      ...base.notes[0],
+      id: 'custom-property-match',
+      organized: false,
+      path: 'Actual/Location.md',
+      properties: [
+        { key: 'path', label: 'Path', value: 'Roadmap' },
+        { key: 'organized', label: 'Organized', value: 'planned' },
+      ],
+      title: 'Custom property match',
+    }
+    const metadataOnlyMatch: MobileNote = {
+      ...base.notes[1],
+      id: 'metadata-only-match',
+      organized: true,
+      path: 'Roadmap',
+      properties: [],
+      title: 'Metadata-only match',
+    }
+    const result = applyMobileWorkspaceEditWithWrites({
+      ...base,
+      allNotes: [customPropertyMatch, metadataOnlyMatch],
+      notes: [customPropertyMatch, metadataOnlyMatch],
+    }, {
+      definition: {
+        color: null,
+        filters: {
+          all: [
+            { field: 'path', op: 'equals', value: 'Roadmap' },
+            { field: 'organized', op: 'equals', value: 'planned' },
+          ],
+        },
+        icon: null,
+        name: 'Roadmap',
+        sort: null,
+      },
+      type: 'createView',
+    })
+    const view = result.snapshot.views?.find((candidate) => candidate.filename === 'roadmap.yml')
+    if (!view) throw new Error('Missing created saved view')
+
+    expect(view.definition.evaluationMode).toBeUndefined()
+    expect(evaluateMobileSavedView(view, result.snapshot.allNotes ?? [])).toEqual([customPropertyMatch])
   })
 
   it('updates saved-view YAML without changing the filename', () => {

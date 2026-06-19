@@ -182,12 +182,6 @@ export function evaluateMobileSavedView(view: MobileSavedView, notes: MobileNote
   return sortMobileNotesBySort(matchingNotes, view.definition.sort)
 }
 
-export function mobileViewEvaluationModeForFilters(
-  group: MobileViewFilterGroup,
-): MobileViewDefinition['evaluationMode'] {
-  return filterGroupUsesMobileInternalField(group) ? 'mobileInternal' : undefined
-}
-
 export function mobileSavedViewId(filename: string) {
   return `view-${slugify(filename.replace(/\.[^.]+$/, ''))}`
 }
@@ -913,18 +907,6 @@ function groupKind(text: YamlText): FilterGroupKind | null {
 
 function isFilterGroup(node: MobileViewFilterNode): node is MobileViewFilterGroup {
   return 'all' in node || 'any' in node
-}
-
-function filterGroupUsesMobileInternalField(group: MobileViewFilterGroup): boolean {
-  const nodes = 'any' in group ? group.any : group.all
-  for (const node of nodes) {
-    if (isFilterGroup(node)) {
-      if (filterGroupUsesMobileInternalField(node)) return true
-      continue
-    }
-    if (mobileInternalFieldResolvers[node.field.toLowerCase()] !== undefined) return true
-  }
-  return false
 }
 
 function relationshipKeys(relationship: MobileNote['relationships'][number]) {
