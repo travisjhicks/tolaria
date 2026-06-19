@@ -96,6 +96,28 @@ _sort: title:asc
     expect(content).not.toContain('\n_sort:')
   })
 
+  it('canonicalizes desktop visible aliases when toggling Type section visibility', () => {
+    const hiddenContent = mobileTypeDefinitionContent('Secret', {
+      rawContent: `---
+type: Type
+Visible: false
+---
+# Secret
+`,
+    }, {
+      visible: null,
+    })
+
+    expect(hiddenContent).not.toContain('\nVisible:')
+    expect(hiddenContent).not.toContain('\nvisible:')
+
+    const visibleContent = mobileTypeDefinitionContent('Secret', undefined, {
+      visible: false,
+    })
+
+    expect(visibleContent).toContain('visible: false')
+  })
+
   it('quotes Type schema frontmatter keys with desktop YAML rules', () => {
     const content = mobileTypeDefinitionContent('Project', undefined, {
       properties: { 'key:value': '2026-06-01' },

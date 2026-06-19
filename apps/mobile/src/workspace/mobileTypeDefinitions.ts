@@ -175,7 +175,7 @@ function patchedTypeFrontmatter(
   writeOptionalSystemMetadataValue(nextFrontmatter, systemMetadataAliases.order, patch.order)
 
   if (patch.visible !== undefined) {
-    writeFrontmatterValue(nextFrontmatter, 'visible', patch.visible === false ? false : null)
+    writeOptionalCanonicalFrontmatterValue(nextFrontmatter, 'visible', patch.visible === false ? false : null)
   }
 
   if (patch.properties !== undefined || patch.relationships !== undefined) {
