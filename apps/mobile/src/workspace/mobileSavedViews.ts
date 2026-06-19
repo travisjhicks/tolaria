@@ -110,6 +110,16 @@ const builtInFieldResolvers: Record<string, BuiltInFieldResolver> = {
 }
 const doubleQuote = '"'
 const singleQuote = '\''
+const doubleQuotedScalarEscapes: Record<string, string> = {
+  '\\\\': '\\',
+  '\\"': '"',
+  '\\/': '/',
+  '\\b': '\b',
+  '\\f': '\f',
+  '\\n': '\n',
+  '\\r': '\r',
+  '\\t': '\t',
+}
 
 export function parseMobileSavedViewFile(file: ViewFileSource, index: ViewIndex): MobileSavedView | null {
   if (!isViewFile(file.relativePath)) return null
@@ -331,10 +341,11 @@ function parseConditionProperty(lines: YamlLine[], index: LineIndex, indent: Ind
     return { key: keyValue.key, nextIndex: index + 1, value: parseYamlValue(keyValue.value) }
   }
 
+  const list = listValues(lines, index + 1, indent + 2)
   return {
     key: keyValue.key,
-    nextIndex: index + 1 + listValues(lines, index + 1, indent + 2).consumed,
-    value: listValues(lines, index + 1, indent + 2).values,
+    nextIndex: index + 1 + list.consumed,
+    value: list.values.length > 0 ? list.values : null,
   }
 }
 
@@ -449,36 +460,49 @@ function evaluateScalarCondition(
   const dateResult = dateConditionResult(condition, value)
   if (dateResult !== null) return dateResult
 
-  const rawText = textValue(value)
-  if (regex) return textMatchResult(condition.op, regex.test(rawText))
+  if (regex) return textMatchResult(condition.op, regex.test(textValue(value)))
 
-  return scalarTextConditionResult(condition, normalizedText(rawText), normalizedText(condition.value))
+  return scalarTextConditionResult(condition, value)
 }
 
 function scalarTextConditionResult(
   condition: MobileViewFilterCondition,
-  text: string,
-  target: string,
+  value: string | number | boolean | null,
 ) {
-  const comparisonResult = scalarTextComparisonResult(condition.op, text, target)
+  const comparisonResult = scalarTextComparisonResult(condition.op, value, condition.value)
   if (comparisonResult !== null) return comparisonResult
 
-  const setResult = scalarSetConditionResult(condition, text)
+  const setResult = scalarSetConditionResult(condition, value)
   if (setResult !== null) return setResult
   return false
 }
 
-function scalarTextComparisonResult(op: MobileViewFilterOp, text: string, target: string): boolean | null {
-  if (op === 'equals') return text === target
-  if (op === 'not_equals') return text !== target
-  if (op === 'contains') return text.includes(target)
-  if (op === 'not_contains') return !text.includes(target)
+function scalarTextComparisonResult(op: MobileViewFilterOp, value: unknown, target: unknown): boolean | null {
+  if (op === 'equals') return scalarEquals(value, target)
+  if (op === 'not_equals') return !scalarEquals(value, target)
+  if (op === 'contains') return scalarContains(value, target)
+  if (op === 'not_contains') return !scalarContains(value, target)
   return null
 }
 
-function scalarSetConditionResult(condition: MobileViewFilterCondition, text: string): boolean | null {
-  if (condition.op === 'any_of') return conditionValues(condition.value).includes(text)
-  if (condition.op === 'none_of') return !conditionValues(condition.value).includes(text)
+function scalarEquals(value: unknown, target: unknown): boolean {
+  const text = nullableText(value)
+  const targetText = nullableText(target)
+  if (text === null || targetText === null) return text === targetText
+  return normalizedText(text) === normalizedText(targetText)
+}
+
+function scalarContains(value: unknown, target: unknown): boolean {
+  const text = nullableText(value)
+  const targetText = nullableText(target)
+  if (text === null || targetText === null) return false
+  return normalizedText(text).includes(normalizedText(targetText))
+}
+
+function scalarSetConditionResult(condition: MobileViewFilterCondition, value: unknown): boolean | null {
+  const text = nullableText(value)
+  if (condition.op === 'any_of') return text === null ? false : conditionValues(condition.value).includes(normalizedText(text))
+  if (condition.op === 'none_of') return text === null ? true : !conditionValues(condition.value).includes(normalizedText(text))
   return null
 }
 
@@ -748,9 +772,11 @@ function parseYamlValue(value: YamlText): unknown {
 }
 
 function yamlScalarToken(value: YamlText) {
+  const quote = scalarQuote(value)
+
   return {
-    quoted: isQuotedScalar(value),
-    text: unquote(value),
+    quoted: quote !== null,
+    text: unquotedScalar(value, quote),
   }
 }
 
@@ -764,7 +790,7 @@ function yamlLiteralValue(value: YamlText): unknown {
   const lower = value.toLowerCase()
   if (lower === 'true') return true
   if (lower === 'false') return false
-  if (lower === 'null') return null
+  if (lower === 'null' || lower === '~') return null
   return /^-?\d+(?:\.\d+)?$/u.test(value) ? Number(value) : undefined
 }
 
@@ -804,14 +830,39 @@ function splitInlineListItems(value: YamlText): YamlText[] {
   return items
 }
 
-function unquote(value: YamlText) {
-  const quote = value.at(0)
-  if (isQuote(quote) && value.at(-1) === quote) return value.slice(1, -1)
-  return value
+function unquotedScalar(value: YamlText, quote: '"' | '\'' | null) {
+  if (quote === null) return value
+
+  const inner = value.slice(1, -1)
+  return quote === doubleQuote ? unescapeDoubleQuotedScalar(inner) : inner.replaceAll("''", "'")
 }
 
-function isQuotedScalar(value: YamlText) {
-  return isQuote(value.at(0)) && value.at(-1) === value.at(0)
+function unescapeDoubleQuotedScalar(value: YamlText) {
+  return value.replace(/\\(?:["\\/bfnrt]|x[\da-fA-F]{2}|u[\da-fA-F]{4}|U[\da-fA-F]{8})/gu, (escape) => {
+    const shortEscape = doubleQuotedScalarEscape(escape)
+    return shortEscape ?? unicodeEscapeText(escape)
+  })
+}
+
+function doubleQuotedScalarEscape(value: YamlText): string | null {
+  return doubleQuotedScalarEscapes[value] ?? null
+}
+
+function unicodeEscapeText(value: YamlText) {
+  const codePoint = Number.parseInt(value.slice(2), 16)
+  if (!Number.isFinite(codePoint)) return value
+
+  try {
+    return String.fromCodePoint(codePoint)
+  } catch {
+    return value
+  }
+}
+
+function scalarQuote(value: YamlText): '"' | '\'' | null {
+  const quote = value.at(0)
+  if (isQuote(quote) && value.at(-1) === quote) return quote
+  return null
 }
 
 function isQuote(value: string | undefined): value is '"' | '\'' {
@@ -858,6 +909,11 @@ function conditionValues(value: unknown): string[] {
 
 function normalizedText(value: unknown) {
   return textValue(value).toLowerCase()
+}
+
+function nullableText(value: unknown) {
+  if (value === null || value === undefined) return null
+  return String(value).trim()
 }
 
 function textValue(value: unknown) {

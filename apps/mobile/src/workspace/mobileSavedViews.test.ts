@@ -114,6 +114,47 @@ filters:
     ]).map((candidate) => candidate.id)).toEqual(['hash-content', 'plain'])
   })
 
+  it('parses desktop YAML escaped scalars and null shorthands', () => {
+    const view = parseMobileSavedViewFile({
+      relativePath: 'views/escaped-scalars.yml',
+      content: String.raw`name: "Luca \"Focus\" \u2605"
+icon: "~"
+color: ~
+listPropertiesDisplay: ["Quote \"A\"", 'Owner''s Status']
+filters:
+  all:
+    - field: title
+      op: equals
+      value: "Mobile\nQA"
+    - field: priority
+      op: equals
+      value:
+    - field: category
+      op: equals
+      value: ~
+`,
+    }, 0)
+
+    expect(view?.definition).toMatchObject({
+      color: null,
+      icon: '~',
+      listPropertiesDisplay: ['Quote "A"', "Owner's Status"],
+      name: 'Luca "Focus" \u2605',
+    })
+    expect(view?.definition.filters).toMatchObject({
+      all: [
+        { field: 'title', op: 'equals', value: 'Mobile\nQA' },
+        { field: 'priority', op: 'equals', value: null },
+        { field: 'category', op: 'equals', value: null },
+      ],
+    })
+    expect(evaluateMobileSavedView(view!, [
+      note({ id: 'missing-null-fields', title: 'Mobile\nQA' }),
+      note({ id: 'empty-priority', properties: [{ key: 'priority', label: 'Priority', value: '' }], title: 'Mobile\nQA' }),
+      note({ id: 'literal-backslash', title: String.raw`Mobile\nQA` }),
+    ]).map((candidate) => candidate.id)).toEqual(['missing-null-fields'])
+  })
+
   it('sorts saved views with desktop custom-property sort strings', () => {
     const parsedView = (name: string, sort: string, order: number) => parseMobileSavedViewFile({ content: `name: ${name}\nsort: "${sort}"\nfilters:\n  all: []\n`, relativePath: `views/${name.toLowerCase().replace(/\s+/gu, '-')}.yml` }, order)
     const rankedView = parsedView('Ranked', 'property:Priority:asc', 0)
