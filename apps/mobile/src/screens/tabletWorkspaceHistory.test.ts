@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { workspaceScenarioForId } from '../fixtures/workspaceFixtures'
 import { mobileNoteEditableContent } from '../workspace/mobileDocumentContent'
-import { applyMobileWorkspaceEdit, type MobileWorkspaceEdit } from '../workspace/mobileWorkspaceEditing'
+import {
+  applyMobileWorkspaceEdit,
+  applyMobileWorkspaceEditWithWrites,
+  type MobileWorkspaceEdit,
+  type MobileWorkspaceWrite,
+} from '../workspace/mobileWorkspaceEditing'
 import type { MobileNote, MobileTypeDefinition, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
 import {
   emptyMobileWorkspaceHistory,
@@ -416,33 +421,73 @@ describe('tablet workspace editing history', () => {
 
   it('undoes and redoes primary note-list display property overrides', () => {
     const previousSnapshot = workspaceScenarioForId('default')
-    const { redoneSnapshot, undoneSnapshot } = historyRoundTrip(previousSnapshot, {
+    const { redoWrites, redoneSnapshot, undoWrites, undoneSnapshot } = historyRoundTripWithWrites(previousSnapshot, {
       listPropertiesDisplay: [' status ', 'belongs_to', 'Status'],
       target: 'allNotes',
       type: 'updatePrimaryNoteListProperties',
     })
 
     expect(undoneSnapshot.noteListPropertyOverrides).toBeUndefined()
+    expect(undoneSnapshot.vaultConfig).toEqual({
+      allNotes: { noteListProperties: null },
+    })
+    expect(undoWrites).toEqual([{
+      config: undoneSnapshot.vaultConfig,
+      kind: 'saveVaultConfig',
+    }])
     expect(redoneSnapshot.noteListPropertyOverrides).toEqual({
       allNotes: ['status', 'belongs_to'],
     })
+    expect(redoneSnapshot.vaultConfig).toEqual({
+      allNotes: { noteListProperties: ['status', 'belongs_to'] },
+    })
+    expect(redoWrites).toEqual([{
+      config: redoneSnapshot.vaultConfig,
+      kind: 'saveVaultConfig',
+    }])
   })
 
-  it('undoes primary note-list display resets back to the previous override', () => {
+  it('undoes primary note-list display resets back to the previous persisted override', () => {
     const previousSnapshot = {
       ...workspaceScenarioForId('default'),
-      noteListPropertyOverrides: { inbox: ['status', 'tags'] },
+      noteListPropertyOverrides: {
+        allNotes: ['priority'],
+        inbox: ['status', 'tags'],
+      },
+      vaultConfig: {
+        allNotes: { noteListProperties: ['priority'] },
+        inbox: { explicitOrganization: true, noteListProperties: ['status', 'tags'] },
+      },
     }
-    const { redoneSnapshot, undoneSnapshot } = historyRoundTrip(previousSnapshot, {
+    const { redoWrites, redoneSnapshot, undoWrites, undoneSnapshot } = historyRoundTripWithWrites(previousSnapshot, {
       listPropertiesDisplay: [],
       target: 'inbox',
       type: 'updatePrimaryNoteListProperties',
     })
 
     expect(undoneSnapshot.noteListPropertyOverrides).toEqual({
+      allNotes: ['priority'],
       inbox: ['status', 'tags'],
     })
-    expect(redoneSnapshot.noteListPropertyOverrides).toBeUndefined()
+    expect(undoneSnapshot.vaultConfig).toEqual({
+      allNotes: { noteListProperties: ['priority'] },
+      inbox: { explicitOrganization: true, noteListProperties: ['status', 'tags'] },
+    })
+    expect(undoWrites).toEqual([{
+      config: undoneSnapshot.vaultConfig,
+      kind: 'saveVaultConfig',
+    }])
+    expect(redoneSnapshot.noteListPropertyOverrides).toEqual({
+      allNotes: ['priority'],
+    })
+    expect(redoneSnapshot.vaultConfig).toEqual({
+      allNotes: { noteListProperties: ['priority'] },
+      inbox: { explicitOrganization: true, noteListProperties: null },
+    })
+    expect(redoWrites).toEqual([{
+      config: redoneSnapshot.vaultConfig,
+      kind: 'saveVaultConfig',
+    }])
   })
 
   it('records bulk note edits as one reversible history entry', () => {
@@ -720,6 +765,16 @@ function applyHistoryEdits(snapshot: MobileWorkspaceSnapshot, edits: MobileWorks
   return edits.reduce(applyMobileWorkspaceEdit, snapshot)
 }
 
+function applyHistoryEditsWithWrites(snapshot: MobileWorkspaceSnapshot, edits: MobileWorkspaceEdit[]) {
+  return edits.reduce<{ snapshot: MobileWorkspaceSnapshot; writes: MobileWorkspaceWrite[] }>((result, edit) => {
+    const nextResult = applyMobileWorkspaceEditWithWrites(result.snapshot, edit)
+    return {
+      snapshot: nextResult.snapshot,
+      writes: [...result.writes, ...nextResult.writes],
+    }
+  }, { snapshot, writes: [] })
+}
+
 function historyRoundTrip(previousSnapshot: MobileWorkspaceSnapshot, edit: MobileWorkspaceEdit) {
   const nextSnapshot = applyMobileWorkspaceEdit(previousSnapshot, edit)
   const entry = requiredHistoryEntry(previousSnapshot, nextSnapshot, edit)
@@ -728,6 +783,20 @@ function historyRoundTrip(previousSnapshot: MobileWorkspaceSnapshot, edit: Mobil
   return {
     redoneSnapshot: applyHistoryEdits(undoneSnapshot, entry.redoEdits),
     undoneSnapshot,
+  }
+}
+
+function historyRoundTripWithWrites(previousSnapshot: MobileWorkspaceSnapshot, edit: MobileWorkspaceEdit) {
+  const nextResult = applyMobileWorkspaceEditWithWrites(previousSnapshot, edit)
+  const entry = requiredHistoryEntry(previousSnapshot, nextResult.snapshot, edit)
+  const undoResult = applyHistoryEditsWithWrites(nextResult.snapshot, entry.undoEdits)
+  const redoResult = applyHistoryEditsWithWrites(undoResult.snapshot, entry.redoEdits)
+
+  return {
+    redoWrites: redoResult.writes,
+    redoneSnapshot: redoResult.snapshot,
+    undoWrites: undoResult.writes,
+    undoneSnapshot: undoResult.snapshot,
   }
 }
 
