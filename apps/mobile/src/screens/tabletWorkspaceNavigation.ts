@@ -23,6 +23,7 @@ import type {
   MobileSidebarItemSelection,
 } from '../components/workspace/MobileWorkspaceSidebar'
 import { mobileNoteListMatchesQuery, normalizedMobileSearchQuery } from '../workspace/mobileNoteSearch'
+import { mobileAllNotesFileVisibilityFromVaultConfig } from '../workspace/mobileVaultConfig'
 
 export type NoteCount = number
 export type NoteCountText = string
@@ -44,6 +45,13 @@ type NoteListPropertyResolver = (
   snapshot: MobileWorkspaceSnapshot,
   selection: TabletSidebarItemSelection,
 ) => string[]
+type NavigationVisibleNotesInput = {
+  noteListFilter: MobileNoteListFilter
+  noteListProperties: string[]
+  searchQuery: SearchQuery
+  sidebarSelection: TabletSidebarSelection
+  snapshot: MobileWorkspaceSnapshot
+}
 type SelectSidebarSelection = (selection: TabletSidebarSelection, sourceSnapshot?: MobileWorkspaceSnapshot) => void
 type SetSidebarSelection = (selection: TabletSidebarSelection) => void
 
@@ -62,19 +70,14 @@ export function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot, 
   const [sidebarSelection, setSidebarSelection] = useState<TabletSidebarSelection>(() => initialSidebarSelection(snapshot))
   const [noteListFilter, setNoteListFilter] = useState<MobileNoteListFilter>('open')
   const [selectedNoteId, setSelectedNoteId] = useState<NoteId | null>(initialSelectedNoteId(snapshot))
-  const sidebarNotes = useMemo(() => (
-    notesForSidebarSelection(snapshot, sidebarSelection, { noteListFilter })
-  ), [noteListFilter, sidebarSelection, snapshot])
   const noteListProperties = useMemo(() => noteListPropertiesForSelection(snapshot, sidebarSelection), [sidebarSelection, snapshot])
-  const noteListNeighborhood = useMemo(
-    () => neighborhoodForSelection(snapshot, sidebarSelection, searchQuery, noteListProperties),
-    [noteListProperties, searchQuery, sidebarSelection, snapshot],
-  )
-  const notes = useMemo(() => (
-    noteListNeighborhood
-      ? flattenMobileNeighborhoodNotes(noteListNeighborhood)
-      : filterNotesBySearch(sidebarNotes, searchQuery, noteListProperties, snapshot.typeDefinitions)
-  ), [noteListNeighborhood, noteListProperties, searchQuery, sidebarNotes, snapshot.typeDefinitions])
+  const { noteListNeighborhood, notes } = useNavigationVisibleNotes({
+    noteListFilter,
+    noteListProperties,
+    searchQuery,
+    sidebarSelection,
+    snapshot,
+  })
   const selectedNote = selectedMobileNote(snapshot, notes, selectedNoteId)
 
   const selectSidebarSelection = useCallback((selection: TabletSidebarSelection, sourceSnapshot = snapshot) => {
@@ -116,13 +119,13 @@ export function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot, 
     noteListFilter,
     noteListFilterCounts: noteListFilterCountsForSelection(snapshot, sidebarSelection),
     noteListFilterVisible: shouldShowNoteListFilter(sidebarSelection),
-    noteListSubtitle: noteListSubtitle(
+    noteListSubtitle: noteListSubtitle({
+      filterVisible: shouldShowNoteListFilter(sidebarSelection),
+      inboxSubtitle: snapshot.noteListSubtitle,
+      noteCount: notes.length,
       sidebarSelection,
-      snapshot.noteListSubtitle,
-      notes.length,
       searchQuery,
-      shouldShowNoteListFilter(sidebarSelection),
-    ),
+    }),
     noteListTitle: sidebarSelection.label,
     notes,
     onNoteListFilterChange: selectNoteListFilter,
@@ -132,6 +135,29 @@ export function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot, 
     setSelectedNoteId,
     ...selectionActions,
   }
+}
+
+function useNavigationVisibleNotes({
+  noteListFilter,
+  noteListProperties,
+  searchQuery,
+  sidebarSelection,
+  snapshot,
+}: NavigationVisibleNotesInput) {
+  const sidebarNotes = useMemo(() => (
+    notesForSidebarSelection(snapshot, sidebarSelection, { noteListFilter })
+  ), [noteListFilter, sidebarSelection, snapshot])
+  const noteListNeighborhood = useMemo(
+    () => neighborhoodForSelection(snapshot, sidebarSelection, searchQuery, noteListProperties),
+    [noteListProperties, searchQuery, sidebarSelection, snapshot],
+  )
+  const notes = useMemo(() => (
+    noteListNeighborhood
+      ? flattenMobileNeighborhoodNotes(noteListNeighborhood)
+      : filterNotesBySearch(sidebarNotes, searchQuery, noteListProperties, snapshot.typeDefinitions)
+  ), [noteListNeighborhood, noteListProperties, searchQuery, sidebarNotes, snapshot.typeDefinitions])
+
+  return { noteListNeighborhood, notes }
 }
 
 function useTabletSelectionActions({
@@ -270,7 +296,7 @@ export function notesForSidebarSelection(
   }
 
   const sectionResolver = sidebarSectionResolvers[selection.sectionId]
-  const sectionNotes = sectionResolver?.(snapshot, notes, selection) ?? primaryNotesForSelection(notes, selection)
+  const sectionNotes = sectionResolver?.(snapshot, notes, selection) ?? primaryNotesForSelection(snapshot, notes, selection)
   return selection.sectionId === 'types'
     ? sectionNotes.filter((note) => noteMatchesArchiveFilter(note, options.noteListFilter))
     : sectionNotes
@@ -292,9 +318,16 @@ function shouldShowNoteListFilter(selection: TabletSidebarSelection): boolean {
   return selection.kind === 'folder' || (selection.kind === 'item' && selection.sectionId === 'types')
 }
 
-function primaryNotesForSelection(notes: MobileNote[], selection: TabletSidebarItemSelection) {
+function primaryNotesForSelection(
+  snapshot: MobileWorkspaceSnapshot,
+  notes: MobileNote[],
+  selection: TabletSidebarItemSelection,
+) {
   if (selection.id === 'archive') return notes.filter((note) => note.archived && isMobileMarkdownNote(note))
-  if (selection.id === 'all-notes') return notes.filter((note) => !note.archived && isMobileAllNotesEntry(note))
+  if (selection.id === 'all-notes') {
+    const allNotesFileVisibility = mobileAllNotesFileVisibilityFromVaultConfig(snapshot.vaultConfig)
+    return notes.filter((note) => !note.archived && isMobileAllNotesEntry(note, allNotesFileVisibility))
+  }
   if (selection.id === 'inbox') return inboxNotes(notes)
 
   return notes
@@ -463,18 +496,24 @@ function noteFolderPath(note: MobileNote) {
   return (note.path ?? note.id).split('/').slice(0, -1).join('/')
 }
 
-function noteListSubtitle(
-  selection: TabletSidebarSelection,
-  inboxSubtitle: NoteCountText,
-  noteCount: NoteCount,
-  searchQuery: SearchQuery,
+function noteListSubtitle({
   filterVisible = false,
-) {
+  inboxSubtitle,
+  noteCount,
+  searchQuery,
+  sidebarSelection,
+}: {
+  filterVisible?: boolean
+  inboxSubtitle: NoteCountText
+  noteCount: NoteCount
+  searchQuery: SearchQuery
+  sidebarSelection: TabletSidebarSelection
+}) {
   const visibleCount = noteCount.toLocaleString()
-  if (filterVisible || normalizedMobileSearchQuery(searchQuery) || selection.kind !== 'item') return visibleCount
-  if (selection.id === 'inbox') return inboxSubtitle
+  if (filterVisible || normalizedMobileSearchQuery(searchQuery) || sidebarSelection.kind !== 'item') return visibleCount
+  if (sidebarSelection.id === 'inbox') return inboxSubtitle
 
-  return selection.count ?? visibleCount
+  return sidebarSelection.count ?? visibleCount
 }
 
 function selectedMobileNote(

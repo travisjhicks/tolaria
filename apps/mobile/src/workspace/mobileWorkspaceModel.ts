@@ -202,8 +202,15 @@ export type MobilePrimaryNoteListPropertyOverrides = {
   inbox?: string[]
 }
 
+export type MobileAllNotesFileVisibility = {
+  images: boolean
+  pdfs: boolean
+  unsupported: boolean
+}
+
 export type MobileVaultPrimaryNoteListConfig = {
   explicitOrganization?: boolean
+  fileVisibility?: MobileAllNotesFileVisibility
   noteListProperties?: string[] | null
 }
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { workspaceScenarioForId } from '../fixtures/workspaceFixtures'
 import { applyMobileWorkspaceEditWithWrites } from './mobileWorkspaceEditing'
+import { parseMobileVaultConfig, serializeMobileVaultConfig } from './mobileVaultConfig'
 
 describe('primary note-list property overrides', () => {
   it('persists primary note-list display overrides through vault config writes', () => {
@@ -46,7 +47,10 @@ describe('primary note-list property overrides', () => {
     const base = {
       ...workspaceScenarioForId('default'),
       vaultConfig: {
-        allNotes: { noteListProperties: ['tags'] },
+        allNotes: {
+          fileVisibility: { images: true, pdfs: false, unsupported: true },
+          noteListProperties: ['tags'],
+        },
         inbox: { explicitOrganization: true, noteListProperties: ['status'] },
       },
     }
@@ -60,10 +64,38 @@ describe('primary note-list property overrides', () => {
     expect(result.snapshot.noteListPropertyOverrides).toEqual({ allNotes: ['tags'] })
     expect(result.writes).toEqual([{
       config: {
-        allNotes: { noteListProperties: ['tags'] },
+        allNotes: {
+          fileVisibility: { images: true, pdfs: false, unsupported: true },
+          noteListProperties: ['tags'],
+        },
         inbox: { explicitOrganization: true, noteListProperties: null },
       },
       kind: 'saveVaultConfig',
     }])
+  })
+
+  it('round-trips All Notes file visibility through vault config serialization', () => {
+    const serialized = serializeMobileVaultConfig({
+      allNotes: {
+        fileVisibility: { images: true, pdfs: false, unsupported: true },
+        noteListProperties: ['status'],
+      },
+    })
+
+    expect(parseMobileVaultConfig(serialized)).toEqual({
+      allNotes: {
+        fileVisibility: { images: true, pdfs: false, unsupported: true },
+        noteListProperties: ['status'],
+      },
+    })
+    expect(parseMobileVaultConfig(JSON.stringify({
+      allNotes: {
+        fileVisibility: { images: 1, pdfs: true },
+      },
+    }))).toEqual({
+      allNotes: {
+        fileVisibility: { images: false, pdfs: true, unsupported: false },
+      },
+    })
   })
 })

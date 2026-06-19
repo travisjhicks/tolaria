@@ -4,6 +4,7 @@ import {
   serializeMobileSavedViewDefinition,
 } from './mobileSavedViews'
 import { buildMobileSidebarSections } from './mobileSidebarSections'
+import { mobileAllNotesFileVisibilityFromVaultConfig } from './mobileVaultConfig'
 import {
   mobileTypeDefinitionContent,
   mobileTypeDefinitionPath,
@@ -83,6 +84,7 @@ function restoreMobileFolder(
       ...snapshot,
       folderPaths,
       sidebarSections: buildMobileSidebarSections({
+        allNotesFileVisibility: mobileAllNotesFileVisibilityFromVaultConfig(snapshot.vaultConfig),
         folderPaths,
         notes: workspaceNotePool(snapshot),
         previousSections: snapshot.sidebarSections,
@@ -158,6 +160,7 @@ function snapshotWithViews(
   return {
     ...snapshot,
     sidebarSections: buildMobileSidebarSections({
+      allNotesFileVisibility: mobileAllNotesFileVisibilityFromVaultConfig(snapshot.vaultConfig),
       folderPaths: snapshot.folderPaths,
       notes: workspaceNotePool(snapshot),
       previousSections: snapshot.sidebarSections,

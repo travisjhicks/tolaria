@@ -1,9 +1,11 @@
 import type {
+  MobileAllNotesFileVisibility,
   MobilePrimaryNoteListPropertyOverrides,
   MobileVaultConfig,
   MobileVaultPrimaryNoteListConfig,
   MobileWorkspaceSnapshot,
 } from './mobileWorkspaceModel'
+import { DEFAULT_MOBILE_ALL_NOTES_FILE_VISIBILITY } from './mobileNoteFilters'
 
 type PrimaryNoteListTarget = keyof MobilePrimaryNoteListPropertyOverrides
 
@@ -46,6 +48,12 @@ export function mobileNoteListPropertyOverridesFromVaultConfig(
   addPrimaryNoteListOverride(overrides, 'inbox', normalizedConfig.inbox)
 
   return Object.keys(overrides).length > 0 ? overrides : undefined
+}
+
+export function mobileAllNotesFileVisibilityFromVaultConfig(
+  config: MobileVaultConfig | null | undefined,
+): MobileAllNotesFileVisibility {
+  return normalizeMobileVaultConfig(config).allNotes?.fileVisibility ?? DEFAULT_MOBILE_ALL_NOTES_FILE_VISIBILITY
 }
 
 export function snapshotWithMobileVaultConfig(
@@ -108,8 +116,22 @@ function normalizePrimaryNoteListConfig(value: unknown): MobileVaultPrimaryNoteL
   if (typeof value.explicitOrganization === 'boolean') {
     config.explicitOrganization = value.explicitOrganization
   }
+  if (Object.hasOwn(value, 'fileVisibility')) {
+    const fileVisibility = normalizeAllNotesFileVisibility(value.fileVisibility)
+    if (fileVisibility) config.fileVisibility = fileVisibility
+  }
 
   return Object.keys(config).length > 0 ? config : null
+}
+
+function normalizeAllNotesFileVisibility(value: unknown): MobileAllNotesFileVisibility | null {
+  if (!isRecord(value)) return null
+
+  return {
+    images: value.images === true,
+    pdfs: value.pdfs === true,
+    unsupported: value.unsupported === true,
+  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

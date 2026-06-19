@@ -71,7 +71,10 @@ type: Project
 
     await repository.persistWrites([{
       config: {
-        allNotes: { noteListProperties: ['status', 'belongs_to'] },
+        allNotes: {
+          fileVisibility: { images: true, pdfs: true, unsupported: false },
+          noteListProperties: ['status', 'belongs_to'],
+        },
         inbox: { explicitOrganization: true, noteListProperties: ['tags'] },
       },
       kind: 'saveVaultConfig',
@@ -82,7 +85,10 @@ type: Project
     })
     expect(fileSystem.vaultConfigs()).toEqual({
       'file:///vault': {
-        allNotes: { noteListProperties: ['status', 'belongs_to'] },
+        allNotes: {
+          fileVisibility: { images: true, pdfs: true, unsupported: false },
+          noteListProperties: ['status', 'belongs_to'],
+        },
         inbox: { explicitOrganization: true, noteListProperties: ['tags'] },
       },
     })
@@ -92,7 +98,10 @@ type: Project
         inbox: ['tags'],
       },
       vaultConfig: {
-        allNotes: { noteListProperties: ['status', 'belongs_to'] },
+        allNotes: {
+          fileVisibility: { images: true, pdfs: true, unsupported: false },
+          noteListProperties: ['status', 'belongs_to'],
+        },
         inbox: { explicitOrganization: true, noteListProperties: ['tags'] },
       },
     })
@@ -118,6 +127,34 @@ type: Project
       title: 'logo.png',
       type: 'File',
     })
+  })
+
+  it('counts optional file entries in All Notes when vault config enables desktop visibility', async () => {
+    const fileSystem = fakeWorkspaceFileSystem({
+      'Assets/logo.png': '',
+      'Docs/brief.pdf': '',
+      'Docs/config.yml': 'name: Tolaria\n',
+      'Writing/Workflow.md': '# Workflow\n\n',
+    })
+    const repository = createFileSystemWorkspaceRepository(fileSystem)
+    const request = { source: 'native' as const, vaultLabel: 'Laputa', vaultRootUri: 'file:///vault' }
+
+    await repository.persistWrites([{
+      config: {
+        allNotes: {
+          fileVisibility: { images: true, pdfs: true, unsupported: false },
+        },
+      },
+      kind: 'saveVaultConfig',
+    }], request)
+
+    const snapshot = repository.readSnapshot(request)
+
+    expect(snapshot.sidebarSections.find((section) => section.id === 'primary')?.items).toEqual([
+      expect.objectContaining({ count: '1', id: 'inbox' }),
+      expect.objectContaining({ count: '3', id: 'all-notes' }),
+      expect.objectContaining({ count: '0', id: 'archive' }),
+    ])
   })
 
   it('hydrates and persists note content through relative vault paths', async () => {

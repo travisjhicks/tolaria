@@ -25,6 +25,7 @@ import { normalizeMobileNoteWidth } from './mobileNoteWidth'
 import { normalizeMobileWikilinkTarget } from './mobileWikilinks'
 import { mobileWorkspaceAlias } from './mobileWorkspaceAlias'
 import {
+  mobileAllNotesFileVisibilityFromVaultConfig,
   mobileNoteListPropertyOverridesFromVaultConfig,
   normalizeMobileVaultConfig,
 } from './mobileVaultConfig'
@@ -221,7 +222,13 @@ export function buildLocalVaultWorkspaceSnapshot({
     notes,
     selectedNoteId,
     folderPaths,
-    sidebarSections: buildMobileSidebarSections({ folderPaths, notes: allNotes, typeDefinitions, views }),
+    sidebarSections: buildMobileSidebarSections({
+      allNotesFileVisibility: mobileAllNotesFileVisibilityFromVaultConfig(normalizedVaultConfig),
+      folderPaths,
+      notes: allNotes,
+      typeDefinitions,
+      views,
+    }),
     source: {
       alias: workspaceAlias,
       kind: 'localVault',

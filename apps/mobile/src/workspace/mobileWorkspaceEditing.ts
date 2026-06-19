@@ -77,6 +77,7 @@ import {
   mobileWikilinkTargetForNote,
 } from './mobileWikilinks'
 import {
+  mobileAllNotesFileVisibilityFromVaultConfig,
   mobileNoteListPropertyOverridesFromVaultConfig,
   mobileVaultConfigWithPrimaryNoteListProperties,
 } from './mobileVaultConfig'
@@ -739,6 +740,7 @@ function rebuildSnapshot(
     notes: resolvedNotes,
     selectedNoteId: selectedNote?.id,
     sidebarSections: buildMobileSidebarSections({
+      allNotesFileVisibility: mobileAllNotesFileVisibilityFromVaultConfig(snapshot.vaultConfig),
       folderPaths: snapshot.folderPaths,
       notes: resolvedAllNotes,
       previousSections: snapshot.sidebarSections,
@@ -903,6 +905,7 @@ function createMobileView(
   const nextSnapshot = {
     ...snapshot,
     sidebarSections: buildMobileSidebarSections({
+      allNotesFileVisibility: mobileAllNotesFileVisibilityFromVaultConfig(snapshot.vaultConfig),
       folderPaths: snapshot.folderPaths,
       notes: workspaceNotePool(snapshot),
       previousSections: snapshot.sidebarSections,
@@ -1011,6 +1014,7 @@ function snapshotWithViews(
   return {
     ...snapshot,
     sidebarSections: buildMobileSidebarSections({
+      allNotesFileVisibility: mobileAllNotesFileVisibilityFromVaultConfig(snapshot.vaultConfig),
       folderPaths: snapshot.folderPaths,
       notes: workspaceNotePool(snapshot),
       previousSections: snapshot.sidebarSections,

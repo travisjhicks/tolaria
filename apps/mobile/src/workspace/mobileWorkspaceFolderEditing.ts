@@ -1,4 +1,5 @@
 import { buildMobileSidebarSections } from './mobileSidebarSections'
+import { mobileAllNotesFileVisibilityFromVaultConfig } from './mobileVaultConfig'
 import type { MobileNote, MobileWorkspaceSnapshot } from './mobileWorkspaceModel'
 import {
   folderPathsWithCreated,
@@ -188,6 +189,7 @@ function snapshotWithFolderPaths(
     ...snapshot,
     folderPaths,
     sidebarSections: buildMobileSidebarSections({
+      allNotesFileVisibility: mobileAllNotesFileVisibilityFromVaultConfig(snapshot.vaultConfig),
       folderPaths,
       notes: workspaceNotePool(snapshot),
       previousSections: snapshot.sidebarSections,

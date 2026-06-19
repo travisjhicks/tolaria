@@ -164,11 +164,12 @@ describe('tablet workspace navigation', () => {
     ]), inboxSelection).map((candidate) => candidate.id)).toEqual(['capture'])
   })
 
-  it('keeps primary filters markdown-only while folder navigation can show file entries', () => {
+  it('keeps primary filters markdown-only by default while folder navigation can show file entries', () => {
     const snapshot = workspaceSnapshot([
       note({ id: 'root', path: 'Root.md', title: 'Root' }),
       note({ fileKind: 'text', id: 'docs/config.yml', path: 'docs/config.yml', title: 'config.yml', type: 'File' }),
       note({ fileKind: 'binary', id: 'docs/logo.png', path: 'docs/logo.png', title: 'logo.png', type: 'File' }),
+      note({ fileKind: 'binary', id: 'docs/manual.pdf', path: 'docs/manual.pdf', title: 'manual.pdf', type: 'File' }),
       note({ id: 'attachments/reference.md', path: 'attachments/reference.md', title: 'Reference' }),
       note({ archived: true, id: 'archive/old.md', path: 'archive/old.md', title: 'Old' }),
       note({ archived: true, fileKind: 'binary', id: 'archive/old.zip', path: 'archive/old.zip', title: 'old.zip', type: 'File' }),
@@ -196,7 +197,50 @@ describe('tablet workspace navigation', () => {
       id: 'docs',
       kind: 'folder',
       label: 'docs',
-    }).map((candidate) => candidate.id)).toEqual(['docs/config.yml', 'docs/logo.png'])
+    }).map((candidate) => candidate.id)).toEqual(['docs/config.yml', 'docs/logo.png', 'docs/manual.pdf'])
+  })
+
+  it('uses desktop All Notes file visibility settings for optional file entries', () => {
+    const snapshot = {
+      ...workspaceSnapshot([
+        note({ id: 'root', path: 'Root.md', title: 'Root' }),
+        note({ fileKind: 'text', id: 'docs/config.yml', path: 'docs/config.yml', title: 'config.yml', type: 'File' }),
+        note({ fileKind: 'binary', id: 'docs/logo.png', path: 'docs/logo.png', title: 'logo.png', type: 'File' }),
+        note({ fileKind: 'binary', id: 'docs/manual.pdf', path: 'docs/manual.pdf', title: 'manual.pdf', type: 'File' }),
+        note({ archived: true, fileKind: 'binary', id: 'archive/old.zip', path: 'archive/old.zip', title: 'old.zip', type: 'File' }),
+      ]),
+      vaultConfig: {
+        allNotes: {
+          fileVisibility: { images: true, pdfs: true, unsupported: false },
+        },
+      },
+    }
+    const selection: TabletSidebarSelection = {
+      id: 'all-notes',
+      kind: 'item',
+      label: 'All Notes',
+      sectionId: 'primary',
+    }
+
+    expect(notesForSidebarSelection(snapshot, selection).map((candidate) => candidate.id)).toEqual([
+      'root',
+      'docs/logo.png',
+      'docs/manual.pdf',
+    ])
+
+    const unsupportedSnapshot = {
+      ...snapshot,
+      vaultConfig: {
+        allNotes: {
+          fileVisibility: { images: false, pdfs: false, unsupported: true },
+        },
+      },
+    }
+
+    expect(notesForSidebarSelection(unsupportedSnapshot, selection).map((candidate) => candidate.id)).toEqual([
+      'root',
+      'docs/config.yml',
+    ])
   })
 
   it('selects folders by path and includes descendants without matching duplicate labels', () => {

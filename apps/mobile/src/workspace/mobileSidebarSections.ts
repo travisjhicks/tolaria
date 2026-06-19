@@ -1,8 +1,14 @@
 import { evaluateMobileSavedView } from './mobileSavedViews'
-import { isMobileAllNotesEntry, isMobileInboxNote, isMobileMarkdownNote } from './mobileNoteFilters'
+import {
+  DEFAULT_MOBILE_ALL_NOTES_FILE_VISIBILITY,
+  isMobileAllNotesEntry,
+  isMobileInboxNote,
+  isMobileMarkdownNote,
+} from './mobileNoteFilters'
 import { mobileSidebarIconFromValue, mobileToneFromValue } from './mobileWorkspaceMetadata'
 import { buildMobileFolderTree } from './mobileWorkspaceFolders'
 import type {
+  MobileAllNotesFileVisibility,
   MobileNote,
   MobileSavedView,
   MobileSidebarIcon,
@@ -14,6 +20,7 @@ import type {
 } from './mobileWorkspaceModel'
 
 type BuildMobileSidebarSectionsInput = {
+  allNotesFileVisibility?: MobileAllNotesFileVisibility
   folderPaths?: string[]
   notes: MobileNote[]
   previousSections?: MobileSidebarSection[]
@@ -34,6 +41,7 @@ const typeIcons: Record<string, MobileSidebarIcon> = {
 }
 
 export function buildMobileSidebarSections({
+  allNotesFileVisibility = DEFAULT_MOBILE_ALL_NOTES_FILE_VISIBILITY,
   folderPaths,
   notes,
   previousSections = [],
@@ -43,7 +51,7 @@ export function buildMobileSidebarSections({
   const activeNotes = notes.filter((note) => !note.archived)
   const activeMarkdownNotes = activeNotes.filter(isMobileMarkdownNote)
   const sections = [
-    primarySection(notes),
+    primarySection(notes, allNotesFileVisibility),
     favoritesSection(activeMarkdownNotes),
     viewsSection(views, notes.filter(isMobileMarkdownNote)),
     typesSection(activeMarkdownNotes, previousSections, typeDefinitions),
@@ -53,9 +61,12 @@ export function buildMobileSidebarSections({
   return sections.filter((section) => section.id === 'primary' || Boolean(section.items?.length || section.folders?.length))
 }
 
-function primarySection(notes: MobileNote[]): MobileSidebarSection {
+function primarySection(
+  notes: MobileNote[],
+  allNotesFileVisibility: MobileAllNotesFileVisibility,
+): MobileSidebarSection {
   const inboxNotes = notes.filter(isMobileInboxNote)
-  const allNotes = notes.filter((note) => !note.archived && isMobileAllNotesEntry(note))
+  const allNotes = notes.filter((note) => !note.archived && isMobileAllNotesEntry(note, allNotesFileVisibility))
   const archivedNotes = notes.filter((note) => note.archived && isMobileMarkdownNote(note))
 
   return {
