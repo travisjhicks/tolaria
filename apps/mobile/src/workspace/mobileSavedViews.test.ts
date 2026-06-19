@@ -139,6 +139,19 @@ filters:
     ]).map((candidate) => candidate.id)).toEqual(['frontmatter-alpha', 'frontmatter-zeta', 'missing'])
   })
 
+  it('sorts desktop scalar-array custom properties by the whole array text', () => {
+    const view = parseMobileSavedViewFile({
+      content: 'name: Ranked Tags\nsort: "property:Tags:asc"\nfilters:\n  all: []\n',
+      relativePath: 'views/ranked-tags.yml',
+    }, 0)
+
+    expect(evaluateMobileSavedView(view!, [
+      note({ id: 'same-first-late', properties: [{ key: 'Tags', label: 'Tags', value: ['alpha', 'zeta'] }] }),
+      note({ id: 'same-first-early', properties: [{ key: 'Tags', label: 'Tags', value: ['alpha', 'beta'] }] }),
+      note({ id: 'later-first', properties: [{ key: 'Tags', label: 'Tags', value: ['bravo'] }] }),
+    ]).map((candidate) => candidate.id)).toEqual(['same-first-early', 'same-first-late', 'later-first'])
+  })
+
   it('sorts saved views with desktop built-in sort semantics', () => {
     const createdView = parseMobileSavedViewFile(
       { content: 'name: Created\nsort: "created:desc"\nfilters:\n  all: []\n', relativePath: 'views/created.yml' },

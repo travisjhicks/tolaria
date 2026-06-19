@@ -36,6 +36,7 @@ type LineIndex = number
 type MobileTextValues = string[]
 type SortDirection = 'asc' | 'desc'
 type SortField = { key: FieldKey; kind: 'builtIn' | 'property' }
+type SortFieldValue = string | number | boolean | string[] | null
 type SortValue = string | null
 type ViewFilename = string
 type ViewIndex = number
@@ -567,7 +568,7 @@ function compareNotes(left: MobileNote, right: MobileNote, field: SortField, dir
   return direction === 'asc' ? result : -result
 }
 
-function sortFieldValue(note: MobileNote, field: SortField): string | number | boolean | null {
+function sortFieldValue(note: MobileNote, field: SortField): SortFieldValue {
   if (field.kind === 'property') return sortPropertyValue(note, field.key)
   if (field.key === 'modified') return displayTimestamp(note)
   if (field.key === 'created') return note.createdAt ?? note.modifiedAt ?? 0
@@ -592,10 +593,9 @@ function displayTimestamp(note: MobileNote) {
   return note.modifiedAt ?? note.createdAt ?? 0
 }
 
-function sortPropertyValue(note: MobileNote, key: FieldKey): string | number | boolean | null {
+function sortPropertyValue(note: MobileNote, key: FieldKey): SortFieldValue {
   const property = note.properties?.find((candidate) => candidate.key.toLowerCase() === key.toLowerCase())
-  const value = Array.isArray(property?.value) ? property.value[0] : property?.value
-  return value ?? null
+  return property?.value ?? null
 }
 
 function sortConfig(sort: SortValue): { direction: SortDirection; field: SortField } | null {
@@ -620,14 +620,14 @@ function sortField(rawField: FieldKey): SortField {
   return builtInSortFields.has(field) ? { key: field, kind: 'builtIn' } : { key: rawField, kind: 'property' }
 }
 
-function compareMissingValues(left: string | number | boolean | null, right: string | number | boolean | null) {
+function compareMissingValues(left: SortFieldValue, right: SortFieldValue) {
   if (left === null && right === null) return 0
   if (left === null) return 1
   if (right === null) return -1
   return null
 }
 
-function comparePresentFieldValue(left: string | number | boolean | null, right: string | number | boolean | null) {
+function comparePresentFieldValue(left: SortFieldValue, right: SortFieldValue) {
   if (typeof left === 'number' && typeof right === 'number') return left - right
   if (typeof left === 'boolean' && typeof right === 'boolean') return Number(left) - Number(right)
 
