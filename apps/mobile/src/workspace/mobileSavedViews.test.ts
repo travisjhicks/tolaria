@@ -314,6 +314,51 @@ filters:
     expect(evaluateMobileSavedView(view!, notes).map((candidate) => candidate.id)).toEqual(['custom-property-match'])
   })
 
+  it('round-trips nested desktop saved-view filter groups', () => {
+    const view = parseMobileSavedViewFile({
+      relativePath: 'views/nested-focus.yml',
+      content: `name: Nested Focus
+filters:
+  all:
+    - any:
+        - field: type
+          op: equals
+          value: Project
+        - all:
+            - field: type
+              op: equals
+              value: Event
+            - field: status
+              op: equals
+              value: Active
+    - field: favorite
+      op: equals
+      value: true
+`,
+    }, 0)
+    const notes = [
+      note({ favorite: true, id: 'favorite-project', status: 'Draft', type: 'Project' }),
+      note({ favorite: true, id: 'favorite-active-event', status: 'Active', type: 'Event' }),
+      note({ favorite: true, id: 'favorite-draft-event', status: 'Draft', type: 'Event' }),
+      note({ favorite: false, id: 'plain-project', status: 'Draft', type: 'Project' }),
+    ]
+
+    expect(evaluateMobileSavedView(view!, notes).map((candidate) => candidate.id)).toEqual([
+      'favorite-project',
+      'favorite-active-event',
+    ])
+
+    const serialized = serializeMobileSavedViewDefinition(view!.definition)
+    const reparsed = parseMobileSavedViewFile({ content: serialized, relativePath: 'views/nested-focus.yml' }, 0)
+
+    expect(serialized).toContain('    - any:')
+    expect(serialized).toContain('        - all:')
+    expect(evaluateMobileSavedView(reparsed!, notes).map((candidate) => candidate.id)).toEqual([
+      'favorite-project',
+      'favorite-active-event',
+    ])
+  })
+
   it('evaluates regex-enabled saved-view filters like desktop', () => {
     const view = parseMobileSavedViewFile({
       relativePath: 'views/regex.yml',
