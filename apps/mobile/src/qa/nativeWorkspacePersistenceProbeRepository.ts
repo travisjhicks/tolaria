@@ -17,6 +17,7 @@ declare const require: (moduleName: string) => ExpoFileSystemModule
 
 const createdNotePath = 'Writing/Drafts/Mobile Created.md'
 const movedNotePath = 'Research/Seed.md'
+const metadataNotePath = 'Metadata/Chrome State.md'
 const oldTypeName = 'Retired Proof'
 const oldViewName = 'Old Native Proof'
 const relationshipSourcePath = 'Relationships/Source.md'
@@ -93,8 +94,13 @@ async function logWorkspacePersistenceProof(
   const relationshipSourceContent = relationshipSource
     ? await baseRepository.readNoteContent(relationshipSource, request)
     : null
+  const metadataNote = noteByPath(snapshot, metadataNotePath)
+  const metadataContent = metadataNote
+    ? await baseRepository.readNoteContent(metadataNote, request)
+    : null
 
   console.info(nativeWorkspacePersistenceLogLine(workspacePersistenceProof(snapshot, {
+    metadataContent,
     movedContent,
     relationshipSourceContent,
     renamedAssignedContent,
@@ -122,6 +128,7 @@ function workspacePersistenceProbeRootUri(): string | null {
 function workspacePersistenceProbeWrites(seedSnapshot: MobileWorkspaceSnapshot) {
   return [
     ...workspacePersistenceNoteWrites(),
+    ...workspacePersistenceMetadataWrites(seedSnapshot),
     ...workspacePersistenceViewWrites(),
     workspacePersistenceConfigWrite(),
     ...workspacePersistenceFolderWrites(),
@@ -149,6 +156,38 @@ function workspacePersistenceNoteWrites() {
       toPath: movedNotePath,
     },
   ]
+}
+
+type WorkspaceProbeEdit = Parameters<typeof applyMobileWorkspaceEditWithWrites>[1]
+type WorkspaceProbeWrites = ReturnType<typeof applyMobileWorkspaceEditWithWrites>['writes']
+
+function workspacePersistenceMetadataWrites(seedSnapshot: MobileWorkspaceSnapshot) {
+  const note = noteByPath(seedSnapshot, metadataNotePath)
+  if (!note) return []
+
+  return workspacePersistenceEditWrites(seedSnapshot, [
+    { key: '_icon', noteId: note.id, type: 'updateProperty', value: 'star' },
+    { key: '_width', noteId: note.id, type: 'updateProperty', value: 'wide' },
+    { archived: true, noteId: note.id, type: 'setArchived' },
+    { noteId: note.id, organized: true, type: 'setOrganized' },
+    { noteId: note.id, type: 'toggleFavorite' },
+  ])
+}
+
+function workspacePersistenceEditWrites(
+  seedSnapshot: MobileWorkspaceSnapshot,
+  edits: WorkspaceProbeEdit[],
+) {
+  const writes: WorkspaceProbeWrites = []
+  let snapshot = seedSnapshot
+
+  for (const edit of edits) {
+    const result = applyMobileWorkspaceEditWithWrites(snapshot, edit)
+    snapshot = result.snapshot
+    writes.push(...result.writes)
+  }
+
+  return writes
 }
 
 function workspacePersistenceViewWrites() {
@@ -232,6 +271,11 @@ function seedWorkspacePersistenceProbeWrites() {
       path: 'Writing/Seed.md',
     },
     {
+      content: metadataNoteInitialContent(),
+      kind: 'createNote' as const,
+      path: metadataNotePath,
+    },
+    {
       content: '# Keep\n',
       kind: 'createNote' as const,
       path: 'Folders/Queue/Keep.md',
@@ -272,6 +316,7 @@ function seedWorkspacePersistenceProbeWrites() {
 function workspacePersistenceProof(
   snapshot: MobileWorkspaceSnapshot,
   content: {
+    metadataContent: string | null
     movedContent: string | null
     relationshipSourceContent: string | null
     renamedAssignedContent: string | null
@@ -284,6 +329,8 @@ function workspacePersistenceProof(
     folderDeleteApplied: !folderPathStartsWith(snapshot, 'Scratch'),
     folderRenameApplied: folderRenameApplied(snapshot),
     movedNoteContentPreserved: movedContentPreserved(content.movedContent),
+    noteChromeMetadataHydrated: noteChromeMetadataHydrated(snapshot, content.metadataContent),
+    noteStateMetadataHydrated: noteStateMetadataHydrated(snapshot, content.metadataContent),
     persistedToNativeRepository: snapshot.source?.kind === 'localVault',
     relationshipSourceRefHydrated: relationshipSourceRefHydrated(content.relationshipSourceContent),
     relationshipTargetHydrated: snapshotContainsNotePath(snapshot, relationshipTargetPath),
@@ -329,6 +376,29 @@ function folderPathStartsWith(snapshot: MobileWorkspaceSnapshot, pathPrefix: str
 
 function movedContentPreserved(content: string | null) {
   return content?.includes('saved before moving through native persistence') === true
+}
+
+function noteChromeMetadataHydrated(snapshot: MobileWorkspaceSnapshot, content: string | null) {
+  const note = noteByPath(snapshot, metadataNotePath)
+  return noteMatches(note, { icon: 'star', noteWidth: 'wide' })
+    && textContainsAll(content, ['_icon: star', '_width: wide'])
+}
+
+function noteStateMetadataHydrated(snapshot: MobileWorkspaceSnapshot, content: string | null) {
+  const note = noteByPath(snapshot, metadataNotePath)
+  return noteMatches(note, { archived: true, favorite: true, organized: true })
+    && textContainsAll(content, ['_archived: true', '_organized: true', '_favorite: true', '_favorite_index:'])
+}
+
+function noteMatches(
+  note: ReturnType<typeof noteByPath>,
+  expected: Partial<Pick<NonNullable<ReturnType<typeof noteByPath>>, 'archived' | 'favorite' | 'icon' | 'noteWidth' | 'organized'>>,
+) {
+  return note !== null && Object.entries(expected).every(([key, value]) => note[key as keyof typeof expected] === value)
+}
+
+function textContainsAll(content: string | null, fragments: string[]) {
+  return content !== null && fragments.every((fragment) => content.includes(fragment))
 }
 
 function relationshipSourceRefHydrated(content: string | null) {
@@ -384,6 +454,19 @@ function seedNoteUpdatedContent() {
     '# Seeded Mobile Note',
     '',
     'This was saved before moving through native persistence.',
+    '',
+  ].join('\n')
+}
+
+function metadataNoteInitialContent() {
+  return [
+    '---',
+    'type: Essay',
+    'status: Draft',
+    '---',
+    '# Chrome State',
+    '',
+    'Metadata persistence proof seed.',
     '',
   ].join('\n')
 }

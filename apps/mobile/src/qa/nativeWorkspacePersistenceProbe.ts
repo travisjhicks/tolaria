@@ -8,6 +8,8 @@ export type NativeWorkspacePersistenceProof = {
   folderDeleteApplied: boolean
   folderRenameApplied: boolean
   movedNoteContentPreserved: boolean
+  noteChromeMetadataHydrated: boolean
+  noteStateMetadataHydrated: boolean
   persistedToNativeRepository: boolean
   relationshipSourceRefHydrated: boolean
   relationshipTargetHydrated: boolean
@@ -58,6 +60,8 @@ export function assertNativeWorkspacePersistenceProofs(
     proofFailure(latest.persistedToNativeRepository, 'workspace.persistence.native', 'Workspace writes ran through the native Expo filesystem repository'),
     proofFailure(latest.createdNoteHydrated, 'workspace.persistence.createNote', 'Created notes rehydrate from the native vault snapshot'),
     proofFailure(latest.movedNoteContentPreserved, 'workspace.persistence.moveNote', 'Saved and moved note content is read back from the native repository'),
+    proofFailure(latest.noteChromeMetadataHydrated, 'workspace.persistence.noteChromeMetadata', 'Note icon and width metadata rehydrate from native frontmatter writes'),
+    proofFailure(latest.noteStateMetadataHydrated, 'workspace.persistence.noteStateMetadata', 'Note archive, organized, and favorite metadata rehydrate from native frontmatter writes'),
     proofFailure(latest.relationshipTargetHydrated, 'workspace.persistence.relationshipTarget', 'Relationship target creation rehydrates the reducer-created target note'),
     proofFailure(latest.relationshipSourceRefHydrated, 'workspace.persistence.relationshipSourceRef', 'Relationship target creation rehydrates the saved source note relationship ref'),
     proofFailure(latest.savedViewHydrated, 'workspace.persistence.saveView', 'Saved desktop-compatible views rehydrate from native views/*.yml'),
@@ -104,6 +108,8 @@ function parsedWorkspacePersistenceProof(value: unknown): NativeWorkspacePersist
     folderDeleteApplied: value.folderDeleteApplied,
     folderRenameApplied: value.folderRenameApplied,
     movedNoteContentPreserved: value.movedNoteContentPreserved,
+    noteChromeMetadataHydrated: value.noteChromeMetadataHydrated,
+    noteStateMetadataHydrated: value.noteStateMetadataHydrated,
     persistedToNativeRepository: value.persistedToNativeRepository,
     relationshipSourceRefHydrated: value.relationshipSourceRefHydrated,
     relationshipTargetHydrated: value.relationshipTargetHydrated,
@@ -130,6 +136,8 @@ const workspacePersistenceProofKeys = [
   'folderDeleteApplied',
   'folderRenameApplied',
   'movedNoteContentPreserved',
+  'noteChromeMetadataHydrated',
+  'noteStateMetadataHydrated',
   'persistedToNativeRepository',
   'relationshipSourceRefHydrated',
   'relationshipTargetHydrated',

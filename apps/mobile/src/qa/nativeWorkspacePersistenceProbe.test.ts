@@ -27,14 +27,11 @@ describe('native workspace persistence probe', () => {
   })
 
   it('reports incomplete Type rename persistence proofs', () => {
-    const proof = {
-      ...passingWorkspaceProof(),
+    expectProofFailures({
       renamedTypeAssignedNoteHydrated: false,
       renamedTypeDefinitionHydrated: false,
       renamedTypeSchemaRefsHydrated: false,
-    }
-
-    expect(assertNativeWorkspacePersistenceProofs([proof]).map((failure) => failure.id)).toEqual([
+    }, [
       'workspace.persistence.renameType',
       'workspace.persistence.renameType.assignedNote',
       'workspace.persistence.renameType.schemaRefs',
@@ -42,25 +39,29 @@ describe('native workspace persistence probe', () => {
   })
 
   it('reports incomplete relationship target persistence proofs', () => {
-    const proof = {
-      ...passingWorkspaceProof(),
+    expectProofFailures({
       relationshipSourceRefHydrated: false,
       relationshipTargetHydrated: false,
-    }
-
-    expect(assertNativeWorkspacePersistenceProofs([proof]).map((failure) => failure.id)).toEqual([
+    }, [
       'workspace.persistence.relationshipTarget',
       'workspace.persistence.relationshipSourceRef',
     ])
   })
 
-  it('reports incomplete vault config persistence proofs', () => {
-    const proof = {
-      ...passingWorkspaceProof(),
-      vaultConfigHydrated: false,
-    }
+  it('reports incomplete note metadata persistence proofs', () => {
+    expectProofFailures({
+      noteChromeMetadataHydrated: false,
+      noteStateMetadataHydrated: false,
+    }, [
+      'workspace.persistence.noteChromeMetadata',
+      'workspace.persistence.noteStateMetadata',
+    ])
+  })
 
-    expect(assertNativeWorkspacePersistenceProofs([proof]).map((failure) => failure.id)).toEqual([
+  it('reports incomplete vault config persistence proofs', () => {
+    expectProofFailures({
+      vaultConfigHydrated: false,
+    }, [
       'workspace.persistence.vaultConfig',
     ])
   })
@@ -78,6 +79,14 @@ describe('native workspace persistence probe', () => {
   })
 })
 
+function expectProofFailures(
+  proofPatch: Partial<NativeWorkspacePersistenceProof>,
+  expectedIds: string[],
+) {
+  const proof = { ...passingWorkspaceProof(), ...proofPatch }
+  expect(assertNativeWorkspacePersistenceProofs([proof]).map((failure) => failure.id)).toEqual(expectedIds)
+}
+
 function passingWorkspaceProof(): NativeWorkspacePersistenceProof {
   return {
     createdNoteHydrated: true,
@@ -86,6 +95,8 @@ function passingWorkspaceProof(): NativeWorkspacePersistenceProof {
     folderDeleteApplied: true,
     folderRenameApplied: true,
     movedNoteContentPreserved: true,
+    noteChromeMetadataHydrated: true,
+    noteStateMetadataHydrated: true,
     persistedToNativeRepository: true,
     relationshipSourceRefHydrated: true,
     relationshipTargetHydrated: true,

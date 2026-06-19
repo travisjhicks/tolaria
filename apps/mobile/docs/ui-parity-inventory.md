@@ -99,7 +99,7 @@ Editor autocomplete is covered as behavior too: `[[` suggestions match active no
 
 Property editing is covered through real typed writes: scalar text, tag lists, number values, boolean Yes/No values, status chips, ISO date entry, URL entry, color swatches, and raw frontmatter edits all pass through the same frontmatter write boundary as desktop-style property edits.
 
-`pnpm mobile:qa:ios-workspace-persistence` and `pnpm mobile:qa:ios-phone-workspace-persistence` run an isolated native Expo FileSystem vault and fail unless repository-level writes persist and rehydrate on the actual iOS Simulator. The probe covers create/save/move/delete note writes, save/delete `views/*.yml`, primary note-list config writes, create/rename/delete folders, and create/delete Type documents through the same mobile repository boundary used by tablet and phone action sheets.
+`pnpm mobile:qa:ios-workspace-persistence` and `pnpm mobile:qa:ios-phone-workspace-persistence` run an isolated native Expo FileSystem vault and fail unless repository-level writes persist and rehydrate on the actual iOS Simulator. The probe covers create/save/move/delete note writes, note icon/width/archive/organized/favorite frontmatter metadata, save/delete `views/*.yml`, primary note-list config writes, create/rename/delete folders, and create/delete Type documents through the same mobile repository boundary used by tablet and phone action sheets.
 
 React Native Web screenshots are a fast preflight only. Layout-sensitive mobile UI work must also pass the native iOS simulator metric check and produce a simulator screenshot before it is accepted, because spacing, safe-area, and text layout can diverge between web and the actual Expo app.
 
