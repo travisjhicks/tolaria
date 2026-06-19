@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Pressable, ScrollView, StyleSheet, View, type NativeSyntheticEvent, type TextInputKeyPressEventData } from 'react-native'
-import { CheckCircle, FilePlus, FolderOpen, LinkSimple, ListBullets, Star, Trash } from 'phosphor-react-native'
+import { CheckCircle, ClipboardText, FilePlus, FolderOpen, LinkSimple, ListBullets, Star, Trash } from 'phosphor-react-native'
 import { Text } from '../ui/text'
 import { mobileText } from '../../i18n/mobileText'
 import { MobileButton } from '../../ui/MobileButton'
@@ -111,6 +111,7 @@ type MobileWorkspaceActionSheetProps = {
   onChangeNoteType: () => void
   onChangeNoteTypeInputChange: (value: string) => void
   onClose: () => void
+  onCopyFolderPath: () => void
   onCreateFolder: () => void
   onCreateNote: (titleOverride?: string) => void
   onCreateRelationshipTarget: () => void
@@ -616,6 +617,12 @@ function FolderActionsContent(props: MobileWorkspaceActionSheetProps) {
         label={mobileText('sidebar.action.createFolder')}
         testID="workspace-action-create-child-folder"
         onPress={props.onOpenCreateChildFolder}
+      />
+      <ActionRow
+        icon={<ClipboardText color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
+        label={mobileText('sidebar.action.copyFolderPathMenu')}
+        testID="workspace-action-copy-folder-path"
+        onPress={props.onCopyFolderPath}
       />
       <ActionRow
         destructive

@@ -1,7 +1,9 @@
 import type { MobileWorkspaceAction } from '../components/workspace/MobileWorkspaceActionSheet'
 import type { MobileSidebarFolderSelection } from '../components/workspace/MobileWorkspaceSidebar'
+import { writeMobileClipboardText } from '../workspace/mobileClipboard'
 import type { MobileWorkspaceEdit } from '../workspace/mobileWorkspaceEditing'
 import { mobileFolderName, mobileFolderParentPath } from '../workspace/mobileWorkspaceFolders'
+import { buildMobileFilePathForRelativePath } from '../workspace/mobileNoteFilePath'
 import type { TabletReadOnlyForm } from './tabletWorkspaceTypes'
 import type { TabletSidebarSelection } from './tabletWorkspaceNavigation'
 
@@ -21,6 +23,7 @@ export function folderWorkspaceActions({
   selectFolder,
   setOpenAction,
   updateReadOnlyForm,
+  vaultRootUri,
 }: {
   applyEdit: ApplyWorkspaceEdit
   closeAction: CloseWorkspaceAction
@@ -28,8 +31,14 @@ export function folderWorkspaceActions({
   selectFolder: SelectFolder
   setOpenAction: SetOpenAction
   updateReadOnlyForm: ReadOnlyFormUpdater
+  vaultRootUri?: string | null
 }) {
   return {
+    onCopyFolderPath: () => copyFolderPath({
+      closeAction,
+      folderPath: readOnlyForm.editingFolderPath,
+      vaultRootUri,
+    }),
     onCreateFolder: () => commitFolderEdit({
       applyEdit,
       closeAction,
@@ -121,6 +130,24 @@ function openCreateNoteInFolder({
   updateReadOnlyForm('createTitle', '')
   selectFolder({ id: folderPath, name: folderName || mobileFolderName(folderPath) })
   setOpenAction('createNote')
+}
+
+function copyFolderPath({
+  closeAction,
+  folderPath,
+  vaultRootUri,
+}: {
+  closeAction: CloseWorkspaceAction
+  folderPath: string
+  vaultRootUri?: string | null
+}) {
+  const result = buildMobileFilePathForRelativePath({ path: folderPath, vaultRootUri })
+  if (!result.ok) return
+
+  closeAction()
+  void writeMobileClipboardText(result.path).catch((error) => {
+    console.warn('[mobile-folder-path] Failed to copy folder path:', error)
+  })
 }
 
 function commitFolderEdit({

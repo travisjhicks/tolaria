@@ -22,6 +22,11 @@ test.describe('phone folder action parity', () => {
     await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('Phone Renamed Folder')
 
     await longPressRoleButton(page, 'Phone Renamed Folder')
+    await page.getByTestId('workspace-action-copy-folder-path').click()
+    await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+    await expect(latestClipboardAttempt(page)).resolves.toBe('Phone Renamed Folder')
+
+    await longPressRoleButton(page, 'Phone Renamed Folder')
     await page.getByTestId('workspace-action-create-note-in-folder').click()
     await expect(page.getByTestId('workspace-create-note-title-input')).toBeVisible()
     await page.getByTestId('workspace-create-note-title-input').fill('Phone Folder Draft')
@@ -52,4 +57,11 @@ async function openPhoneSidebar(page: Page) {
 
   await page.getByTestId('phone-sidebar-action').click()
   await expect(page.getByTestId('phone-sidebar-screen')).toBeVisible()
+}
+
+async function latestClipboardAttempt(page: Page) {
+  return page.evaluate(() => {
+    const attempts = (window as unknown as Record<string, unknown>).__TOLARIA_MOBILE_CLIPBOARD_ATTEMPTS__
+    return Array.isArray(attempts) ? attempts.at(-1) : null
+  })
 }

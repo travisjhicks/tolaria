@@ -139,6 +139,7 @@ type WorkspaceActionsContext = {
   closeAction: () => void
   navigation: TabletWorkspaceNavigation
   readOnlyForm: TabletReadOnlyForm
+  repositoryRequest?: ReadOnlyWorkspaceRequest
   selectedNote: MobileNote | null
   setOpenAction: SetOpenAction
   updateReadOnlyForm: ReadOnlyFormUpdater
@@ -179,6 +180,7 @@ export function useTabletWorkspaceController({
     closeAction,
     navigation,
     readOnlyForm,
+    repositoryRequest,
     selectedNote,
     setOpenAction,
     updateReadOnlyForm,
@@ -462,6 +464,7 @@ function createWorkspaceActions({
   closeAction,
   navigation,
   readOnlyForm,
+  repositoryRequest,
   setOpenAction,
   updateReadOnlyForm,
   workspaceSnapshot,
@@ -501,6 +504,7 @@ function createWorkspaceActions({
       selectFolder: navigation.selectFolder,
       setOpenAction,
       updateReadOnlyForm,
+      vaultRootUri: repositoryRequest?.vaultRootUri,
     }),
     ...favoriteWorkspaceActions({ applyEdit, readOnlyForm, workspaceSnapshot }),
     ...primaryNoteListWorkspaceActions({ applyEdit, closeAction, readOnlyForm, updateReadOnlyForm, workspaceSnapshot }),

@@ -4,6 +4,10 @@ export type MobileNoteFilePathResult =
   | { ok: true; path: string }
   | { error: 'missing_note' | 'unsafe_path'; ok: false }
 
+export type MobileRelativeFilePathResult =
+  | { ok: true; path: string }
+  | { error: 'missing_path' | 'unsafe_path'; ok: false }
+
 export function buildMobileFilePathForNote({
   note,
   vaultRootUri,
@@ -14,11 +18,30 @@ export function buildMobileFilePathForNote({
   if (!note) return { error: 'missing_note', ok: false }
 
   const path = safeRelativeNotePath(note.path) ?? safeRelativeNotePath(note.id)
-  if (!path) return { error: 'unsafe_path', ok: false }
+  return mobileFilePathResult(path, vaultRootUri)
+}
 
+export function buildMobileFilePathForRelativePath({
+  path,
+  vaultRootUri,
+}: {
+  path: string | null | undefined
+  vaultRootUri?: string | null
+}): MobileRelativeFilePathResult {
+  if (!stringValue(path).trim()) return { error: 'missing_path', ok: false }
+
+  const safePath = safeRelativeNotePath(path)
+  return mobileFilePathResult(safePath, vaultRootUri)
+}
+
+function mobileFilePathResult(
+  safePath: string | null,
+  vaultRootUri?: string | null,
+): { ok: true; path: string } | { error: 'unsafe_path'; ok: false } {
+  if (!safePath) return { error: 'unsafe_path', ok: false }
   return {
     ok: true,
-    path: vaultRootUri?.trim() ? joinVaultUri(vaultRootUri, path) : path,
+    path: vaultRootUri?.trim() ? joinVaultUri(vaultRootUri, safePath) : safePath,
   }
 }
 
