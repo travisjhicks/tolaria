@@ -9,6 +9,8 @@ export type NativeWysiwygMarkdownBlockProof = {
   codeBlockSaved: boolean
   contentLength: number
   dividerSaved: boolean
+  mathBlockSaved: boolean
+  mermaidSaved: boolean
   noteId: NoteId
   tableSaved: boolean
 }
@@ -20,18 +22,45 @@ export type NativeWysiwygMarkdownBlockAssertionFailure = {
 
 export const nativeWysiwygMarkdownBlockLogPrefix = 'TOLARIA_MOBILE_WYSIWYG_MARKDOWN_BLOCK_PROBE'
 
+type ProofFieldName = keyof NativeWysiwygMarkdownBlockProof
+type ProofFieldType = 'boolean' | 'number' | 'string'
+type ProofFieldMap = {
+  [Field in ProofFieldName]: NativeWysiwygMarkdownBlockProof[Field]
+}
+
 const expectedDivider = '---'
 const expectedCodeBlock = '```text\ncode\n```'
-const expectedTableLines = [
+const expectedMathBlock = '$$\n\\sqrt{a^2 + b^2}\n$$'
+const expectedMermaid = [
+  '```mermaid',
+  'flowchart TD',
+  '    edit["Switch to the raw editor to edit"]',
+  '```',
+].join('\n')
+const expectedTable = [
   '| Column | Value |',
   '| --- | --- |',
   '| Item | Detail |',
-] as const
+].join('\n')
+
+const proofFieldTypes = {
+  codeBlockSaved: 'boolean',
+  contentLength: 'number',
+  dividerSaved: 'boolean',
+  mathBlockSaved: 'boolean',
+  mermaidSaved: 'boolean',
+  noteId: 'string',
+  tableSaved: 'boolean',
+} as const satisfies Record<ProofFieldName, ProofFieldType>
+
+const proofFields = Object.keys(proofFieldTypes) as ProofFieldName[]
 
 export function nativeWysiwygMarkdownBlockProbePayloads(): NativeWysiwygMarkdownBlockPayload[] {
   return [
     { action: 'divider' },
     { action: 'codeBlock' },
+    { action: 'mathBlock' },
+    { action: 'mermaid' },
     { action: 'table' },
   ]
 }
@@ -49,8 +78,10 @@ export function nativeWysiwygMarkdownBlockProof({
     codeBlockSaved: normalizedContent.includes(expectedCodeBlock),
     contentLength: content.length,
     dividerSaved: markdownBlocks(normalizedContent).includes(expectedDivider),
+    mathBlockSaved: normalizedContent.includes(expectedMathBlock),
+    mermaidSaved: normalizedContent.includes(expectedMermaid),
     noteId,
-    tableSaved: expectedTableLines.every((line) => normalizedContent.includes(line)),
+    tableSaved: normalizedContent.includes(expectedTable),
   }
 }
 
@@ -92,6 +123,16 @@ export function assertNativeWysiwygMarkdownBlockProofs(
       'Native WYSIWYG code-block insertion saves as desktop fenced-code markdown',
     ),
     proofFailure(
+      latest.mathBlockSaved,
+      'editor.wysiwyg.markdownBlocks.mathBlock',
+      'Native WYSIWYG math insertion saves as desktop display-math markdown',
+    ),
+    proofFailure(
+      latest.mermaidSaved,
+      'editor.wysiwyg.markdownBlocks.mermaid',
+      'Native WYSIWYG Mermaid insertion saves as desktop fenced-diagram markdown',
+    ),
+    proofFailure(
       latest.tableSaved,
       'editor.wysiwyg.markdownBlocks.table',
       'Native WYSIWYG table insertion saves as desktop markdown table source lines',
@@ -122,22 +163,28 @@ function parseProofLine(line: ProbeLine): NativeWysiwygMarkdownBlockProof | null
 }
 
 function parsedProof(value: unknown): NativeWysiwygMarkdownBlockProof | null {
-  if (!value || typeof value !== 'object') return null
-
-  const candidate = value as Partial<NativeWysiwygMarkdownBlockProof>
-  if (typeof candidate.codeBlockSaved !== 'boolean') return null
-  if (typeof candidate.contentLength !== 'number') return null
-  if (typeof candidate.dividerSaved !== 'boolean') return null
-  if (typeof candidate.noteId !== 'string') return null
-  if (typeof candidate.tableSaved !== 'boolean') return null
+  if (!isRecord(value)) return null
+  if (!isNativeWysiwygMarkdownBlockProof(value)) return null
 
   return {
-    codeBlockSaved: candidate.codeBlockSaved,
-    contentLength: candidate.contentLength,
-    dividerSaved: candidate.dividerSaved,
-    noteId: candidate.noteId,
-    tableSaved: candidate.tableSaved,
+    codeBlockSaved: value.codeBlockSaved,
+    contentLength: value.contentLength,
+    dividerSaved: value.dividerSaved,
+    mathBlockSaved: value.mathBlockSaved,
+    mermaidSaved: value.mermaidSaved,
+    noteId: value.noteId,
+    tableSaved: value.tableSaved,
   }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object'
+}
+
+function isNativeWysiwygMarkdownBlockProof(
+  value: Record<string, unknown>,
+): value is ProofFieldMap {
+  return proofFields.every((field) => typeof value[field] === proofFieldTypes[field])
 }
 
 function normalizedMarkdown(content: MarkdownContent): MarkdownContent {

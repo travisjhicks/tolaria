@@ -95,6 +95,8 @@ describe('native WYSIWYG wikilink bridge', () => {
   it.each([
     ['divider', 'Intro\n\n---\n\nTail'],
     ['codeBlock', 'Intro\n\n```text\ncode\n```\n\nTail'],
+    ['mathBlock', 'Intro\n\n$$\n\\sqrt{a^2 + b^2}\n$$\n\nTail'],
+    ['mermaid', 'Intro\n\n```mermaid\nflowchart TD\n    edit["Switch to the raw editor to edit"]\n```\n\nTail'],
     ['table', 'Intro\n\n| Column | Value |\n| --- | --- |\n| Item | Detail |\n\nTail'],
   ] as const)('inserts native WYSIWYG %s as durable markdown source lines', (action, expectedMarkdown) => {
     const nextDocument = nativeWysiwygDocumentWithInsertedMarkdownBlock({

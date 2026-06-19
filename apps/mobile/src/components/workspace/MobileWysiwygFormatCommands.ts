@@ -1,5 +1,9 @@
 import { mobileColors } from '../../ui/tokens'
 import type { MobileMarkdownFormatAction } from '../../workspace/mobileMarkdownFormatting'
+import {
+  mobileMarkdownSourceBlockActions,
+  type MobileMarkdownSourceBlockAction,
+} from '../../workspace/mobileMarkdownSourceBlocks'
 
 export type NativeWysiwygCommandBridge = {
   toggleBlockquote?: () => void
@@ -20,13 +24,9 @@ type NativeWysiwygFormatCommandSpec = {
   run: NativeWysiwygFormatCommand
 }
 
-export const nativeWysiwygMarkdownBlockActions = [
-  'divider',
-  'codeBlock',
-  'table',
-] as const satisfies readonly MobileMarkdownFormatAction[]
+export const nativeWysiwygMarkdownBlockActions = mobileMarkdownSourceBlockActions
 
-export type NativeWysiwygMarkdownBlockAction = typeof nativeWysiwygMarkdownBlockActions[number]
+export type NativeWysiwygMarkdownBlockAction = MobileMarkdownSourceBlockAction
 
 export const nativeWysiwygFormattingActions = [
   'attachment',

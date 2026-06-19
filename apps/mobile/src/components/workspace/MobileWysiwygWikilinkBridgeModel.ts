@@ -8,6 +8,7 @@ import {
   activeMobileWikilinkQuery,
 } from '../../workspace/mobileWikilinkAutocomplete'
 import type { TiptapJsonNode } from '../../workspace/mobileDocumentContent'
+import { mobileMarkdownSourceBlockLines } from '../../workspace/mobileMarkdownSourceBlocks'
 import type { NativeWysiwygMarkdownBlockAction } from './MobileWysiwygFormatCommands'
 
 type NativeWysiwygWikilinkTextNode = {
@@ -179,13 +180,7 @@ function nativeWysiwygLinkAttachmentContent(
 }
 
 function nativeWysiwygMarkdownBlockNode(action: NativeWysiwygMarkdownBlockAction): TiptapJsonNode {
-  if (action === 'divider') return nativeWysiwygSourceParagraph(['---'])
-  if (action === 'codeBlock') return nativeWysiwygSourceParagraph(['```text', 'code', '```'])
-  return nativeWysiwygSourceParagraph([
-    '| Column | Value |',
-    '| --- | --- |',
-    '| Item | Detail |',
-  ])
+  return nativeWysiwygSourceParagraph(mobileMarkdownSourceBlockLines(action))
 }
 
 function nativeWysiwygSourceParagraph(lines: string[]): TiptapJsonNode {

@@ -14,6 +14,8 @@ describe('native WYSIWYG markdown block probe', () => {
     expect(nativeWysiwygMarkdownBlockProbePayloads()).toEqual([
       { action: 'divider' },
       { action: 'codeBlock' },
+      { action: 'mathBlock' },
+      { action: 'mermaid' },
       { action: 'table' },
     ])
   })
@@ -29,6 +31,15 @@ describe('native WYSIWYG markdown block probe', () => {
         'code',
         '```',
         '',
+        '$$',
+        '\\sqrt{a^2 + b^2}',
+        '$$',
+        '',
+        '```mermaid',
+        'flowchart TD',
+        '    edit["Switch to the raw editor to edit"]',
+        '```',
+        '',
         '| Column | Value |',
         '| --- | --- |',
         '| Item | Detail |',
@@ -37,6 +48,8 @@ describe('native WYSIWYG markdown block probe', () => {
     })).toMatchObject({
       codeBlockSaved: true,
       dividerSaved: true,
+      mathBlockSaved: true,
+      mermaidSaved: true,
       noteId: 'note.md',
       tableSaved: true,
     })
@@ -53,6 +66,15 @@ describe('native WYSIWYG markdown block probe', () => {
         'code',
         '```',
         '',
+        '$$',
+        '\\sqrt{a^2 + b^2}',
+        '$$',
+        '',
+        '```mermaid',
+        'flowchart TD',
+        '    edit["Switch to the raw editor to edit"]',
+        '```',
+        '',
         '| Column | Value |',
         '| --- | --- |',
         '| Item | Detail |',
@@ -61,6 +83,8 @@ describe('native WYSIWYG markdown block probe', () => {
     })).toMatchObject({
       codeBlockSaved: true,
       dividerSaved: false,
+      mathBlockSaved: true,
+      mermaidSaved: true,
       tableSaved: true,
     })
   })
@@ -74,6 +98,15 @@ describe('native WYSIWYG markdown block probe', () => {
         '',
         '```text',
         'code',
+        '```',
+        '',
+        '$$',
+        '\\sqrt{a^2 + b^2}',
+        '$$',
+        '',
+        '```mermaid',
+        'flowchart TD',
+        '    edit["Switch to the raw editor to edit"]',
         '```',
         '',
         '| Column | Value |',
@@ -101,6 +134,14 @@ describe('native WYSIWYG markdown block probe', () => {
       {
         id: 'editor.wysiwyg.markdownBlocks.codeBlock',
         message: 'Native WYSIWYG code-block insertion saves as desktop fenced-code markdown',
+      },
+      {
+        id: 'editor.wysiwyg.markdownBlocks.mathBlock',
+        message: 'Native WYSIWYG math insertion saves as desktop display-math markdown',
+      },
+      {
+        id: 'editor.wysiwyg.markdownBlocks.mermaid',
+        message: 'Native WYSIWYG Mermaid insertion saves as desktop fenced-diagram markdown',
       },
       {
         id: 'editor.wysiwyg.markdownBlocks.table',

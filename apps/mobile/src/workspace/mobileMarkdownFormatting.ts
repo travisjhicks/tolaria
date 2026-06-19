@@ -1,3 +1,9 @@
+import {
+  mobileMarkdownSourceBlockFormat,
+  mobileMarkdownSourceBlockText,
+  type MobileMarkdownSourceBlockFormat,
+} from './mobileMarkdownSourceBlocks'
+
 export type MobileMarkdownFormatAction =
   | 'attachment'
   | 'bold'
@@ -67,12 +73,6 @@ type NumberedLine = MarkdownLine & {
   index: number
 }
 
-type SourceBlockFormat = {
-  closing: string
-  fallback: string
-  opening: string
-}
-
 const inlineFormats: Partial<Record<MobileMarkdownFormatAction, InlineFormat>> = {
   bold: { placeholder: 'bold text', prefix: '**', suffix: '**' },
   code: { placeholder: 'code', prefix: '`', suffix: '`' },
@@ -93,24 +93,7 @@ const lineMarkers: Partial<Record<MobileMarkdownFormatAction, LineMarker>> = {
   taskList: { value: '- [ ] ' },
 }
 
-const defaultMathBlockLatex = '\\sqrt{a^2 + b^2}'
-
-const defaultMermaidDiagram = [
-  'flowchart TD',
-  '    edit["Switch to the raw editor to edit"]',
-].join('\n')
-
-const sourceBlockFormats: Partial<Record<MobileMarkdownFormatAction, SourceBlockFormat>> = {
-  codeBlock: { closing: '\n```', fallback: 'code', opening: '```text\n' },
-  mathBlock: { closing: '\n$$', fallback: defaultMathBlockLatex, opening: '$$\n' },
-  mermaid: { closing: '\n```', fallback: defaultMermaidDiagram, opening: '```mermaid\n' },
-}
-
-const markdownTableSnippet = [
-  '| Column | Value |',
-  '| --- | --- |',
-  '| Item | Detail |',
-].join('\n')
+const markdownTableSnippet = mobileMarkdownSourceBlockText('table')
 
 export function applyMobileMarkdownFormat(
   text: string,
@@ -154,13 +137,12 @@ class MarkdownEditSession {
     const lineMarker = lineMarkers[this.action]
     if (lineMarker) return this.applyMarkedLineTransform(lineMarker)
 
-    const sourceBlockFormat = sourceBlockFormats[this.action]
-    if (sourceBlockFormat) return this.insertSourceBlock(sourceBlockFormat)
-
     if (this.action === 'orderedList') return this.applyLineTransform((line) => this.numberedLine(line))
-    if (this.action === 'divider') return this.insertDivider()
     if (this.action === 'table') return this.insertTable()
     if (this.action === 'wikilink') return this.applyWikilinkFormat()
+
+    const sourceBlockFormat = mobileMarkdownSourceBlockFormat(this.action)
+    if (sourceBlockFormat) return this.insertSourceBlock(sourceBlockFormat)
 
     return { selection: this.range, text: this.text }
   }
@@ -246,7 +228,7 @@ class MarkdownEditSession {
     return `${marker}${line.value.replace(/^\d+[.)]\s+/u, '')}`
   }
 
-  private insertSourceBlock(format: SourceBlockFormat): MobileMarkdownFormatResult {
+  private insertSourceBlock(format: MobileMarkdownSourceBlockFormat): MobileMarkdownFormatResult {
     const selected = this.selectedText()
     const content = selected || format.fallback
     const before = this.blockPrefix()
@@ -255,18 +237,7 @@ class MarkdownEditSession {
     const contentStart = this.range.start + before.length + format.opening.length
 
     return {
-      selection: selected ? collapsedSelection(this.range.start + replacement.length) : { start: contentStart, end: contentStart + content.length },
-      text: this.replaceRange({ value: replacement }),
-    }
-  }
-
-  private insertDivider(): MobileMarkdownFormatResult {
-    const before = this.blockPrefix()
-    const after = this.blockSuffix()
-    const replacement = `${before}---${after}`
-
-    return {
-      selection: collapsedSelection(this.range.start + replacement.length),
+      selection: this.sourceBlockSelection({ content, contentStart, replacement, selected, selectFallback: format.selectFallback }),
       text: this.replaceRange({ value: replacement }),
     }
   }
@@ -284,6 +255,23 @@ class MarkdownEditSession {
       },
       text: this.replaceRange({ value: replacement }),
     }
+  }
+
+  private sourceBlockSelection({
+    content,
+    contentStart,
+    replacement,
+    selected,
+    selectFallback,
+  }: {
+    content: string
+    contentStart: number
+    replacement: string
+    selected: string
+    selectFallback: boolean
+  }): MobileMarkdownSelection {
+    if (selected || !selectFallback) return collapsedSelection(this.range.start + replacement.length)
+    return { start: contentStart, end: contentStart + content.length }
   }
 
   private blockPrefix(): string {
