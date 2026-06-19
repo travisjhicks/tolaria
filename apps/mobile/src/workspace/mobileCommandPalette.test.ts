@@ -92,6 +92,31 @@ describe('mobile command palette', () => {
     expect(handlers.onCreateNote).toHaveBeenCalledWith('')
   })
 
+  it('exposes desktop-style selected folder commands', () => {
+    const handlers = commandHandlers({ activeFolderId: 'Tolaria/Mobile UI' })
+    const copyPath = enabledCommand(handlers, 'copy-selected-folder-path')
+    const rename = enabledCommand(handlers, 'rename-folder')
+    const deleteFolder = enabledCommand(handlers, 'delete-folder')
+
+    expect(copyPath).toMatchObject({
+      group: 'Navigation',
+      label: 'Copy folder path',
+    })
+    expect(rename).toMatchObject({ label: 'Rename Folder' })
+    expect(deleteFolder).toMatchObject({ label: 'Delete Folder' })
+
+    copyPath.execute()
+    rename.execute()
+    deleteFolder.execute()
+
+    expect(handlers.onCopySelectedFolderPath).toHaveBeenCalledOnce()
+    expect(handlers.onOpenFolderActions).toHaveBeenCalledWith({
+      id: 'Tolaria/Mobile UI',
+      name: 'Mobile UI',
+    })
+    expect(handlers.onDeleteSelectedFolder).toHaveBeenCalledOnce()
+  })
+
   it('exposes desktop-style section filter commands when note-list filters are visible', () => {
     const handlers = commandHandlers({ noteListFilter: 'open', noteListFilterVisible: true })
     const results = mobileCommandPaletteResults(buildMobileCommandPaletteCommands(handlers), '')
@@ -268,8 +293,10 @@ function commandHandlers(
     canUndoWorkspaceEdit: true,
     onCopyDeepLink: vi.fn(),
     onCopyFilePath: vi.fn(),
+    onCopySelectedFolderPath: vi.fn(),
     onCreateNote: vi.fn(),
     onCreateNoteOfType: vi.fn(),
+    onDeleteSelectedFolder: vi.fn(),
     onDeleteNote: vi.fn(),
     onEnterNeighborhood: vi.fn(),
     onExportNoteAsPdf: vi.fn(),
@@ -279,6 +306,7 @@ function commandHandlers(
     onOpenCreateType: vi.fn(),
     onOpenFindInNote: vi.fn(),
     onOpenFileInDefaultApp: vi.fn(),
+    onOpenFolderActions: vi.fn(),
     onOpenMoveNoteToFolder: vi.fn(),
     onOpenNativeVault: vi.fn(),
     onOpenPrimaryActions: vi.fn(),

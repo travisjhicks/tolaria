@@ -70,6 +70,7 @@ import {
   folderParentPathForSelection,
   folderWorkspaceActions,
 } from './tabletWorkspaceFolderActions'
+import { selectedFolderCommandActions } from './tabletWorkspaceSelectedFolderActions'
 import {
   openPrimaryListProperties,
   primaryNoteListWorkspaceActions,
@@ -224,6 +225,11 @@ export function useTabletWorkspaceController({
     navigation,
     workspaceSnapshot,
   })
+  const selectedFolderActions = selectedFolderCommandActions({
+    applyEdit,
+    sidebarSelection: navigation.sidebarSelection,
+    vaultRootUri: repositoryRequest?.vaultRootUri ?? null,
+  })
   const noteIconActions = noteIconWorkspaceActions({
     readOnlyForm,
     saveSelectedEdit,
@@ -241,6 +247,7 @@ export function useTabletWorkspaceController({
     ...propertyActions,
     ...relationshipActions,
     ...retargetActions,
+    ...selectedFolderActions,
     ...selectedViewActions,
     openAction,
     readOnlyForm,

@@ -1,7 +1,15 @@
 import appCommandManifest from '../../../../src/shared/appCommandManifest.json'
 import { mobileText } from '../i18n/mobileText'
-import type { MobileSidebarItemSelection } from '../components/workspace/MobileWorkspaceSidebar'
-import type { MobileNote, MobileSidebarItem, MobileWorkspaceSnapshot } from './mobileWorkspaceModel'
+import type {
+  MobileSidebarFolderSelection,
+  MobileSidebarItemSelection,
+} from '../components/workspace/MobileWorkspaceSidebar'
+import type {
+  MobileNote,
+  MobileSidebarFolder,
+  MobileSidebarItem,
+  MobileWorkspaceSnapshot,
+} from './mobileWorkspaceModel'
 import type { MobileNoteListFilter } from './mobileNoteFilters'
 
 type DesktopCommandKey = keyof typeof appCommandManifest.commands
@@ -38,8 +46,10 @@ export type MobileCommandPaletteHandlers = {
   onOpenCreateNote: () => void
   onOpenCreateType: () => void
   onCopyFilePath?: () => void
+  onCopySelectedFolderPath?: () => void
   onOpenFindInNote: () => void
   onOpenFileInDefaultApp?: () => void
+  onOpenFolderActions?: (selection: MobileSidebarFolderSelection) => void
   onOpenMoveNoteToFolder?: () => void
   onOpenNativeVault?: () => void
   onOpenReplaceInNote: () => void
@@ -52,6 +62,7 @@ export type MobileCommandPaletteHandlers = {
   onOpenViewActions?: (selection: MobileSidebarItemSelection) => void
   onMoveSelectedViewDown?: () => void
   onMoveSelectedViewUp?: () => void
+  onDeleteSelectedFolder?: () => void
   onNoteListFilterChange?: (filter: MobileNoteListFilter) => void
   onPastePlainText?: () => void
   onCopyDeepLink?: () => void
@@ -347,8 +358,40 @@ function navigationCommands(handlers: MobileCommandPaletteHandlers): MobileComma
     primaryNavigationCommand('goInbox', 'inbox', mobileText('command.navigation.goInbox'), handlers),
     primaryNavigationCommand('goAllNotes', 'all-notes', mobileText('command.navigation.goAllNotes'), handlers),
     primaryNavigationCommand('goArchived', 'archive', mobileText('command.navigation.goArchived'), handlers),
+    ...folderNavigationCommands(handlers),
     ...typeSectionNavigationCommands(handlers),
     ...noteListFilterCommands(handlers),
+  ]
+}
+
+function folderNavigationCommands(handlers: MobileCommandPaletteHandlers): MobileCommandPaletteCommand[] {
+  const folder = activeSidebarFolder(handlers)
+
+  return [
+    dynamicCommand({
+      enabled: Boolean(folder && handlers.onCopySelectedFolderPath),
+      execute: handlers.onCopySelectedFolderPath,
+      group: 'Navigation',
+      id: 'copy-selected-folder-path',
+      keywords: ['folder', 'directory', 'path', 'copy', 'clipboard'],
+      label: mobileText('sidebar.action.copyFolderPathMenu'),
+    }),
+    dynamicCommand({
+      enabled: Boolean(folder && handlers.onOpenFolderActions),
+      execute: folder ? () => handlers.onOpenFolderActions?.(folder) : undefined,
+      group: 'Navigation',
+      id: 'rename-folder',
+      keywords: ['folder', 'directory', 'sidebar', 'rename'],
+      label: mobileText('command.navigation.renameFolder'),
+    }),
+    dynamicCommand({
+      enabled: Boolean(folder && handlers.onDeleteSelectedFolder),
+      execute: handlers.onDeleteSelectedFolder,
+      group: 'Navigation',
+      id: 'delete-folder',
+      keywords: ['folder', 'directory', 'sidebar', 'delete', 'remove'],
+      label: mobileText('command.navigation.deleteFolder'),
+    }),
   ]
 }
 
@@ -760,6 +803,31 @@ function typeSidebarItems(snapshot: MobileWorkspaceSnapshot): MobileSidebarItem[
     .find((section) => section.id === 'types')
     ?.items
     ?.filter((item) => item.typeName || item.label) ?? []
+}
+
+function activeSidebarFolder(handlers: MobileCommandPaletteHandlers): MobileSidebarFolderSelection | null {
+  const folderId = handlers.activeFolderId
+  if (!folderId) return null
+
+  for (const section of handlers.snapshot.sidebarSections) {
+    const folder = findSidebarFolder(section.folders ?? [], folderId)
+    if (folder) return { id: folder.id, name: folder.name }
+  }
+
+  return null
+}
+
+function findSidebarFolder(
+  folders: MobileSidebarFolder[],
+  folderId: string,
+): MobileSidebarFolder | null {
+  for (const folder of folders) {
+    if (folder.id === folderId) return folder
+    const child = findSidebarFolder(folder.children, folderId)
+    if (child) return child
+  }
+
+  return null
 }
 
 function activeSidebarItem(handlers: MobileCommandPaletteHandlers): ActiveSidebarItem | null {

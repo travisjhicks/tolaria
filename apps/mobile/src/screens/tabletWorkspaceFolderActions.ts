@@ -132,6 +132,24 @@ function openCreateNoteInFolder({
   setOpenAction('createNote')
 }
 
+export function copyMobileFolderPath({
+  folderPath,
+  onCopied,
+  vaultRootUri,
+}: {
+  folderPath: string
+  onCopied?: () => void
+  vaultRootUri?: string | null
+}) {
+  const result = buildMobileFilePathForRelativePath({ path: folderPath, vaultRootUri })
+  if (!result.ok) return
+
+  onCopied?.()
+  void writeMobileClipboardText(result.path).catch((error) => {
+    console.warn('[mobile-folder-path] Failed to copy folder path:', error)
+  })
+}
+
 function copyFolderPath({
   closeAction,
   folderPath,
@@ -141,13 +159,7 @@ function copyFolderPath({
   folderPath: string
   vaultRootUri?: string | null
 }) {
-  const result = buildMobileFilePathForRelativePath({ path: folderPath, vaultRootUri })
-  if (!result.ok) return
-
-  closeAction()
-  void writeMobileClipboardText(result.path).catch((error) => {
-    console.warn('[mobile-folder-path] Failed to copy folder path:', error)
-  })
+  copyMobileFolderPath({ folderPath, onCopied: closeAction, vaultRootUri })
 }
 
 function commitFolderEdit({

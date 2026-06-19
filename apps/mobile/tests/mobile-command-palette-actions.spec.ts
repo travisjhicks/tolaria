@@ -50,6 +50,27 @@ test.describe('mobile command palette actions', () => {
     await expect(page.getByTestId('workspace-action-sheet-editPrimaryListProperties')).toBeVisible()
     await expect(page.getByTestId('workspace-all-notes-file-visibility')).toBeVisible()
   })
+
+  test('dispatches selected-folder commands from the tablet command palette', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'tablet-landscape', 'Command palette action checks use the full-width tablet layout.')
+
+    await page.goto('/')
+    await page.getByRole('button', { exact: true, name: 'Mobile UI' }).click()
+    await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('Mobile UI')
+
+    await openCommandPalette(page)
+    await runCommand(page, 'copy folder path', 'copy-selected-folder-path')
+
+    await expect(page.getByTestId('mobile-command-palette')).toBeHidden()
+    await expect.poll(() => latestClipboardAttempt(page)).toBe('Tolaria/Mobile UI')
+
+    await openCommandPalette(page)
+    await runCommand(page, 'rename folder', 'rename-folder')
+
+    await expect(page.getByTestId('mobile-command-palette')).toBeHidden()
+    await expect(page.getByTestId('workspace-action-sheet-editFolder')).toBeVisible()
+    await expect(page.getByTestId('workspace-rename-folder-input')).toHaveValue('Mobile UI')
+  })
 })
 
 async function openCommandPalette(page: Page) {
