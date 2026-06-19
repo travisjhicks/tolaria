@@ -1,5 +1,5 @@
 import { mobileNoteListMatchesQuery, normalizedMobileSearchQuery } from './mobileNoteSearch'
-import { mobileNoteForWikilinkTarget, parseMobileWikilink } from './mobileWikilinks'
+import { normalizeMobileWikilinkTarget, parseMobileWikilink } from './mobileWikilinks'
 import type { MobileNote, MobileRelationship } from './mobileWorkspaceModel'
 
 export type MobileNeighborhoodGroup = {
@@ -17,6 +17,11 @@ export type MobileNeighborhood = {
 }
 
 const preferredInverseLabels = ['Children', 'Events', 'Referenced by'] as const
+type MobileSourceMatcher = {
+  noteId: string
+  rawTitle: string
+  targets: Set<string>
+}
 
 export function buildMobileNeighborhood(source: MobileNote, notes: MobileNote[]): MobileNeighborhood {
   return {
@@ -89,12 +94,13 @@ function directRelationshipGroups(source: MobileNote, notes: MobileNote[]): Mobi
 
 function inverseRelationshipGroups(source: MobileNote, notes: MobileNote[]): MobileNeighborhoodGroup[] {
   const inverseGroups = new Map<string, MobileNote[]>()
+  const sourceMatcher = mobileSourceMatcher(source)
 
   for (const note of notes) {
     if (note.id === source.id) continue
     for (const relationship of note.relationships) {
       if (relationshipKey(relationship).toLowerCase() === 'type') continue
-      if (!relationshipTargetsNote(relationship, source, notes)) continue
+      if (!relationshipTargetsNote(relationship, sourceMatcher)) continue
       appendInverseRelationship(inverseGroups, inverseRelationshipLabel(relationship, note), note)
     }
   }
@@ -103,8 +109,10 @@ function inverseRelationshipGroups(source: MobileNote, notes: MobileNote[]): Mob
 }
 
 function backlinkGroups(source: MobileNote, notes: MobileNote[]): MobileNeighborhoodGroup[] {
+  const sourceMatcher = mobileSourceMatcher(source)
+
   return [
-    relationshipGroup('Backlinks', notes.filter((note) => noteLinksToSource(note, source, notes)), 'backlinks'),
+    relationshipGroup('Backlinks', notes.filter((note) => noteLinksToSource(note, sourceMatcher)), 'backlinks'),
   ].filter(hasNotes)
 }
 
@@ -126,39 +134,64 @@ function hasNotes(group: MobileNeighborhoodGroup) {
   return group.notes.length > 0
 }
 
-function relationshipTargetsNote(relationship: MobileRelationship, source: MobileNote, notes: MobileNote[]) {
+function relationshipTargetsNote(relationship: MobileRelationship, source: MobileSourceMatcher) {
   return relationship.values.some((value) => {
-    if (value.id === source.id) return true
-    if (value.ref && mobileNoteForWikilinkTarget(notes, wikilinkTarget(value.ref))?.id === source.id) return true
+    if (value.id === source.noteId) return true
+    if (value.ref && targetMatchesSource(wikilinkTarget(value.ref), source)) return true
 
-    return value.title === source.title
+    return value.title === source.rawTitle
   })
 }
 
-function noteLinksToSource(note: MobileNote, source: MobileNote, notes: MobileNote[]) {
-  if (note.id === source.id) return false
-  return (note.outgoingLinks ?? []).some((target) => linkTargetsSource(target, source, notes))
+function noteLinksToSource(note: MobileNote, source: MobileSourceMatcher) {
+  if (note.id === source.noteId) return false
+  return (note.outgoingLinks ?? []).some((target) => targetMatchesSource(target, source))
 }
 
-function linkTargetsSource(target: string, source: MobileNote, notes: MobileNote[]) {
-  if (sourceLinkTargets(source).has(target)) return true
-  if (sourceLinkTargets(source).has(target.split('/').pop() ?? '')) return true
+function targetMatchesSource(target: string, source: MobileSourceMatcher) {
+  const normalizedTarget = normalizeMobileWikilinkTarget(target)
+  if (source.targets.has(normalizedTarget)) return true
 
-  return mobileNoteForWikilinkTarget(notes, target)?.id === source.id
+  const lastSegment = normalizedTarget.split('/').filter(Boolean).at(-1)
+  return lastSegment ? source.targets.has(lastSegment) : false
 }
 
-function sourceLinkTargets(note: MobileNote) {
+function mobileSourceMatcher(note: MobileNote): MobileSourceMatcher {
+  return {
+    noteId: note.id,
+    rawTitle: note.title,
+    targets: sourceLinkTargets(note),
+  }
+}
+
+function sourceLinkTargets(note: MobileNote): Set<string> {
   const path = note.path ?? note.id
   const filename = path.split('/').pop() ?? path
   const filenameStem = filename.replace(/\.[^.]+$/u, '')
   const relativePathStem = path.replace(/\.md$/u, '')
-
-  return new Set([
+  const baseTargets = [
     note.title,
     ...(note.aliases ?? []),
     filenameStem,
     relativePathStem,
-  ].filter(Boolean))
+    ...pathSuffixes(relativePathStem),
+  ].filter(Boolean)
+  const workspaceAlias = note.workspaceAlias?.trim()
+  const workspaceTargets = workspaceAlias
+    ? baseTargets.map((target) => `${workspaceAlias}/${target}`)
+    : []
+
+  return new Set([
+    ...baseTargets,
+    ...workspaceTargets,
+  ].map(normalizeMobileWikilinkTarget).filter(Boolean))
+}
+
+function pathSuffixes(path: string): string[] {
+  const normalizedPath = path.replace(/^\/+|\/+$/g, '')
+  const segments = normalizedPath.split('/').filter(Boolean)
+
+  return segments.map((_segment, index) => segments.slice(index).join('/'))
 }
 
 function appendInverseRelationship(groups: Map<string, MobileNote[]>, label: string, note: MobileNote) {
