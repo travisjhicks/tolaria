@@ -434,6 +434,41 @@ Visible: false
     })
   })
 
+  it('honors desktop numeric boolean flags when deriving local vault notes', () => {
+    const snapshot = buildLocalVaultWorkspaceSnapshot({
+      files: [
+        vaultFile('Favorite Draft.md', `---
+_favorite: 1
+_organized: 0
+---
+# Favorite Draft
+`),
+        vaultFile('Archive/Hidden.md', `---
+_archived: 1
+---
+# Hidden
+`),
+      ],
+      vaultLabel: 'Laputa',
+      vaultPath: '/Users/luca/Laputa',
+    })
+
+    const favorite = snapshot.allNotes?.find((note) => note.id === 'Favorite Draft.md')
+    const archived = snapshot.allNotes?.find((note) => note.id === 'Archive/Hidden.md')
+    expect(favorite).toMatchObject({ favorite: true, organized: false })
+    expect(archived).toMatchObject({ archived: true })
+    expect(snapshot.sidebarSections.find((section) => section.id === 'favorites')?.items?.[0]).toMatchObject({
+      id: 'favorite-Favorite Draft.md',
+      label: 'Favorite Draft',
+    })
+    expect(snapshot.sidebarSections.find((section) => section.id === 'primary')?.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'inbox', count: '1' }),
+        expect.objectContaining({ id: 'archive', count: '1' }),
+      ]),
+    )
+  })
+
   it('derives sidebar primary counts, type counts, and folder paths from local vault notes', () => {
     const snapshot = buildLocalVaultWorkspaceSnapshot({
       files: [

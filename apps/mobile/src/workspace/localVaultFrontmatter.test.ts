@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  frontmatterFlag,
   frontmatterList,
   frontmatterProperties,
   frontmatterRelationships,
@@ -144,4 +145,17 @@ Body.
     expect(document.frontmatter.values).toEqual(['null', 'null'])
   })
 
+  it('reads desktop numeric boolean frontmatter flags', () => {
+    const document = parseLocalVaultDocument(`---
+_archived: 1
+_favorite: 0
+_organized: 2
+---
+Body.
+`)
+
+    expect(frontmatterFlag(document.frontmatter, ['_archived'])).toBe(true)
+    expect(frontmatterFlag(document.frontmatter, ['_favorite'])).toBe(false)
+    expect(frontmatterFlag(document.frontmatter, ['_organized'])).toBe(true)
+  })
 })
