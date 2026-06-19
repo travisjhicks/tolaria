@@ -156,5 +156,20 @@ async function openPhoneSidebar(page: Page) {
 }
 
 async function longPress(page: Page, testId: string) {
-  await page.getByTestId(testId).click({ delay: 700, force: true })
+  const target = page.getByTestId(testId)
+  await target.scrollIntoViewIfNeeded()
+  const box = await target.boundingBox()
+  if (!box) throw new Error(`Cannot long-press missing target: ${testId}`)
+
+  const client = await page.context().newCDPSession(page)
+  await client.send('Input.dispatchTouchEvent', {
+    touchPoints: [{ x: box.x + box.width / 2, y: box.y + box.height / 2 }],
+    type: 'touchStart',
+  })
+  await page.waitForTimeout(700)
+  await client.send('Input.dispatchTouchEvent', {
+    touchPoints: [],
+    type: 'touchEnd',
+  })
+  await client.detach()
 }
