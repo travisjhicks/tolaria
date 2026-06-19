@@ -6,6 +6,7 @@ import {
   mobileMarkdownBodyToTentapHtml,
   mobileNoteEditableContent,
 } from '../../workspace/mobileDocumentContent'
+import { nativeWysiwygDocumentWithInputTransforms } from '../../workspace/mobileWysiwygInputTransforms'
 import { readMobileClipboardText } from '../../workspace/mobileClipboard'
 import { mobileHtmlWithResolvedAttachmentUris } from '../../workspace/mobileAttachmentUris'
 import type { MobileEditorBlock, MobileNote } from '../../workspace/mobileWorkspaceModel'
@@ -912,14 +913,17 @@ function useScheduleEditorChange(
   return useCallback(() => {
     if (!acceptsEditorChangesRef.current) return
     hasAcceptedEditorChangeRef.current = true
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-    saveTimerRef.current = setTimeout(flushEditorDocument, 250)
+    scheduleNativeWysiwygSave({ flushEditorDocument, saveTimerRef })
     if (inlineAutocompleteTimerRef.current) clearTimeout(inlineAutocompleteTimerRef.current)
     inlineAutocompleteTimerRef.current = setTimeout(() => {
-      void detectNativeWysiwygInlineAutocomplete(editorRef.current)
+      void applyNativeWysiwygInputTransforms(editorRef.current)
+        .then((transformed) => {
+          if (transformed) scheduleNativeWysiwygSave({ flushEditorDocument, saveTimerRef })
+          return detectNativeWysiwygInlineAutocomplete(editorRef.current)
+        })
         .then(onInlineAutocomplete)
         .catch((error: unknown) => {
-          console.warn('[mobile-editor] Failed to detect native WYSIWYG autocomplete:', error)
+          console.warn('[mobile-editor] Failed to run native WYSIWYG change handlers:', error)
         })
     }, 80)
   }, [
@@ -931,6 +935,32 @@ function useScheduleEditorChange(
     onInlineAutocomplete,
     saveTimerRef,
   ])
+}
+
+function scheduleNativeWysiwygSave({
+  flushEditorDocument,
+  saveTimerRef,
+}: {
+  flushEditorDocument: () => void
+  saveTimerRef: MutableRefObject<TimerHandle | null>
+}) {
+  if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+  saveTimerRef.current = setTimeout(flushEditorDocument, 250)
+}
+
+async function applyNativeWysiwygInputTransforms(
+  editor: EditorBridge | null,
+): Promise<boolean> {
+  if (!isJsonReadableEditorBridge(editor) || !isContentSettableEditorBridge(editor)) return false
+
+  const nextJson = nativeWysiwygDocumentWithInputTransforms({
+    json: await editor.getJSON(),
+    selection: nativeWysiwygEditorSelection(editor),
+  })
+  if (!nextJson) return false
+
+  editor.setContent(nextJson)
+  return true
 }
 
 async function detectNativeWysiwygInlineAutocomplete(
