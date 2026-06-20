@@ -543,14 +543,26 @@ filters:
       value: 10 days ago
 `,
     }, 1)
+    const upcomingView = parseMobileSavedViewFile({
+      relativePath: 'views/upcoming.yml',
+      content: `name: Upcoming
+filters:
+  all:
+    - field: Date
+      op: equals
+      value: in 2 weeks
+`,
+    }, 2)
     const notes = [
       note({ id: 'older', properties: [{ key: 'Date', label: 'Date', value: '2026-03-20' }] }),
       note({ id: 'recent', properties: [{ key: 'Date', label: 'Date', value: '2026-03-30' }] }),
       note({ id: 'today', properties: [{ key: 'Date', label: 'Date', value: '2026-04-07' }] }),
+      note({ id: 'upcoming', properties: [{ key: 'Date', label: 'Date', value: '2026-04-21' }] }),
     ]
 
     expect(evaluateMobileSavedView(todayView!, notes).map((candidate) => candidate.id)).toEqual(['today'])
-    expect(evaluateMobileSavedView(recentView!, notes).map((candidate) => candidate.id)).toEqual(['recent', 'today'])
+    expect(evaluateMobileSavedView(recentView!, notes).map((candidate) => candidate.id)).toEqual(['recent', 'today', 'upcoming'])
+    expect(evaluateMobileSavedView(upcomingView!, notes).map((candidate) => candidate.id)).toEqual(['upcoming'])
   })
 
   it('clamps relative month and year filters to desktop date-fns calendar semantics', () => {

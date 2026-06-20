@@ -7,6 +7,7 @@ import type {
   MobileViewFilterNode,
   MobileViewFilterOp,
 } from './mobileWorkspaceModel'
+import { parseDateFilterInput } from '../../../../src/utils/filterDates'
 import { evaluateArrayFieldCondition } from '../../../../src/utils/viewFilterArrayFields'
 import safeRegex from 'safe-regex2'
 
@@ -947,140 +948,6 @@ function viewFilenameFromStem(stem: string): ViewFilename {
 
 function avoidReservedDeviceName(stem: string): string {
   return windowsReservedDeviceNames.has(stem.toLocaleUpperCase()) ? `${stem}-view` : stem
-}
-
-const relativeNumberWords = new Map([
-  ['a', 1],
-  ['an', 1],
-  ['one', 1],
-  ['two', 2],
-  ['three', 3],
-  ['four', 4],
-  ['five', 5],
-  ['six', 6],
-  ['seven', 7],
-  ['eight', 8],
-  ['nine', 9],
-  ['ten', 10],
-  ['eleven', 11],
-  ['twelve', 12],
-])
-const relativeDayOffsets = new Map([
-  ['today', 0],
-  ['yesterday', -1],
-  ['tomorrow', 1],
-])
-
-function parseDateFilterInput(value: string, reference = new Date()): Date | null {
-  const trimmed = value.trim()
-  if (!trimmed) return null
-
-  const relative = parseRelativeDateInput(trimmed, reference)
-  if (relative) return relative
-
-  if (isIsoDateOnly(trimmed)) return parseIsoDateOnly(trimmed)
-
-  const timestamp = Date.parse(trimmed)
-  return Number.isNaN(timestamp) ? null : new Date(timestamp)
-}
-
-function parseIsoDateOnly(value: string): Date | null {
-  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/u)
-  if (!match) return null
-
-  const year = Number(match[1])
-  const month = Number(match[2])
-  const day = Number(match[3])
-  const parsed = new Date(year, month - 1, day)
-  if (Number.isNaN(parsed.getTime())) return null
-  return parsed.getFullYear() === year && parsed.getMonth() === month - 1 && parsed.getDate() === day
-    ? parsed
-    : null
-}
-
-function isIsoDateOnly(value: string): boolean {
-  return /^\d{4}-\d{2}-\d{2}$/u.test(value)
-}
-
-function parseRelativeDateInput(value: string, reference: Date): Date | null {
-  const normalized = value.trim().toLowerCase()
-  const base = startOfLocalDay(reference)
-  const namedOffset = relativeDayOffsets.get(normalized)
-  if (namedOffset !== undefined) return shiftDate(base, 'day', namedOffset)
-
-  const relative = relativeDateParts(normalized)
-  if (!relative) return null
-
-  return shiftDate(base, relative.unit, relative.future ? relative.amount : -relative.amount)
-}
-
-function relativeDateParts(value: string): { amount: number; future: boolean; unit: 'day' | 'month' | 'week' | 'year' } | null {
-  const tokens = value.split(/\s+/u)
-  return futureRelativeDateParts(tokens) ?? pastRelativeDateParts(tokens)
-}
-
-function futureRelativeDateParts(tokens: string[]): { amount: number; future: true; unit: 'day' | 'month' | 'week' | 'year' } | null {
-  if (tokens.length !== 3 || tokens[0] !== 'in') return null
-  const amount = relativeAmount(tokens[1] ?? '')
-  const unit = relativeUnit(tokens[2] ?? '')
-  if (amount === null || unit === null) return null
-
-  return { amount, future: true, unit }
-}
-
-function pastRelativeDateParts(tokens: string[]): { amount: number; future: false; unit: 'day' | 'month' | 'week' | 'year' } | null {
-  if (tokens.length !== 3 || tokens[2] !== 'ago') return null
-  const amount = relativeAmount(tokens[0] ?? '')
-  const unit = relativeUnit(tokens[1] ?? '')
-  if (amount === null || unit === null) return null
-
-  return { amount, future: false, unit }
-}
-
-function relativeAmount(value: string): number | null {
-  if (/^\d+$/u.test(value)) return Number(value)
-  return relativeNumberWords.get(value) ?? null
-}
-
-function relativeUnit(value: string): 'day' | 'month' | 'week' | 'year' | null {
-  const unit = value.toLowerCase().replace(/s$/u, '')
-  if (unit === 'day' || unit === 'week' || unit === 'month' || unit === 'year') return unit
-  return null
-}
-
-function startOfLocalDay(value: Date): Date {
-  return new Date(value.getFullYear(), value.getMonth(), value.getDate())
-}
-
-function shiftDate(value: Date, unit: 'day' | 'month' | 'week' | 'year', amount: number): Date {
-  if (unit === 'month') return shiftCalendarMonth(value, amount)
-  if (unit === 'year') return shiftCalendarYear(value, amount)
-
-  const next = new Date(value)
-  next.setDate(next.getDate() + (unit === 'week' ? amount * 7 : amount))
-  return next
-}
-
-function shiftCalendarMonth(value: Date, amount: number): Date {
-  const next = new Date(value)
-  const day = next.getDate()
-  next.setDate(1)
-  next.setMonth(next.getMonth() + amount)
-  next.setDate(Math.min(day, daysInMonth(next.getFullYear(), next.getMonth())))
-  return next
-}
-
-function shiftCalendarYear(value: Date, amount: number): Date {
-  const next = new Date(value)
-  const day = next.getDate()
-  next.setDate(1)
-  next.setFullYear(next.getFullYear() + amount)
-  next.setDate(Math.min(day, daysInMonth(next.getFullYear(), next.getMonth())))
-  return next
-}
-
-function daysInMonth(year: number, month: number): number {
-  return new Date(year, month + 1, 0).getDate()
 }
 
 function serializedFilterGroup(group: MobileViewFilterGroup, indent: number): string[] {
