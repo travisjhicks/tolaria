@@ -1,16 +1,33 @@
 import type { AnyExtension, Editor } from '@tiptap/core'
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table'
+import type { MobileMarkdownTableAlignment } from '../../workspace/mobileMarkdownTables'
 
 const TableNode = Table.configure({
   allowTableNodeSelection: true,
   lastColumnResizable: false,
   resizable: false,
 })
+const MobileTableCell = TableCell.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      tolariaAlignment: mobileTableAlignmentAttribute(),
+    }
+  },
+})
+const MobileTableHeader = TableHeader.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      tolariaAlignment: mobileTableAlignmentAttribute(),
+    }
+  },
+})
 const tableExtensions: AnyExtension[] = [
   TableNode,
   TableRow,
-  TableHeader,
-  TableCell,
+  MobileTableHeader,
+  MobileTableCell,
 ]
 
 type MobileTableBridgeExtension = {
@@ -66,6 +83,29 @@ type MobileTableBridgeMessage = {
 type SendMobileTableBridgeMessage = (message: MobileTableBridgeMessage) => void
 
 export const MobileTableBridge = mobileTableBridge()
+
+function mobileTableAlignmentAttribute() {
+  return {
+    default: null,
+    parseHTML: (element: HTMLElement) => (
+      mobileTableAlignment(element.getAttribute('data-tolaria-alignment'))
+      ?? mobileTableAlignment(element.style.textAlign)
+    ),
+    renderHTML: (attrs: { tolariaAlignment?: unknown }) => {
+      const alignment = mobileTableAlignment(attrs.tolariaAlignment)
+      return alignment && alignment !== 'default'
+        ? {
+          'data-tolaria-alignment': alignment,
+          style: `text-align: ${alignment}`,
+        }
+        : {}
+    },
+  }
+}
+
+function mobileTableAlignment(value: unknown): MobileMarkdownTableAlignment | null {
+  return value === 'center' || value === 'default' || value === 'left' || value === 'right' ? value : null
+}
 
 function mobileTableBridge({
   config,

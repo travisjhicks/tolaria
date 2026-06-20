@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { tiptapJsonToMobileMarkdown, type TiptapJsonNode } from '../workspace/mobileDocumentContent'
+import type { MobileMarkdownTableAlignment } from '../workspace/mobileMarkdownTables'
 import {
   assertNativeWysiwygTableCommandMutationProofs,
   formatNativeWysiwygTableCommandMutationFailures,
@@ -15,8 +16,14 @@ describe('native WYSIWYG table command mutation probe', () => {
     expect(nativeWysiwygTableCommandMutationProbeJson()).toMatchObject({
       content: [{
         content: [
-          tableRowWithCellTypes('tableHeader', 2),
-          tableRowWithCellTypes('tableCell', 2),
+          tableRowWithCells('tableHeader', [
+            { alignment: 'left', text: 'Column' },
+            { alignment: 'right', text: 'Value' },
+          ]),
+          tableRowWithCells('tableCell', [
+            { alignment: 'left', text: 'Item' },
+            { alignment: 'right', text: 'Detail' },
+          ]),
         ],
         type: 'table',
       }],
@@ -31,7 +38,9 @@ describe('native WYSIWYG table command mutation probe', () => {
     expect(nativeWysiwygTableCommandMutationProof({ content, json, noteId: 'note.md' })).toEqual({
       columnCount: 3,
       contentLength: content.length,
+      jsonAlignmentPreserved: true,
       jsonMutated: true,
+      markdownAlignmentSaved: true,
       markdownSaved: true,
       noteId: 'note.md',
       rowCount: 3,
@@ -75,6 +84,32 @@ describe('native WYSIWYG table command mutation probe', () => {
     ])
   })
 
+  it('reports native table command mutations that strip alignment metadata', () => {
+    const json = mutatedUnalignedProbeJson()
+    const proof = nativeWysiwygTableCommandMutationProof({
+      content: `${tiptapJsonToMobileMarkdown(json)}\n`,
+      json,
+      noteId: 'note.md',
+    })
+
+    expect(proof).toMatchObject({
+      jsonAlignmentPreserved: false,
+      jsonMutated: true,
+      markdownAlignmentSaved: false,
+      markdownSaved: true,
+    })
+    expect(assertNativeWysiwygTableCommandMutationProofs([proof])).toEqual([
+      {
+        id: 'editor.wysiwyg.tableCommandMutation.jsonAlignment',
+        message: 'Native WYSIWYG table command mutation preserves structured table alignment metadata',
+      },
+      {
+        id: 'editor.wysiwyg.tableCommandMutation.markdownAlignment',
+        message: 'Native WYSIWYG table command mutation saves desktop markdown table alignment dividers',
+      },
+    ])
+  })
+
   it('detects the native QA query flag', () => {
     expect(nativeWysiwygTableCommandMutationProbeEnabled(
       new globalThis.URLSearchParams('wysiwygTableCommandMutationProbe=1'),
@@ -89,9 +124,21 @@ function mutatedProbeJson(): TiptapJsonNode {
   return {
     content: [{
       content: [
-        tableRowNode('tableHeader', ['Column', '', 'Value']),
-        tableRowNode('tableCell', ['Item', '', 'Detail']),
-        tableRowNode('tableCell', ['', '', '']),
+        tableRowNode('tableHeader', [
+          { alignment: 'left', text: 'Column' },
+          { text: '' },
+          { alignment: 'right', text: 'Value' },
+        ]),
+        tableRowNode('tableCell', [
+          { alignment: 'left', text: 'Item' },
+          { text: '' },
+          { alignment: 'right', text: 'Detail' },
+        ]),
+        tableRowNode('tableCell', [
+          { text: '' },
+          { text: '' },
+          { text: '' },
+        ]),
       ],
       type: 'table',
     }],
@@ -99,19 +146,42 @@ function mutatedProbeJson(): TiptapJsonNode {
   }
 }
 
-function tableRowNode(cellType: 'tableCell' | 'tableHeader', cells: string[]): TiptapJsonNode {
+function mutatedUnalignedProbeJson(): TiptapJsonNode {
   return {
-    content: cells.map((text) => ({
-      content: text ? [{ content: [{ text, type: 'text' }], type: 'paragraph' }] : [{ type: 'paragraph' }],
+    content: [{
+      content: [
+        tableRowNode('tableHeader', [{ text: 'Column' }, { text: '' }, { text: 'Value' }]),
+        tableRowNode('tableCell', [{ text: 'Item' }, { text: '' }, { text: 'Detail' }]),
+        tableRowNode('tableCell', [{ text: '' }, { text: '' }, { text: '' }]),
+      ],
+      type: 'table',
+    }],
+    type: 'doc',
+  }
+}
+
+type TestTableCell = {
+  alignment?: MobileMarkdownTableAlignment
+  text: string
+}
+
+function tableRowNode(cellType: 'tableCell' | 'tableHeader', cells: TestTableCell[]): TiptapJsonNode {
+  return {
+    content: cells.map((cell) => ({
+      ...(cell.alignment ? { attrs: { tolariaAlignment: cell.alignment } } : {}),
+      content: cell.text ? [{ content: [{ text: cell.text, type: 'text' }], type: 'paragraph' }] : [{ type: 'paragraph' }],
       type: cellType,
     })),
     type: 'tableRow',
   }
 }
 
-function tableRowWithCellTypes(cellType: 'tableCell' | 'tableHeader', count: number) {
+function tableRowWithCells(cellType: 'tableCell' | 'tableHeader', cells: TestTableCell[]) {
   return {
-    content: Array.from({ length: count }, () => ({ type: cellType })),
+    content: cells.map((cell) => ({
+      attrs: { tolariaAlignment: cell.alignment },
+      type: cellType,
+    })),
     type: 'tableRow',
   }
 }

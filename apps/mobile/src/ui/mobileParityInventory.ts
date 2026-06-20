@@ -141,7 +141,7 @@ export const mobileParityInventory = [
     surface: 'Note more actions',
   },
   {
-    assertions: ['native WYSIWYG table row/column command checks', 'source-backed markdown table resize, alignment, and cell edit checks'],
+    assertions: ['native WYSIWYG table row/column command checks', 'native aligned-table hydration/serialization checks', 'source-backed markdown table resize, alignment, and cell edit checks'],
     contracts: ['desktopEditorParity', 'desktopToolbarActionParity'],
     desktopSource: 'BlockNote table editing, markdown table serialization, and editor command actions',
     mobileFile: 'src/components/workspace/MobileTableMoreActions.tsx',

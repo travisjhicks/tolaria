@@ -159,10 +159,13 @@ Updated body.
     )
   })
 
-  it('keeps aligned markdown table lines editable until native cells can round-trip alignment', () => {
+  it('hydrates aligned markdown tables as native TenTap table HTML with alignment metadata', () => {
     const html = mobileMarkdownBodyToTentapHtml('| Surface | Target |\n| :--- | ---: |\n| Editor | WYSIWYG |\n')
 
-    expect(html).toBe('<p>| Surface | Target |<br>| :--- | ---: |<br>| Editor | WYSIWYG |</p>')
+    expect(html).toBe(
+      '<table><thead><tr><th data-tolaria-alignment="left" style="text-align: left"><p>Surface</p></th><th data-tolaria-alignment="right" style="text-align: right"><p>Target</p></th></tr></thead>'
+      + '<tbody><tr><td data-tolaria-alignment="left" style="text-align: left"><p>Editor</p></td><td data-tolaria-alignment="right" style="text-align: right"><p>WYSIWYG</p></td></tr></tbody></table>',
+    )
   })
 
   it('hydrates root display math blocks as native TenTap math nodes', () => {
@@ -402,6 +405,41 @@ Updated body.
       '| Surface | Target |',
       '| --- | --- |',
       '| Editor | WYSIWYG |',
+    ].join('\n'))
+  })
+
+  it('serializes aligned TenTap table cells back to desktop markdown divider syntax', () => {
+    const document: TiptapJsonNode = {
+      type: 'doc',
+      content: [
+        {
+          type: 'table',
+          content: [
+            {
+              type: 'tableRow',
+              content: [
+                { attrs: { align: 'left' }, type: 'tableHeader', content: [{ text: 'Surface', type: 'text' }] },
+                { attrs: { tolariaAlignment: 'center' }, type: 'tableHeader', content: [{ text: 'Desktop', type: 'text' }] },
+                { attrs: { align: 'right' }, type: 'tableHeader', content: [{ text: 'Mobile', type: 'text' }] },
+              ],
+            },
+            {
+              type: 'tableRow',
+              content: [
+                { attrs: { tolariaAlignment: 'left' }, type: 'tableCell', content: [{ text: 'Editor', type: 'text' }] },
+                { attrs: { tolariaAlignment: 'center' }, type: 'tableCell', content: [{ text: 'BlockNote', type: 'text' }] },
+                { attrs: { tolariaAlignment: 'right' }, type: 'tableCell', content: [{ text: 'TenTap', type: 'text' }] },
+              ],
+            },
+          ],
+        },
+      ],
+    }
+
+    expect(tiptapJsonToMobileMarkdown(document)).toBe([
+      '| Surface | Desktop | Mobile |',
+      '| :--- | :---: | ---: |',
+      '| Editor | BlockNote | TenTap |',
     ].join('\n'))
   })
 

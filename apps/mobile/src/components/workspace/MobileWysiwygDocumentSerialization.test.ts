@@ -71,16 +71,34 @@ describe('native WYSIWYG document serialization', () => {
     expect(result.content).toBe('[project brief.pdf](<attachments/project brief.pdf>)\n')
   })
 
-  it('keeps unsupported Expo Go table content editable as markdown lines', () => {
+  it('saves native aligned table cells without losing desktop divider syntax', () => {
     const result = nativeWysiwygDocumentContentFromJson({
-      currentContent: tableDocumentSource(),
+      currentContent: alignedTableDocumentSource(),
       initialBodyHasContent: true,
       isFirstSerialization: false,
-      json: documentNode(paragraphNode('| Surface | Target |', '| --- | --- |', '| Editor | WYSIWYG |')),
+      json: documentNode({
+        content: [
+          {
+            content: [
+              { attrs: { tolariaAlignment: 'left' }, content: [{ text: 'Surface', type: 'text' }], type: 'tableHeader' },
+              { attrs: { tolariaAlignment: 'right' }, content: [{ text: 'Target', type: 'text' }], type: 'tableHeader' },
+            ],
+            type: 'tableRow',
+          },
+          {
+            content: [
+              { attrs: { tolariaAlignment: 'left' }, content: [{ text: 'Editor', type: 'text' }], type: 'tableCell' },
+              { attrs: { tolariaAlignment: 'right' }, content: [{ text: 'WYSIWYG', type: 'text' }], type: 'tableCell' },
+            ],
+            type: 'tableRow',
+          },
+        ],
+        type: 'table',
+      }),
     })
 
-    expect(result.content).toBe(tableDocumentSource())
-    expect(result.markdown).toBe(['| Surface | Target |', '| --- | --- |', '| Editor | WYSIWYG |'].join('\n'))
+    expect(result.content).toBe(alignedTableDocumentSource())
+    expect(result.markdown).toBe(['| Surface | Target |', '| :--- | ---: |', '| Editor | WYSIWYG |'].join('\n'))
   })
 
   it('keeps source-backed horizontal rules editable as markdown lines', () => {
@@ -132,6 +150,6 @@ function paragraphNode(...lines: string[]): TiptapJsonNode {
   }
 }
 
-function tableDocumentSource(): string {
-  return ['| Surface | Target |', '| --- | --- |', '| Editor | WYSIWYG |', ''].join('\n')
+function alignedTableDocumentSource(): string {
+  return ['| Surface | Target |', '| :--- | ---: |', '| Editor | WYSIWYG |', ''].join('\n')
 }

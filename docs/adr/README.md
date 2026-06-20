@@ -197,3 +197,8 @@ proposed → active → superseded
 | [0144](0144-mobile-note-move-write-contract.md) | Mobile note move write contract | active |
 | [0145](0145-tentap-mobile-wysiwyg-editor.md) | TenTap mobile WYSIWYG editor | active |
 | [0148](0148-mobile-vault-config-persistence.md) | Mobile vault-scoped config persistence | active |
+| [0149](0149-mobile-tentap-inline-math-node.md) | Mobile TenTap inline math node | active |
+| [0150](0150-mobile-inline-math-mathml-rendering.md) | Mobile inline math MathML rendering | active |
+| [0151](0151-mobile-tentap-code-block-node.md) | Mobile TenTap code block node | active |
+| [0152](0152-mobile-tentap-table-node.md) | Mobile TenTap table node | active |
+| [0153](0153-mobile-tentap-aligned-table-metadata.md) | Mobile TenTap aligned table metadata | active |

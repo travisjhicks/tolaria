@@ -1,14 +1,21 @@
 import type { TiptapJsonNode } from '../workspace/mobileDocumentContent'
+import type { MobileMarkdownTableAlignment } from '../workspace/mobileMarkdownTables'
 
 type MarkdownContent = string
 type NoteId = string
 type ProbeLogText = string
 type ProbeLine = string
+type ProbeTableCell = {
+  alignment: MobileMarkdownTableAlignment
+  text: string
+}
 
 export type NativeWysiwygTableCommandMutationProof = {
   columnCount: number
   contentLength: number
+  jsonAlignmentPreserved: boolean
   jsonMutated: boolean
+  markdownAlignmentSaved: boolean
   markdownSaved: boolean
   noteId: NoteId
   rowCount: number
@@ -39,7 +46,9 @@ export const nativeWysiwygTableCommandMutationLogPrefix = 'TOLARIA_MOBILE_WYSIWY
 const proofFieldTypes = {
   columnCount: 'number',
   contentLength: 'number',
+  jsonAlignmentPreserved: 'boolean',
   jsonMutated: 'boolean',
+  markdownAlignmentSaved: 'boolean',
   markdownSaved: 'boolean',
   noteId: 'string',
   rowCount: 'number',
@@ -51,8 +60,14 @@ export function nativeWysiwygTableCommandMutationProbeJson(): TiptapJsonNode {
     content: [
       {
         content: [
-          tableRowNode('tableHeader', ['Column', 'Value']),
-          tableRowNode('tableCell', ['Item', 'Detail']),
+          tableRowNode('tableHeader', [
+            { alignment: 'left', text: 'Column' },
+            { alignment: 'right', text: 'Value' },
+          ]),
+          tableRowNode('tableCell', [
+            { alignment: 'left', text: 'Item' },
+            { alignment: 'right', text: 'Detail' },
+          ]),
         ],
         type: 'table',
       },
@@ -71,7 +86,9 @@ export function nativeWysiwygTableCommandMutationProof({
   return {
     columnCount: dimensions.columns,
     contentLength: content.length,
+    jsonAlignmentPreserved: firstProbeTablePreservesAlignment(json),
     jsonMutated: dimensions.columns >= 3 && dimensions.rows >= 3,
+    markdownAlignmentSaved: hasProbeTableAlignment(content),
     markdownSaved: hasCommandMutatedProbeTable(content),
     noteId,
     rowCount: dimensions.rows,
@@ -115,6 +132,16 @@ export function assertNativeWysiwygTableCommandMutationProofs(
       'editor.wysiwyg.tableCommandMutation.markdown',
       'Native WYSIWYG table command mutation saves as desktop markdown table lines',
     ),
+    proofFailure(
+      latest.jsonAlignmentPreserved,
+      'editor.wysiwyg.tableCommandMutation.jsonAlignment',
+      'Native WYSIWYG table command mutation preserves structured table alignment metadata',
+    ),
+    proofFailure(
+      latest.markdownAlignmentSaved,
+      'editor.wysiwyg.tableCommandMutation.markdownAlignment',
+      'Native WYSIWYG table command mutation saves desktop markdown table alignment dividers',
+    ),
   ].filter((failure): failure is NativeWysiwygTableCommandMutationAssertionFailure => failure !== null)
 }
 
@@ -147,7 +174,9 @@ function parsedProof(value: unknown): NativeWysiwygTableCommandMutationProof | n
   return {
     columnCount: value.columnCount,
     contentLength: value.contentLength,
+    jsonAlignmentPreserved: value.jsonAlignmentPreserved,
     jsonMutated: value.jsonMutated,
+    markdownAlignmentSaved: value.markdownAlignmentSaved,
     markdownSaved: value.markdownSaved,
     noteId: value.noteId,
     rowCount: value.rowCount,
@@ -195,12 +224,33 @@ function hasCommandMutatedProbeTable(markdown: MarkdownContent): boolean {
   return markdownTables(normalizedMarkdown(markdown)).some((table) => tableHasCommandMutation(table))
 }
 
+function hasProbeTableAlignment(markdown: MarkdownContent): boolean {
+  return markdownTables(normalizedMarkdown(markdown)).some(tablePreservesProbeAlignment)
+}
+
 function tableHasCommandMutation(table: string[][]): boolean {
   const [header, , ...bodyRows] = table
   if (!header || !header.includes('Column') || !header.includes('Value')) return false
   if (header.length < 3 || bodyRows.length < 2) return false
 
   return bodyRows.some((row) => row.length >= 3 && row.includes('Item') && row.includes('Detail'))
+}
+
+function tablePreservesProbeAlignment(table: string[][]): boolean {
+  const [header, divider] = table
+  if (!header || !divider) return false
+
+  const columnIndex = header.indexOf('Column')
+  const valueIndex = header.indexOf('Value')
+  return isLeftMarkdownDivider(divider[columnIndex]) && isRightMarkdownDivider(divider[valueIndex])
+}
+
+function isLeftMarkdownDivider(value: string | undefined): boolean {
+  return Boolean(value && /^:-{3,}$/u.test(value.trim()))
+}
+
+function isRightMarkdownDivider(value: string | undefined): boolean {
+  return Boolean(value && /^-{3,}:$/u.test(value.trim()))
 }
 
 function markdownTables(markdown: MarkdownContent): string[][][] {
@@ -245,9 +295,53 @@ function markdownTableCells(line: string): string[] {
     .map((cell) => cell.trim())
 }
 
-function tableRowNode(cellType: 'tableCell' | 'tableHeader', cells: string[]): TiptapJsonNode {
+function firstProbeTablePreservesAlignment(json: unknown): boolean {
+  const table = firstProbeTable(json)
+  if (!table) return false
+
+  return tableCellPreservesAlignment(table, 'Column', 'left')
+    && tableCellPreservesAlignment(table, 'Value', 'right')
+    && tableCellPreservesAlignment(table, 'Item', 'left')
+    && tableCellPreservesAlignment(table, 'Detail', 'right')
+}
+
+function tableCellPreservesAlignment(
+  table: TiptapJsonNode,
+  text: string,
+  alignment: MobileMarkdownTableAlignment,
+): boolean {
+  const cell = tableCellContainingText(table, text)
+  return Boolean(cell && probeCellAlignment(cell) === alignment)
+}
+
+function tableCellContainingText(node: TiptapJsonNode, text: string): TiptapJsonNode | null {
+  if (node.type === 'tableCell' || node.type === 'tableHeader') {
+    return plainText(tiptapChildNodes(node)).includes(text) ? node : null
+  }
+
+  for (const child of tiptapChildNodes(node)) {
+    const cell = tableCellContainingText(child, text)
+    if (cell) return cell
+  }
+
+  return null
+}
+
+function probeCellAlignment(node: TiptapJsonNode): MobileMarkdownTableAlignment {
+  return mobileTableAlignment(node.attrs?.tolariaAlignment)
+    ?? mobileTableAlignment(node.attrs?.align)
+    ?? mobileTableAlignment(node.attrs?.textAlign)
+    ?? 'default'
+}
+
+function mobileTableAlignment(value: unknown): MobileMarkdownTableAlignment | null {
+  return value === 'center' || value === 'default' || value === 'left' || value === 'right' ? value : null
+}
+
+function tableRowNode(cellType: 'tableCell' | 'tableHeader', cells: ProbeTableCell[]): TiptapJsonNode {
   return {
-    content: cells.map((text) => ({
+    content: cells.map(({ alignment, text }) => ({
+      attrs: { tolariaAlignment: alignment },
       content: [{ content: [{ text, type: 'text' }], type: 'paragraph' }],
       type: cellType,
     })),

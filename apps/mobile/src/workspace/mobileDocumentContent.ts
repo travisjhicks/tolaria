@@ -12,7 +12,9 @@ import { mobileMarkdownListHtml, type MobileMarkdownListItem } from './mobileMar
 import { mobileImageNodeMarkdown, mobileMarkdownImageHtml } from './mobileMarkdownImage'
 import { readMobileInlineMathAt } from './mobileInlineMath'
 import {
+  mobileMarkdownTableSource,
   readMobileMarkdownTableAt,
+  type MobileMarkdownTableAlignment,
   type MobileMarkdownTable,
 } from './mobileMarkdownTables'
 import {
@@ -286,9 +288,7 @@ function readTable(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResul
   const table = readMobileMarkdownTableAt({ lineNumber: startIndex, lines })
   if (!table) return null
 
-  return isStructuredMobileTable(table.table)
-    ? { html: mobileMarkdownTableHtml(table.table), nextIndex: table.nextLine }
-    : sourceLinesParagraphBlock(lines.slice(startIndex, table.nextLine), table.nextLine)
+  return { html: mobileMarkdownTableHtml(table.table), nextIndex: table.nextLine }
 }
 
 function readHorizontalRule(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
@@ -611,29 +611,33 @@ function isMarkdownTableDivider(line: MarkdownLine): boolean {
   return /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line)
 }
 
-function isStructuredMobileTable(table: MobileMarkdownTable): boolean {
-  return table.alignments.every((alignment) => alignment === 'default')
-}
-
 function mobileMarkdownTableHtml(table: MobileMarkdownTable): HtmlSnippet {
-  const header = `<thead><tr>${table.headers.map(tableHeaderCellHtml).join('')}</tr></thead>`
+  const header = `<thead><tr>${table.headers.map((cell, index) => (
+    tableHeaderCellHtml(cell, table.alignments[index] ?? 'default')
+  )).join('')}</tr></thead>`
   const body = table.rows.length > 0
-    ? `<tbody>${table.rows.map(tableRowHtml).join('')}</tbody>`
+    ? `<tbody>${table.rows.map((row) => tableRowHtml(row, table.alignments)).join('')}</tbody>`
     : ''
 
   return `<table>${header}${body}</table>`
 }
 
-function tableRowHtml(cells: MarkdownLines): HtmlSnippet {
-  return `<tr>${cells.map(tableCellHtml).join('')}</tr>`
+function tableRowHtml(cells: MarkdownLines, alignments: MobileMarkdownTableAlignment[]): HtmlSnippet {
+  return `<tr>${cells.map((cell, index) => tableCellHtml(cell, alignments[index] ?? 'default')).join('')}</tr>`
 }
 
-function tableHeaderCellHtml(cell: MarkdownLine): HtmlSnippet {
-  return `<th><p>${inlineMarkdownToHtml(cell)}</p></th>`
+function tableHeaderCellHtml(cell: MarkdownLine, alignment: MobileMarkdownTableAlignment): HtmlSnippet {
+  return `<th${tableCellAlignmentHtmlAttrs(alignment)}><p>${inlineMarkdownToHtml(cell)}</p></th>`
 }
 
-function tableCellHtml(cell: MarkdownLine): HtmlSnippet {
-  return `<td><p>${inlineMarkdownToHtml(cell)}</p></td>`
+function tableCellHtml(cell: MarkdownLine, alignment: MobileMarkdownTableAlignment): HtmlSnippet {
+  return `<td${tableCellAlignmentHtmlAttrs(alignment)}><p>${inlineMarkdownToHtml(cell)}</p></td>`
+}
+
+function tableCellAlignmentHtmlAttrs(alignment: MobileMarkdownTableAlignment): string {
+  if (alignment === 'default') return ''
+
+  return ` data-tolaria-alignment="${alignment}" style="text-align: ${alignment}"`
 }
 
 function inlineMarkdownToHtml(markdown: MarkdownLine): string {
@@ -959,15 +963,39 @@ function serializeListItem(item: TiptapJsonNode, options: TiptapMarkdownOptions)
 
 function tableMarkdown(node: TiptapJsonNode, options: TiptapMarkdownOptions): MarkdownBody {
   const rows = (node.content ?? []).map((row) => (
-    (row.content ?? []).map((cell) => serializeInlineChildren(cell.content ?? [], options))
+    (row.content ?? []).map((cell) => ({
+      alignment: tiptapTableCellAlignment(cell),
+      text: serializeInlineChildren(cell.content ?? [], options),
+    }))
   ))
   if (rows.length === 0) return ''
 
   const [header, ...body] = rows
-  const divider = header.map(() => '---')
-  return [header, divider, ...body]
-    .map((row) => `| ${row.join(' | ')} |`)
-    .join('\n')
+  return mobileMarkdownTableSource({
+    alignments: header.map((_cell, index) => tableColumnAlignment(rows, index)),
+    headers: header.map((cell) => cell.text),
+    rows: body.map((row) => row.map((cell) => cell.text)),
+  })
+}
+
+function tableColumnAlignment(
+  rows: Array<Array<{ alignment: MobileMarkdownTableAlignment }>>,
+  columnIndex: number,
+): MobileMarkdownTableAlignment {
+  return rows
+    .map((row) => row[columnIndex]?.alignment ?? 'default')
+    .find((alignment) => alignment !== 'default') ?? 'default'
+}
+
+function tiptapTableCellAlignment(node: TiptapJsonNode): MobileMarkdownTableAlignment {
+  return mobileMarkdownTableAlignment(node.attrs?.tolariaAlignment)
+    ?? mobileMarkdownTableAlignment(node.attrs?.align)
+    ?? mobileMarkdownTableAlignment(node.attrs?.textAlign)
+    ?? 'default'
+}
+
+function mobileMarkdownTableAlignment(value: unknown): MobileMarkdownTableAlignment | null {
+  return value === 'center' || value === 'default' || value === 'left' || value === 'right' ? value : null
 }
 
 function codeBlockMarkdown(node: TiptapJsonNode): MarkdownBody {
