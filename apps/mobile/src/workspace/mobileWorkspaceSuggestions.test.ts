@@ -142,12 +142,13 @@ describe('mobile workspace suggestions', () => {
       Essay: {
         properties: {
           has: 'Milestone',
+          'has-part': 'Chapter',
         },
         relationships: {
           depends_on: ['[[Mobile UI]]'],
         },
       },
-    })).toEqual(expect.arrayContaining(['depends_on', 'has']))
+    })).toEqual(expect.arrayContaining(['depends_on', 'has', 'has-part']))
   })
 
   it('suggests relationship targets by desktop note identity fields', () => {

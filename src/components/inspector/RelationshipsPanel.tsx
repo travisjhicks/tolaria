@@ -22,6 +22,7 @@ import {
 import { humanizePropertyKey } from '../../utils/propertyLabels'
 import { translate, type AppLocale } from '../../lib/i18n'
 import { canonicalFrontmatterKey } from '../../utils/systemMetadata'
+import { isRelationshipKey } from '../../utils/relationshipKeys'
 import { SUGGESTED_RELATIONSHIP_KEYS } from '../../utils/workspaceSuggestionContracts'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,7 +32,6 @@ const RELATIONSHIPS_PANEL_GRID_CLASS_NAME = 'grid min-w-0 gap-x-2 gap-y-3'
 const RELATIONSHIP_SECTION_LABEL_TEXT_CLASS_NAME = 'min-w-0 flex-1 truncate'
 const RELATIONSHIP_SECTION_VALUE_CLASS_NAME = 'min-w-0'
 const RELATIONSHIP_ACTION_ROW_CLASS_NAME = 'min-w-0 px-1.5'
-const RELATIONSHIP_SCHEMA_KEYS = new Set<string>(SUGGESTED_RELATIONSHIP_KEYS)
 
 type RelationshipEntryGroup = {
   key: string
@@ -507,7 +507,7 @@ function findTypeEntry(entries: VaultEntry[], entry?: VaultEntry): VaultEntry | 
 }
 
 function isRelationshipSchemaKey(key: string): boolean {
-  return RELATIONSHIP_SCHEMA_KEYS.has(canonicalFrontmatterKey(key))
+  return isRelationshipKey(key)
 }
 
 function buildExistingRelationshipKeys(frontmatter: ParsedFrontmatter, relationshipEntries: RelationshipEntryGroup[]): Set<string> {

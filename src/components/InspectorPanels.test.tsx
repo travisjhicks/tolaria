@@ -171,6 +171,28 @@ describe('DynamicRelationshipsPanel', () => {
     expect(onAddProperty).toHaveBeenCalledWith('Mentor', '[[project/my-project]]')
   })
 
+  it('shows Type relationship schema properties as relationship placeholders', () => {
+    const bookType = makeEntry({
+      path: '/vault/book.md',
+      filename: 'book.md',
+      title: 'Book',
+      isA: 'Type',
+      properties: {
+        has_part: 'Chapter',
+      },
+    })
+
+    renderRelationshipsPanel({
+      entry: makeEntry({ title: 'Dune', isA: 'Book' }),
+      entries: [...entries, bookType],
+      frontmatter: {},
+      onAddProperty,
+    })
+
+    const placeholder = screen.getByTestId('type-derived-relationship')
+    expect(within(placeholder).getByText('Has part')).toHaveClass('text-muted-foreground/40')
+  })
+
   it('navigates when clicking a relationship link', () => {
     render(
       <DynamicRelationshipsPanel

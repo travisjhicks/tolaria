@@ -13,7 +13,7 @@ const RELATIONSHIP_KEYS_BY_KIND: Partial<Record<RelationshipKind, string>> = {
 }
 
 export function normalizeRelationshipKey(key: string): string {
-  return key.trim().toLowerCase().replace(/\s+/gu, '_')
+  return key.trim().toLowerCase().replace(/[-\s]+/gu, '_')
 }
 
 export function relationshipKindForKey(key: string): RelationshipKind {

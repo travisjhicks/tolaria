@@ -54,7 +54,7 @@ describe('mobile inspector schema slots', () => {
     })
     const typeDefinitions: MobileTypeDefinitions = {
       Project: {
-        properties: { has: 'Milestone' },
+        properties: { has: 'Milestone', 'has-part': 'Chapter' },
         relationships: {
           depends_on: ['[[Roadmap]]'],
           related_to: ['[[Planning]]'],
@@ -66,6 +66,7 @@ describe('mobile inspector schema slots', () => {
       { key: 'depends_on', label: 'Depends on', source: 'typeDerived' },
       { key: 'related_to', label: 'Related to', source: 'typeDerived' },
       { key: 'has', label: 'Has', source: 'typeDerived' },
+      { key: 'has-part', label: 'Has part', source: 'typeDerived' },
     ])
   })
 

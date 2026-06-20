@@ -11,6 +11,7 @@ describe('relationship key helpers', () => {
   it('normalizes desktop relationship labels to frontmatter keys', () => {
     expect(normalizeRelationshipKey('Belongs to')).toBe('belongs_to')
     expect(normalizeRelationshipKey(' Related To ')).toBe('related_to')
+    expect(normalizeRelationshipKey('has-part')).toBe('has_part')
   })
 
   it('maps canonical and has-prefixed relationship keys to desktop relationship kinds', () => {
@@ -18,12 +19,14 @@ describe('relationship key helpers', () => {
     expect(relationshipKindForKey('related to')).toBe('relatedTo')
     expect(relationshipKindForKey('has')).toBe('has')
     expect(relationshipKindForKey('has_part')).toBe('has')
+    expect(relationshipKindForKey('has-part')).toBe('has')
     expect(relationshipKindForKey('mentioned_by')).toBe('custom')
   })
 
   it('detects relationship keys using the same canonical and has-prefixed rules', () => {
     expect(isRelationshipKey('Belongs to')).toBe(true)
     expect(isRelationshipKey('has_part')).toBe(true)
+    expect(isRelationshipKey('has-part')).toBe(true)
     expect(isRelationshipKey('mentioned_by')).toBe(false)
   })
 

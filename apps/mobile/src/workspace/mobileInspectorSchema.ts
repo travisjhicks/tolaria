@@ -11,7 +11,7 @@ import {
 } from '../../../../src/utils/workspaceSuggestionContracts'
 import { normalizePropertyKey, systemMetadataAliases } from '../../../../src/utils/systemMetadata'
 import { humanizePropertyKey } from '../../../../src/utils/propertyLabels'
-import { relationshipFrontmatterKey } from '../../../../src/utils/relationshipKeys'
+import { isRelationshipKey, relationshipFrontmatterKey } from '../../../../src/utils/relationshipKeys'
 
 type SlotSource = 'suggested' | 'typeDerived'
 
@@ -28,7 +28,6 @@ export type MobileInspectorRelationshipSlot = {
 }
 
 const ICON_PROPERTY_KEYS = systemMetadataAliases('_icon')
-const RELATIONSHIP_SCHEMA_KEYS = new Set<string>(SUGGESTED_RELATIONSHIP_KEYS)
 
 export function mobileInspectorPropertySlots(
   note: MobileNote,
@@ -177,7 +176,7 @@ function isVisibleTypeDerivedProperty(
 }
 
 function isRelationshipSchemaKey(key: string): boolean {
-  return RELATIONSHIP_SCHEMA_KEYS.has(canonicalSlotKey(key))
+  return isRelationshipKey(key)
 }
 
 function isVisiblePlaceholderValue(value: MobilePropertyValue): boolean {

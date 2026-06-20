@@ -1,6 +1,9 @@
 import type { MobileNote, MobilePropertyValue, MobileTypeDefinition, MobileTypeDefinitions } from './mobileWorkspaceModel'
 import { mobileNoteForWikilinkTarget, parseMobileWikilink } from './mobileWikilinks'
-import { SUGGESTED_RELATIONSHIP_KEYS } from '../../../../src/utils/workspaceSuggestionContracts'
+import {
+  isRelationshipKey,
+  normalizeRelationshipKey as normalizeSharedRelationshipKey,
+} from '../../../../src/utils/relationshipKeys'
 
 type NormalizedSuggestionKey = string
 type PropertyKey = string
@@ -13,15 +16,8 @@ export type MobileTypeValueSuggestionItem = {
   value: string
 }
 
-const RELATIONSHIP_SCHEMA_KEYS = new Set<string>(SUGGESTED_RELATIONSHIP_KEYS)
-const CANONICAL_RELATIONSHIP_KEYS = new Map<NormalizedSuggestionKey, RelationshipKey>(
-  SUGGESTED_RELATIONSHIP_KEYS.map((key) => [canonicalSuggestionKey(key), key]),
-)
-
 export function normalizeMobileRelationshipKey(key: RelationshipKey): RelationshipKey {
-  const trimmed = key.trim()
-  const relationshipKey = CANONICAL_RELATIONSHIP_KEYS.get(canonicalSuggestionKey(trimmed))
-  return relationshipKey === undefined ? trimmed : relationshipKey
+  return normalizeSharedRelationshipKey(key)
 }
 
 export function selectedTypePropertyCandidates(
@@ -148,7 +144,7 @@ function isTypePropertyCandidate(key: PropertyKey, value: MobilePropertyValue): 
 }
 
 function isRelationshipSchemaKey(key: RelationshipKey): boolean {
-  return RELATIONSHIP_SCHEMA_KEYS.has(canonicalSuggestionKey(key))
+  return isRelationshipKey(key)
 }
 
 function wikilinkDisplayLabel(ref: string): string {
