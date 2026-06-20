@@ -26,6 +26,7 @@ import { ColorEditableValue } from './ColorInput'
 import { IconEditableValue } from './IconEditableValue'
 import { PROPERTY_CHIP_STYLE } from './propertyChipStyles'
 import { canonicalSystemMetadataKey } from '../utils/systemMetadata'
+import { relationshipKindForKey } from '../utils/relationshipKeys'
 import { useDateDisplayFormat } from '../hooks/useAppPreferences'
 import { getAnchoredDropdownStyle, useAnchoredDropdownPosition } from './anchoredDropdown'
 
@@ -88,14 +89,8 @@ function datePickerEndMonth(selectedDate: Date | undefined): Date {
   return localDate(year, 11, 31)
 }
 
-const RELATIONSHIP_PROPERTY_KEYS = new Set(['belongs_to', 'related_to', 'has'])
-
-function normalizePropertyKey(propKey: string): string {
-  return propKey.trim().toLowerCase().replace(/[\s-]+/g, '_')
-}
-
 function showsRelationshipPropertyIcon(propKey: string): boolean {
-  return RELATIONSHIP_PROPERTY_KEYS.has(normalizePropertyKey(propKey))
+  return relationshipKindForKey(propKey) !== 'custom'
 }
 
 function StatusValue({ propKey, value, isEditing, vaultStatuses, onSave, onStartEdit }: {
