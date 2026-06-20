@@ -153,11 +153,35 @@ function readCodeBlock(lines: MarkdownLines, startIndex: number): ReadHtmlBlockR
     index += 1
   }
 
-  const language = opening.info ? ` data-language="${escapeAttribute(opening.info)}"` : ''
-  return {
-    html: `<pre><code${language}>${escapeHtml(codeLines.join('\n'))}</code></pre>`,
-    nextIndex: index < lines.length ? index + 1 : index,
+  const nextIndex = index < lines.length ? index + 1 : index
+  const language = simpleCodeBlockLanguage(opening.info)
+  if (!isNativeCodeBlockFence(opening.marker, opening.markerKind, language, opening.info)) {
+    return sourceLinesParagraphBlock(lines.slice(startIndex, nextIndex), nextIndex)
   }
+
+  const languageAttrs = language
+    ? ` class="language-${escapeAttribute(language)}" data-language="${escapeAttribute(language)}"`
+    : ''
+  return {
+    html: `<pre><code${languageAttrs}>${escapeHtml(codeLines.join('\n'))}</code></pre>`,
+    nextIndex,
+  }
+}
+
+function isNativeCodeBlockFence(
+  marker: MarkdownLine,
+  markerKind: 'backtick' | 'tilde',
+  language: string | null,
+  info: string | null,
+): boolean {
+  return markerKind === 'backtick'
+    && marker === '```'
+    && language === info
+}
+
+function simpleCodeBlockLanguage(info: string | null): string | null {
+  if (info === null) return null
+  return /^[A-Za-z0-9_-]+$/u.test(info) ? info : null
 }
 
 function readIndentedCodeFenceSourceBlock(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {

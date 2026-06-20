@@ -183,8 +183,17 @@ function nativeWysiwygLinkAttachmentContent(
 }
 
 function nativeWysiwygMarkdownBlockNode(action: NativeWysiwygMarkdownBlockAction): TiptapJsonNode {
+  if (action === 'codeBlock') return nativeWysiwygCodeBlockNode()
   if (action === 'mathBlock') return nativeWysiwygMathBlockNode()
   return nativeWysiwygSourceParagraph(mobileMarkdownSourceBlockLines(action))
+}
+
+function nativeWysiwygCodeBlockNode(): TiptapJsonNode {
+  return {
+    attrs: { language: 'text' },
+    content: [{ text: mobileMarkdownSourceBlockFormat('codeBlock')?.fallback ?? '', type: 'text' }],
+    type: 'codeBlock',
+  }
 }
 
 function nativeWysiwygMathBlockNode(): TiptapJsonNode {

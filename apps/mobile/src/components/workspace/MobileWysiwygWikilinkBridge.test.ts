@@ -98,7 +98,7 @@ describe('native WYSIWYG wikilink bridge', () => {
     ['mathBlock', 'Intro\n\n$$\n\\sqrt{a^2 + b^2}\n$$\n\nTail'],
     ['mermaid', 'Intro\n\n```mermaid\nflowchart TD\n    edit["Switch to the raw editor to edit"]\n```\n\nTail'],
     ['table', 'Intro\n\n| Column | Value |\n| --- | --- |\n| Item | Detail |\n\nTail'],
-  ] as const)('inserts native WYSIWYG %s as durable markdown source lines', (action, expectedMarkdown) => {
+  ] as const)('inserts native WYSIWYG %s as durable desktop markdown', (action, expectedMarkdown) => {
     const nextDocument = nativeWysiwygDocumentWithInsertedMarkdownBlock({
       json: documentNode(paragraphNode('Intro'), paragraphNode('Tail')),
       payload: { action },
@@ -106,6 +106,20 @@ describe('native WYSIWYG wikilink bridge', () => {
     })
 
     expect(tiptapJsonToMobileMarkdown(nextDocument)).toBe(expectedMarkdown)
+  })
+
+  it('inserts native WYSIWYG code blocks as structured TenTap nodes before markdown serialization', () => {
+    const nextDocument = nativeWysiwygDocumentWithInsertedMarkdownBlock({
+      json: documentNode(paragraphNode('Intro'), paragraphNode('Tail')),
+      payload: { action: 'codeBlock' },
+      selection: { from: 3, to: 3 },
+    })
+
+    expect(nextDocument?.content?.[1]).toMatchObject({
+      attrs: { language: 'text' },
+      content: [{ text: 'code', type: 'text' }],
+      type: 'codeBlock',
+    })
   })
 
   it('inserts native WYSIWYG display math as a structured TenTap node before markdown serialization', () => {

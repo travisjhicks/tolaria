@@ -2,6 +2,7 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { EditorContent } from '@tiptap/react'
 import { TenTapStartKit, useTenTap } from '@10play/tentap-editor/web'
+import { MobileCodeBlockBridge } from './MobileWysiwygCodeBlockBridge'
 import { MobileMathInlineBridge } from './MobileWysiwygMathBridge'
 
 declare global {
@@ -11,7 +12,7 @@ declare global {
   }
 }
 
-const mobileTenTapExtensions = [...TenTapStartKit, MobileMathInlineBridge]
+const mobileTenTapExtensions = [...TenTapStartKit, MobileCodeBlockBridge, MobileMathInlineBridge]
 
 function enabledTenTapExtensions() {
   return mobileTenTapExtensions.filter((extension) => (

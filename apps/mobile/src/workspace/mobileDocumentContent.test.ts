@@ -229,12 +229,18 @@ Updated body.
     )
   })
 
-  it('hydrates fenced code info strings with spaces as one editable code block', () => {
+  it('hydrates simple fenced code blocks as native TenTap codeBlock nodes with language metadata', () => {
+    const html = mobileMarkdownBodyToTentapHtml('```ts\nconst parity = "desktop"\n```\n\nDone\n')
+
+    expect(html).toBe('<pre><code class="language-ts" data-language="ts">const parity = &quot;desktop&quot;</code></pre>\n<p>Done</p>')
+  })
+
+  it('keeps complex fenced-code metadata editable as exact source until native codeBlock metadata can round-trip it', () => {
     const html = mobileMarkdownBodyToTentapHtml('```plain text\nprompt: keep [[literal]]\n```\n\nDone\n')
 
-    expect(html).toBe('<pre><code data-language="plain text">prompt: keep [[literal]]</code></pre>\n<p>Done</p>')
+    expect(html).toBe('<p>```plain text<br>prompt: keep [[literal]]<br>```</p>\n<p>Done</p>')
     expect(mobileMarkdownBodyToTentapHtml('~~~mermaid\nflowchart LR\nA --> B\n~~~\n')).toBe(
-      '<pre><code data-language="mermaid">flowchart LR\nA --&gt; B</code></pre>',
+      '<p>~~~mermaid<br>flowchart LR<br>A --&gt; B<br>~~~</p>',
     )
   })
 
@@ -398,6 +404,21 @@ Updated body.
       'ship(parity)',
       '```',
     ))).toBe(['```ts', 'const parity = "desktop";', 'ship(parity)', '```'].join('\n'))
+  })
+
+  it('serializes native codeBlock nodes back to desktop fenced markdown', () => {
+    const document: TiptapJsonNode = {
+      type: 'doc',
+      content: [
+        {
+          attrs: { language: 'ts' },
+          content: [{ text: 'const parity = "desktop"', type: 'text' }],
+          type: 'codeBlock',
+        },
+      ],
+    }
+
+    expect(tiptapJsonToMobileMarkdown(document)).toBe('```ts\nconst parity = "desktop"\n```')
   })
 
   it('serializes plain TenTap wikilinks without redundant display aliases', () => {

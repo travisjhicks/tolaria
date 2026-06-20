@@ -18,6 +18,7 @@ import { probeProps, type MobileLayoutProbe } from '../../qa/mobileLayoutProbe'
 import { mobileColors, mobileSpace } from '../../ui/tokens'
 import { MobileMarkdownFormattingToolbar } from './MobileMarkdownFormattingToolbar'
 import { mobileWysiwygTentapEditorHtml } from './MobileWysiwygTentapEditorHtml'
+import { MobileCodeBlockBridge } from './MobileWysiwygCodeBlockBridge'
 import { MobileMathInlineBridge } from './MobileWysiwygMathBridge'
 import { mobileTentapEditorCss } from './MobileWysiwygMarkdownEditorCss'
 import {
@@ -69,10 +70,10 @@ import {
   nativeWysiwygWikilinkInsertProof,
 } from '../../qa/nativeWysiwygWikilinkInsertProbe'
 import {
-  nativeWysiwygMarkdownBlockLogLine,
   nativeWysiwygMarkdownBlockProbePayloads,
   nativeWysiwygMarkdownBlockProbePlainTextPayload,
-  nativeWysiwygMarkdownBlockProof,
+  nativeWysiwygMarkdownBlockStructuredCodeBlock,
+  publishNativeWysiwygMarkdownBlockProof,
 } from '../../qa/nativeWysiwygMarkdownBlockProbe'
 
 type MobileWysiwygMarkdownEditorProps = {
@@ -155,6 +156,7 @@ type NativeTentapEditorRefs = {
   firstEditorSerializationRef: MutableRefObject<boolean>
   hasAcceptedEditorChangeRef: MutableRefObject<boolean>
   inlineAutocompleteTimerRef: MutableRefObject<TimerHandle | null>
+  markdownBlockProofReadyRef: MutableRefObject<boolean>
   markdownBlockRenderProofRef: MutableRefObject<boolean>
   saveTimerRef: MutableRefObject<TimerHandle | null>
 }
@@ -183,7 +185,7 @@ type SelectionSettableEditorBridge = EditorBridge & {
   setSelection: (from: number, to: number) => void
 }
 
-const mobileTenTapBridgeExtensions = [...TenTapStartKit, MobileMathInlineBridge]
+const mobileTenTapBridgeExtensions = [...TenTapStartKit, MobileCodeBlockBridge, MobileMathInlineBridge]
 
 export function MobileWysiwygMarkdownEditor({
   blocks,
@@ -469,6 +471,7 @@ function useNativeTentapEditorRefs(initialDocumentContent: string): NativeTentap
   const firstEditorSerializationRef = useRef(true)
   const hasAcceptedEditorChangeRef = useRef(false)
   const inlineAutocompleteTimerRef = useRef<TimerHandle | null>(null)
+  const markdownBlockProofReadyRef = useRef(false)
   const markdownBlockRenderProofRef = useRef(false)
   const saveTimerRef = useRef<TimerHandle | null>(null)
 
@@ -480,6 +483,7 @@ function useNativeTentapEditorRefs(initialDocumentContent: string): NativeTentap
     firstEditorSerializationRef,
     hasAcceptedEditorChangeRef,
     inlineAutocompleteTimerRef,
+    markdownBlockProofReadyRef,
     markdownBlockRenderProofRef,
     saveTimerRef,
   }), [
@@ -490,6 +494,7 @@ function useNativeTentapEditorRefs(initialDocumentContent: string): NativeTentap
     firstEditorSerializationRef,
     hasAcceptedEditorChangeRef,
     inlineAutocompleteTimerRef,
+    markdownBlockProofReadyRef,
     markdownBlockRenderProofRef,
     saveTimerRef,
   ])
@@ -607,8 +612,9 @@ function writeEditorJsonToMarkdown({
   refs.firstEditorSerializationRef.current = false
   if (!nextContent.skipped && nextContent.content !== refs.contentRef.current) {
     onUpdateContent(noteId, nextContent.content)
-    if (markdownBlockProbeEnabled) {
+    if (shouldPublishMarkdownBlockProof(markdownBlockProbeEnabled, refs)) {
       publishNativeWysiwygMarkdownBlockProof({
+        codeBlockStructured: nativeWysiwygMarkdownBlockStructuredCodeBlock(json),
         content: nextContent.content,
         mathBlockRendered: refs.markdownBlockRenderProofRef.current,
         noteId,
@@ -617,6 +623,15 @@ function writeEditorJsonToMarkdown({
     if (mutationProbeEnabled) publishNativeWysiwygMutationProof(noteId, nextContent.content)
     if (wikilinkInsertProbeEnabled) publishNativeWysiwygWikilinkInsertProof(noteId, nextContent.content)
   }
+}
+
+function shouldPublishMarkdownBlockProof(
+  markdownBlockProbeEnabled: boolean,
+  refs: NativeTentapEditorRefs,
+): boolean {
+  if (!markdownBlockProbeEnabled) return false
+  if (!refs.markdownBlockProofReadyRef.current) return false
+  return Platform.OS !== 'web'
 }
 
 function useNativeWysiwygMutationProbe({
@@ -878,24 +893,6 @@ function publishNativeWysiwygWikilinkInsertProof(noteId: string, content: string
   console.info(nativeWysiwygWikilinkInsertLogLine(nativeWysiwygWikilinkInsertProof({ content, noteId })))
 }
 
-function publishNativeWysiwygMarkdownBlockProof({
-  content,
-  mathBlockRendered,
-  noteId,
-}: {
-  content: string
-  mathBlockRendered: boolean
-  noteId: string
-}): void {
-  if (Platform.OS === 'web') return
-
-  console.info(nativeWysiwygMarkdownBlockLogLine(nativeWysiwygMarkdownBlockProof({
-    content,
-    mathBlockRendered,
-    noteId,
-  })))
-}
-
 function useNativeWysiwygInserter<Payload>({
   flushEditorDocument,
   insertIntoEditor,
@@ -978,6 +975,7 @@ async function insertMarkdownBlocksIntoNativeEditor(
   }
   editor.setContent(nextJson)
   refs.markdownBlockRenderProofRef.current = await nativeWysiwygBlockMathRenderProof(editor)
+  refs.markdownBlockProofReadyRef.current = true
   return true
 }
 
@@ -1248,6 +1246,7 @@ function useResetEditorChangeGate({
     acceptsEditorChangesRef,
     firstEditorSerializationRef,
     hasAcceptedEditorChangeRef,
+    markdownBlockProofReadyRef,
     markdownBlockRenderProofRef,
   } = refs
 
@@ -1255,12 +1254,14 @@ function useResetEditorChangeGate({
     acceptsEditorChangesRef.current = false
     firstEditorSerializationRef.current = true
     hasAcceptedEditorChangeRef.current = false
+    markdownBlockProofReadyRef.current = false
     markdownBlockRenderProofRef.current = false
   }, [
     acceptsEditorChangesRef,
     firstEditorSerializationRef,
     hasAcceptedEditorChangeRef,
     initialContent,
+    markdownBlockProofReadyRef,
     markdownBlockRenderProofRef,
     noteId,
   ])

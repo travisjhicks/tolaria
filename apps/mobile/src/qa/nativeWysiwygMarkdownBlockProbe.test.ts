@@ -7,6 +7,7 @@ import {
   nativeWysiwygMarkdownBlockProbePlainTextPayload,
   nativeWysiwygMarkdownBlockProbePayloads,
   nativeWysiwygMarkdownBlockProof,
+  nativeWysiwygMarkdownBlockStructuredCodeBlock,
   parseNativeWysiwygMarkdownBlockProofs,
 } from './nativeWysiwygMarkdownBlockProbe'
 
@@ -24,127 +25,20 @@ describe('native WYSIWYG markdown block probe', () => {
   })
 
   it('builds a passing proof when inserted blocks save as desktop markdown', () => {
-    expect(nativeWysiwygMarkdownBlockProof({
-      content: [
-        '# Note',
-        '',
-        'Plain  ',
-        'Clipboard',
-        '',
-        '---',
-        '',
-        '```text',
-        'code',
-        '```',
-        '',
-        '$$',
-        '\\sqrt{a^2 + b^2}',
-        '$$',
-        '',
-        '```mermaid',
-        'flowchart TD',
-        '    edit["Switch to the raw editor to edit"]',
-        '```',
-        '',
-        '| Column | Value |',
-        '| --- | --- |',
-        '| Item | Detail |',
-        '',
-        '```tldraw id="board-1" height="520"',
-        '{}',
-        '```',
-      ].join('\n'),
-      mathBlockRendered: true,
-      noteId: 'note.md',
-    })).toMatchObject({
-      codeBlockSaved: true,
-      dividerSaved: true,
-      mathBlockSaved: true,
-      mathBlockRendered: true,
-      mermaidSaved: true,
-      noteId: 'note.md',
-      plainTextSaved: true,
-      tableSaved: true,
-      whiteboardSaved: true,
-    })
+    expectPassingMarkdownBlockProof(markdownBlockProofContent(), { dividerSaved: true, noteId: 'note.md' })
   })
 
   it('does not confuse frontmatter delimiters with an inserted divider', () => {
-    expect(nativeWysiwygMarkdownBlockProof({
-      content: [
-        '---',
-        'title: Note',
-        '---',
-        '',
-        'Plain  ',
-        'Clipboard',
-        '',
-        '```text',
-        'code',
-        '```',
-        '',
-        '$$',
-        '\\sqrt{a^2 + b^2}',
-        '$$',
-        '',
-        '```mermaid',
-        'flowchart TD',
-        '    edit["Switch to the raw editor to edit"]',
-        '```',
-        '',
-        '| Column | Value |',
-        '| --- | --- |',
-        '| Item | Detail |',
-        '',
-        '```tldraw id="board-1" height="520"',
-        '{}',
-        '```',
-      ].join('\n'),
-      mathBlockRendered: true,
-      noteId: 'note.md',
-    })).toMatchObject({
-      codeBlockSaved: true,
-      dividerSaved: false,
-      mathBlockSaved: true,
-      mathBlockRendered: true,
-      mermaidSaved: true,
-      plainTextSaved: true,
-      tableSaved: true,
-      whiteboardSaved: true,
-    })
+    expectPassingMarkdownBlockProof(
+      markdownBlockProofContent({ divider: false, frontmatter: true }),
+      { dividerSaved: false },
+    )
   })
 
   it('parses and asserts simulator log proofs', () => {
     const proof = nativeWysiwygMarkdownBlockProof({
-      content: [
-        'Intro',
-        '',
-        'Plain  ',
-        'Clipboard',
-        '',
-        '---',
-        '',
-        '```text',
-        'code',
-        '```',
-        '',
-        '$$',
-        '\\sqrt{a^2 + b^2}',
-        '$$',
-        '',
-        '```mermaid',
-        'flowchart TD',
-        '    edit["Switch to the raw editor to edit"]',
-        '```',
-        '',
-        '| Column | Value |',
-        '| --- | --- |',
-        '| Item | Detail |',
-        '',
-        '```tldraw id="board-1" height="520"',
-        '{}',
-        '```',
-      ].join('\n'),
+      codeBlockStructured: true,
+      content: markdownBlockProofContent({ title: 'Intro' }),
       mathBlockRendered: true,
       noteId: 'note.md',
     })
@@ -173,6 +67,10 @@ describe('native WYSIWYG markdown block probe', () => {
         message: 'Native WYSIWYG code-block insertion saves as desktop fenced-code markdown',
       },
       {
+        id: 'editor.wysiwyg.markdownBlocks.codeBlockStructured',
+        message: 'Native WYSIWYG code-block insertion remains a structured TenTap codeBlock before save',
+      },
+      {
         id: 'editor.wysiwyg.markdownBlocks.mathBlock',
         message: 'Native WYSIWYG math insertion saves as desktop display-math markdown',
       },
@@ -195,8 +93,98 @@ describe('native WYSIWYG markdown block probe', () => {
     ])
   })
 
+  it('detects structured code-block nodes in native TenTap JSON', () => {
+    expect(nativeWysiwygMarkdownBlockStructuredCodeBlock({
+      content: [
+        {
+          attrs: { language: 'text' },
+          content: [{ text: 'code', type: 'text' }],
+          type: 'codeBlock',
+        },
+      ],
+      type: 'doc',
+    })).toBe(true)
+
+    expect(nativeWysiwygMarkdownBlockStructuredCodeBlock({
+      content: [
+        {
+          content: [
+            { text: '```text', type: 'text' },
+            { type: 'hardBreak' },
+            { text: 'code', type: 'text' },
+            { type: 'hardBreak' },
+            { text: '```', type: 'text' },
+          ],
+          type: 'paragraph',
+        },
+      ],
+      type: 'doc',
+    })).toBe(false)
+  })
+
   it('detects the native QA query flag', () => {
     expect(nativeWysiwygMarkdownBlockProbeEnabled(new globalThis.URLSearchParams('wysiwygMarkdownBlockProbe=1'))).toBe(true)
     expect(nativeWysiwygMarkdownBlockProbeEnabled(new globalThis.URLSearchParams('wysiwygMarkdownBlockProbe=0'))).toBe(false)
   })
 })
+
+function expectPassingMarkdownBlockProof(
+  content: string,
+  expected: { dividerSaved: boolean; noteId?: string },
+): void {
+  expect(nativeWysiwygMarkdownBlockProof({
+    codeBlockStructured: true,
+    content,
+    mathBlockRendered: true,
+    noteId: 'note.md',
+  })).toMatchObject({
+    codeBlockSaved: true,
+    codeBlockStructured: true,
+    mathBlockSaved: true,
+    mathBlockRendered: true,
+    mermaidSaved: true,
+    plainTextSaved: true,
+    tableSaved: true,
+    whiteboardSaved: true,
+    ...expected,
+  })
+}
+
+function markdownBlockProofContent({
+  divider = true,
+  frontmatter = false,
+  title = '# Note',
+}: {
+  divider?: boolean
+  frontmatter?: boolean
+  title?: string
+} = {}): string {
+  return [
+    ...(frontmatter ? ['---', 'title: Note', '---'] : [title]),
+    '',
+    'Plain  ',
+    'Clipboard',
+    '',
+    ...(divider ? ['---', ''] : []),
+    '```text',
+    'code',
+    '```',
+    '',
+    '$$',
+    '\\sqrt{a^2 + b^2}',
+    '$$',
+    '',
+    '```mermaid',
+    'flowchart TD',
+    '    edit["Switch to the raw editor to edit"]',
+    '```',
+    '',
+    '| Column | Value |',
+    '| --- | --- |',
+    '| Item | Detail |',
+    '',
+    '```tldraw id="board-1" height="520"',
+    '{}',
+    '```',
+  ].join('\n')
+}

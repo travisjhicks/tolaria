@@ -10,6 +10,7 @@ type ProbeLine = string
 
 export type NativeWysiwygMarkdownBlockProof = {
   codeBlockSaved: boolean
+  codeBlockStructured: boolean
   contentLength: number
   dividerSaved: boolean
   mathBlockSaved: boolean
@@ -33,6 +34,18 @@ type ProofFieldType = 'boolean' | 'number' | 'string'
 type ProofFieldMap = {
   [Field in ProofFieldName]: NativeWysiwygMarkdownBlockProof[Field]
 }
+type TiptapJsonNode = {
+  attrs?: Record<string, unknown>
+  content?: TiptapJsonNode[]
+  text?: string
+  type?: string
+}
+type NativeWysiwygMarkdownBlockProofInput = {
+  codeBlockStructured?: boolean
+  content: MarkdownContent
+  mathBlockRendered?: boolean
+  noteId: NoteId
+}
 
 const expectedDivider = '---'
 const expectedCodeBlock = '```text\ncode\n```'
@@ -53,6 +66,7 @@ const expectedWhiteboardFence = /```tldraw id="[^"]+" height="520"\n\{\}\n```/u
 
 const proofFieldTypes = {
   codeBlockSaved: 'boolean',
+  codeBlockStructured: 'boolean',
   contentLength: 'number',
   dividerSaved: 'boolean',
   mathBlockSaved: 'boolean',
@@ -82,18 +96,16 @@ export function nativeWysiwygMarkdownBlockProbePlainTextPayload(): NativeWysiwyg
 }
 
 export function nativeWysiwygMarkdownBlockProof({
+  codeBlockStructured = false,
   content,
   mathBlockRendered = false,
   noteId,
-}: {
-  content: MarkdownContent
-  mathBlockRendered?: boolean
-  noteId: NoteId
-}): NativeWysiwygMarkdownBlockProof {
+}: NativeWysiwygMarkdownBlockProofInput): NativeWysiwygMarkdownBlockProof {
   const normalizedContent = normalizedMarkdown(content)
 
   return {
     codeBlockSaved: normalizedContent.includes(expectedCodeBlock),
+    codeBlockStructured,
     contentLength: content.length,
     dividerSaved: markdownBlocks(normalizedContent).includes(expectedDivider),
     mathBlockSaved: normalizedContent.includes(expectedMathBlock),
@@ -110,6 +122,10 @@ export function nativeWysiwygMarkdownBlockLogLine(
   proof: NativeWysiwygMarkdownBlockProof,
 ): ProbeLine {
   return `${nativeWysiwygMarkdownBlockLogPrefix} ${JSON.stringify(proof)}`
+}
+
+export function publishNativeWysiwygMarkdownBlockProof(input: NativeWysiwygMarkdownBlockProofInput): void {
+  console.info(nativeWysiwygMarkdownBlockLogLine(nativeWysiwygMarkdownBlockProof(input)))
 }
 
 export function parseNativeWysiwygMarkdownBlockProofs(
@@ -149,6 +165,11 @@ export function assertNativeWysiwygMarkdownBlockProofs(
       'Native WYSIWYG code-block insertion saves as desktop fenced-code markdown',
     ),
     proofFailure(
+      latest.codeBlockStructured,
+      'editor.wysiwyg.markdownBlocks.codeBlockStructured',
+      'Native WYSIWYG code-block insertion remains a structured TenTap codeBlock before save',
+    ),
+    proofFailure(
       latest.mathBlockSaved,
       'editor.wysiwyg.markdownBlocks.mathBlock',
       'Native WYSIWYG math insertion saves as desktop display-math markdown',
@@ -186,6 +207,10 @@ export function nativeWysiwygMarkdownBlockProbeEnabled(searchParams: URLSearchPa
   return searchParams.get('wysiwygMarkdownBlockProbe') === '1'
 }
 
+export function nativeWysiwygMarkdownBlockStructuredCodeBlock(json: unknown): boolean {
+  return hasCodeBlockNode(json)
+}
+
 function parseProofLine(line: ProbeLine): NativeWysiwygMarkdownBlockProof | null {
   const prefixIndex = line.indexOf(nativeWysiwygMarkdownBlockLogPrefix)
   if (prefixIndex === -1) return null
@@ -204,6 +229,7 @@ function parsedProof(value: unknown): NativeWysiwygMarkdownBlockProof | null {
 
   return {
     codeBlockSaved: value.codeBlockSaved,
+    codeBlockStructured: value.codeBlockStructured,
     contentLength: value.contentLength,
     dividerSaved: value.dividerSaved,
     mathBlockSaved: value.mathBlockSaved,
@@ -224,6 +250,31 @@ function isNativeWysiwygMarkdownBlockProof(
   value: Record<string, unknown>,
 ): value is ProofFieldMap {
   return proofFields.every((field) => typeof value[field] === proofFieldTypes[field])
+}
+
+function hasCodeBlockNode(value: unknown): boolean {
+  if (!isTiptapJsonNode(value)) return false
+  if (isProbeCodeBlockNode(value)) return true
+
+  return tiptapChildNodes(value).some(hasCodeBlockNode)
+}
+
+function isProbeCodeBlockNode(node: TiptapJsonNode): boolean {
+  return node.type === 'codeBlock'
+    && node.attrs?.language === 'text'
+    && tiptapChildNodes(node).some(isProbeCodeTextNode)
+}
+
+function isProbeCodeTextNode(node: TiptapJsonNode): boolean {
+  return node.type === 'text' && node.text === 'code'
+}
+
+function tiptapChildNodes(node: TiptapJsonNode): TiptapJsonNode[] {
+  return Array.isArray(node.content) ? node.content : []
+}
+
+function isTiptapJsonNode(value: unknown): value is TiptapJsonNode {
+  return Boolean(value && typeof value === 'object')
 }
 
 function normalizedMarkdown(content: MarkdownContent): MarkdownContent {

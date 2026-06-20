@@ -33,12 +33,12 @@ describe('native WYSIWYG format commands', () => {
     expect(calledMethods(editor)).toEqual([method])
   })
 
-  it('keeps source-backed block markdown commands visible without mapping them to TenTap commands', () => {
-    const sourceBackedActions: MobileMarkdownFormatAction[] = ['divider', 'codeBlock', 'mathBlock', 'mermaid', 'table', 'whiteboard']
+  it('keeps inserted block markdown commands visible without mapping them to direct TenTap toolbar commands', () => {
+    const insertedBlockActions: MobileMarkdownFormatAction[] = ['divider', 'codeBlock', 'mathBlock', 'mermaid', 'table', 'whiteboard']
 
-    expect(nativeWysiwygFormattingActions).toEqual(expect.arrayContaining(sourceBackedActions))
+    expect(nativeWysiwygFormattingActions).toEqual(expect.arrayContaining(insertedBlockActions))
 
-    for (const action of sourceBackedActions) {
+    for (const action of insertedBlockActions) {
       const editor = fakeEditor()
       applyNativeWysiwygFormat(editor, action)
       expect(calledMethods(editor)).toEqual([])
