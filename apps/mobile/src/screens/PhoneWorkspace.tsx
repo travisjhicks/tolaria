@@ -50,6 +50,7 @@ export function PhoneWorkspace({
   onOpenNativeVault,
   repository = fixtureReadOnlyWorkspaceRepository,
   repositoryRequest,
+  sourceIdleSave = true,
   sourceSelectionProbe = false,
   snapshot,
   wysiwygAutocompleteProbe = false,
@@ -67,6 +68,7 @@ export function PhoneWorkspace({
   onOpenNativeVault?: () => void
   repository?: ReadOnlyWorkspaceRepository
   repositoryRequest?: ReadOnlyWorkspaceRequest
+  sourceIdleSave?: boolean
   sourceSelectionProbe?: boolean
   snapshot: MobileWorkspaceSnapshot
   wysiwygAutocompleteProbe?: boolean
@@ -99,6 +101,7 @@ export function PhoneWorkspace({
     controller,
     onOpenNativeVault,
     onPastePlainText: editorCommandRegistry.commands.pastePlainText,
+    onSaveActiveEditor: editorCommandRegistry.commands.save,
     openEditor,
     openList,
     openNeighborhoodList,
@@ -160,6 +163,7 @@ export function PhoneWorkspace({
           phoneState={phoneState}
           phoneSwipePreview={dragPreview}
           onRegisterEditorCommands={editorCommandRegistry.register}
+          sourceIdleSave={sourceIdleSave}
           sourceSelectionProbe={sourceSelectionProbe}
           suggestionNotes={suggestionNotes}
           tableOfContentsTarget={tableOfContentsTarget}
@@ -195,6 +199,7 @@ function usePhoneCommandPalette({
   controller,
   onOpenNativeVault,
   onPastePlainText,
+  onSaveActiveEditor,
   openEditor,
   openList,
   openNeighborhoodList,
@@ -205,6 +210,7 @@ function usePhoneCommandPalette({
   controller: PhoneWorkspaceController
   onOpenNativeVault?: () => void
   onPastePlainText?: () => void
+  onSaveActiveEditor?: () => void
   openEditor: (noteId?: string) => void
   openList: () => void
   openNeighborhoodList: (noteId: string) => void
@@ -225,11 +231,23 @@ function usePhoneCommandPalette({
     onOpenNativeVault,
     onEnterNeighborhood: openNeighborhoodList,
     onPastePlainText,
+    onSaveActiveEditor,
     onToggleProperties: toggleProperties,
     onViewAll: openSidebar,
     onViewEditorList: openList,
     onViewEditorOnly: openEditor,
-  }), [controller, onOpenNativeVault, onPastePlainText, openEditor, openList, openNeighborhoodList, openProperties, openSidebar, toggleProperties])
+  }), [
+    controller,
+    onOpenNativeVault,
+    onPastePlainText,
+    onSaveActiveEditor,
+    openEditor,
+    openList,
+    openNeighborhoodList,
+    openProperties,
+    openSidebar,
+    toggleProperties,
+  ])
 
   return {
     element: visible ? <MobileCommandPalette commands={commands} onClose={close} /> : null,
@@ -380,6 +398,7 @@ function phoneWorkspaceDragPreview({
       phoneLayoutProbe={disabledPhoneLayoutProbe}
       phoneState={dragPreview.previewState}
       phoneSwipePreview={dragPreview}
+      sourceIdleSave
       sourceSelectionProbe={false}
       suggestionNotes={suggestionNotes}
       tableOfContentsTarget={null}
@@ -408,6 +427,7 @@ type PhoneWorkspaceStateViewProps = {
   phoneState: PhoneWorkspaceState
   phoneSwipePreview: PhoneSwipePreview
   onRegisterEditorCommands?: RegisterMobileEditorCommands
+  sourceIdleSave: boolean
   sourceSelectionProbe: boolean
   suggestionNotes: MobileNote[]
   tableOfContentsTarget: PhoneTableOfContentsTargetRequest | null
@@ -575,6 +595,7 @@ function PhoneEditorScreen({
   onRegisterEditorCommands,
   phoneLayoutProbe,
   phoneSwipePreview,
+  sourceIdleSave,
   sourceSelectionProbe,
   suggestionNotes,
   tableOfContentsTarget,
@@ -609,6 +630,7 @@ function PhoneEditorScreen({
         notes={suggestionNotes}
         onNavigateWikilink={handleNavigateWikilink}
         onRegisterEditorCommands={onRegisterEditorCommands}
+        sourceIdleSave={sourceIdleSave}
         sourceSelectionProbe={sourceSelectionProbe}
         tableOfContentsTarget={tableOfContentsTarget}
         wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
@@ -656,6 +678,7 @@ function PhoneEditorBody({
   notes,
   onNavigateWikilink,
   onRegisterEditorCommands,
+  sourceIdleSave,
   sourceSelectionProbe,
   tableOfContentsTarget,
   wysiwygAutocompleteProbe,
@@ -673,6 +696,7 @@ function PhoneEditorBody({
   notes: MobileNote[]
   onNavigateWikilink: (target: string) => void
   onRegisterEditorCommands?: RegisterMobileEditorCommands
+  sourceIdleSave: boolean
   sourceSelectionProbe: boolean
   tableOfContentsTarget: PhoneTableOfContentsTargetRequest | null
   wysiwygAutocompleteProbe: boolean
@@ -698,6 +722,7 @@ function PhoneEditorBody({
       onRegisterEditorCommands={onRegisterEditorCommands}
       onToggleFavorite={controller.onToggleFavorite}
       onUpdateContent={controller.onUpdateNoteContent}
+      sourceIdleSave={sourceIdleSave}
       sourceSelectionProbe={sourceSelectionProbe}
       tableOfContentsTarget={tableOfContentsTarget}
       vaultRootUri={controller.vaultRootUri}

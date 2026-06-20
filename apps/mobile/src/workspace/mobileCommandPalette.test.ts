@@ -356,6 +356,26 @@ describe('mobile command palette', () => {
     expect(commandIdsWithoutEditor).not.toContain(appCommandManifest.commands.editPastePlainText.id)
   })
 
+  it('prefers the active editor save command over stale snapshot content', () => {
+    const handlers = commandHandlers()
+    const command = enabledCommand(handlers, appCommandManifest.commands.fileSave.id)
+
+    command.execute()
+
+    expect(handlers.onSaveActiveEditor).toHaveBeenCalledOnce()
+    expect(handlers.onUpdateNoteContent).not.toHaveBeenCalled()
+  })
+
+  it('falls back to snapshot content when no editor save command is registered', () => {
+    const handlers = commandHandlers({ onSaveActiveEditor: undefined })
+    const command = enabledCommand(handlers, appCommandManifest.commands.fileSave.id)
+    const selectedNote = handlers.selectedNote!
+
+    command.execute()
+
+    expect(handlers.onUpdateNoteContent).toHaveBeenCalledWith(selectedNote.id, selectedNote.rawContent ?? '')
+  })
+
   it('normalizes primary sidebar selections from the snapshot', () => {
     expect(mobilePrimarySidebarSelection(workspaceScenarios.default, 'inbox')).toEqual(
       expect.objectContaining({
@@ -421,6 +441,7 @@ function commandHandlers(
     onRenameNoteFileToTitle: vi.fn(),
     onRevealFile: vi.fn(),
     onRevealSelectedFolder: vi.fn(),
+    onSaveActiveEditor: vi.fn(),
     onSelectSidebarItem: vi.fn(),
     onSetArchived: vi.fn(),
     onSetDefaultNoteWidth: vi.fn(),

@@ -141,6 +141,7 @@ type NativeTentapEditorBridgeOptions = Omit<MobileWysiwygMarkdownEditorProps, 'n
 }
 type NativeTentapEditorSurfaceProps = {
   editor: EditorBridge
+  flushEditorDocument: () => void
   injectEditorCss: () => void
   insertWikilink: (payload: NativeWysiwygWikilinkPayload, selection?: NativeWysiwygSelection) => void
   insertAttachment: (payload: NativeWysiwygAttachmentPayload, selection?: NativeWysiwygSelection) => void
@@ -269,6 +270,7 @@ export function MobileWysiwygMarkdownEditor({
 
 function NativeTentapEditorSurface({
   editor,
+  flushEditorDocument,
   injectEditorCss,
   insertAttachment,
   insertMarkdownBlock,
@@ -296,6 +298,7 @@ function NativeTentapEditorSurface({
     pastePlainText: () => {
       void handleFormat('pastePlainText')
     },
+    save: flushEditorDocument,
   })
   const handleInsertWikilink = useCallback((payload: NativeWysiwygWikilinkPayload) => {
     insertWikilink(payload, pickerState?.replacementRange)
@@ -500,7 +503,16 @@ function useNativeTentapEditorBridge({
   useNativeWysiwygMutationProbe({ enabled: wysiwygMutationProbe, flushEditorDocument, refs, vaultRootUri })
   useFlushOnUnmount(refs, flushEditorDocument)
 
-  return { editor, injectEditorCss, insertAttachment, insertMarkdownBlock, insertPlainText, insertSlashCommandBlock, insertWikilink }
+  return {
+    editor,
+    flushEditorDocument,
+    injectEditorCss,
+    insertAttachment,
+    insertMarkdownBlock,
+    insertPlainText,
+    insertSlashCommandBlock,
+    insertWikilink,
+  }
 }
 
 function useNativeTentapEditorRefs(initialDocumentContent: string): NativeTentapEditorRefs {

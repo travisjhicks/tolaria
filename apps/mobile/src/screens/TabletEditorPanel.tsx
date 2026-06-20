@@ -63,6 +63,7 @@ type TabletEditorPanelProps = {
   onTableOfContentsScrollProof?: (proof: NativeTableOfContentsProof) => void
   onToggleFavorite: () => void
   onUpdateContent: (noteId: string, content: string) => void
+  sourceIdleSave?: boolean
   sourceSelectionProbe?: boolean
   tableOfContentsTarget?: MobileTableOfContentsTarget | null
   vaultRootUri?: string | null
@@ -111,6 +112,7 @@ type EditorContentProps = {
   onRegisterEditorCommands?: RegisterMobileEditorCommands
   onUpdateContent: (noteId: string, content: string) => void
   onTableOfContentsTargetLayout: (targetId: string, event: LayoutChangeEvent) => void
+  sourceIdleSave: boolean
   sourceSelectionProbe?: boolean
   vaultRootUri?: string | null
   wysiwygAutocompleteProbe?: boolean
@@ -146,6 +148,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
     onTableOfContentsScrollProof,
     onToggleFavorite,
     onUpdateContent,
+    sourceIdleSave = true,
     sourceSelectionProbe = false,
     tableOfContentsTarget = null,
     vaultRootUri = null,
@@ -205,6 +208,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
     onTableOfContentsTargetLayout: onTargetLayout,
     onUpdateContent,
     plainText,
+    sourceIdleSave,
     sourceSelectionProbe,
     vaultRootUri,
     wysiwygAutocompleteProbe,
@@ -451,6 +455,7 @@ function EditorContent({
   onRegisterEditorCommands,
   onTableOfContentsTargetLayout,
   onUpdateContent,
+  sourceIdleSave,
   sourceSelectionProbe = false,
   vaultRootUri = null,
   wysiwygAutocompleteProbe = false,
@@ -474,6 +479,7 @@ function EditorContent({
           onImportAttachment={onImportAttachment}
           onRegisterEditorCommands={onRegisterEditorCommands}
           onUpdateContent={onUpdateContent}
+          idleSave={sourceIdleSave}
           plainText={plainText}
           sourceSelectionProbe={sourceSelectionProbe}
         />

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 export type MobileEditorCommands = {
   pastePlainText?: () => void
+  save?: () => void
 }
 
 export type RegisterMobileEditorCommands = (commands: MobileEditorCommands) => () => void
@@ -45,6 +46,9 @@ export function useRegisteredMobileEditorCommands(
   const registeredCommands = useMemo<MobileEditorCommands>(() => ({
     pastePlainText: () => {
       commandsRef.current.pastePlainText?.()
+    },
+    save: () => {
+      commandsRef.current.save?.()
     },
   }), [])
 

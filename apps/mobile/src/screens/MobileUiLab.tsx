@@ -144,6 +144,7 @@ export function MobileUiLab() {
         onOpenNativeVault={handleOpenNativeVault}
         repository={repository}
         repositoryRequest={repositoryRequest}
+        sourceIdleSave={!editorIdleSaveDisabled(searchParams)}
         sourceSelectionProbe={sourceSelectionProbe}
         snapshot={snapshot}
         tableOfContentsProbe={tableOfContentsProbe}
@@ -169,6 +170,7 @@ export function MobileUiLab() {
       onOpenNativeVault={handleOpenNativeVault}
       repository={repository}
       repositoryRequest={repositoryRequest}
+      sourceIdleSave={!editorIdleSaveDisabled(searchParams)}
       sourceSelectionProbe={sourceSelectionProbe}
       snapshot={snapshot}
       wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
@@ -260,6 +262,10 @@ function currentVaultAlias(
 
 function layoutProbeEnabled(searchParams: URLSearchParams) {
   return searchParams.get('layoutProbe') === '1' || envFlagEnabled('EXPO_PUBLIC_TOLARIA_LAYOUT_PROBE')
+}
+
+function editorIdleSaveDisabled(searchParams: URLSearchParams) {
+  return searchParams.get('disableEditorIdleSave') === '1'
 }
 
 function mobileSnapshotForProbes(

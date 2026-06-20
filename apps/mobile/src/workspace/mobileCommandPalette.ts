@@ -81,6 +81,7 @@ export type MobileCommandPaletteHandlers = {
   onRedoWorkspaceEdit: () => void
   onRevealSelectedFolder?: () => void
   onRevealFile?: () => void
+  onSaveActiveEditor?: () => void
   onSelectSidebarItem: (selection: MobileSidebarItemSelection) => void
   onSetArchived: (archived: boolean) => void
   onSetDefaultNoteWidth?: (mode: MobileNoteWidth) => void
@@ -628,6 +629,8 @@ function saveSelectedNote(
   handlers: MobileCommandPaletteHandlers,
   note: MobileNote | null,
 ): (() => void) | undefined {
+  if (note && handlers.onSaveActiveEditor) return handlers.onSaveActiveEditor
+
   const saveContent = handlers.onUpdateNoteContent
   if (!note || saveContent === undefined) return undefined
   return () => saveContent(note.id, note.rawContent ?? '')

@@ -35,6 +35,7 @@ export function TabletWorkspace({
   onTableOfContentsScrollProof,
   repository = fixtureReadOnlyWorkspaceRepository,
   repositoryRequest,
+  sourceIdleSave = true,
   sourceSelectionProbe = false,
   snapshot,
   tableOfContentsProbe = false,
@@ -53,6 +54,7 @@ export function TabletWorkspace({
   onTableOfContentsScrollProof?: TabletWorkspaceChromeProps['onTableOfContentsScrollProof']
   repository?: ReadOnlyWorkspaceRepository
   repositoryRequest?: ReadOnlyWorkspaceRequest
+  sourceIdleSave?: boolean
   sourceSelectionProbe?: boolean
   snapshot: MobileWorkspaceSnapshot
   tableOfContentsProbe?: boolean
@@ -77,6 +79,7 @@ export function TabletWorkspace({
         layoutProbe={layoutProbe}
         onOpenNativeVault={onOpenNativeVault}
         onTableOfContentsScrollProof={onTableOfContentsScrollProof}
+        sourceIdleSave={sourceIdleSave}
         sourceSelectionProbe={sourceSelectionProbe}
         tableOfContentsProbe={tableOfContentsProbe}
         wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
@@ -121,11 +124,12 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
     onOpenBacklinks: gestures.showProperties,
     onOpenNativeVault,
     onPastePlainText: editorCommandRegistry.commands.pastePlainText,
+    onSaveActiveEditor: editorCommandRegistry.commands.save,
     onToggleProperties: gestures.toggleProperties,
     onViewAll: gestures.showAllPanels,
     onViewEditorList: gestures.showEditorList,
     onViewEditorOnly: gestures.showEditorOnly,
-  }), [editorCommandRegistry.commands.pastePlainText, gestures, onOpenNativeVault, props])
+  }), [editorCommandRegistry.commands.pastePlainText, editorCommandRegistry.commands.save, gestures, onOpenNativeVault, props])
   const handleNavigateWikilink = useCallback((target: string) => {
     const noteId = mobileNoteIdForWikilinkTarget(suggestionNotes, target)
     if (noteId) onSelectNote(noteId)
@@ -292,6 +296,7 @@ type TabletEditorPanelHostProps = Pick<
   | 'onToggleFavorite'
   | 'onUpdateNoteContent'
   | 'selectedNote'
+  | 'sourceIdleSave'
   | 'sourceSelectionProbe'
   | 'vaultRootUri'
   | 'wysiwygAutocompleteProbe'
@@ -322,6 +327,7 @@ function TabletEditorPanelHost({
   onToggleFavorite,
   onUpdateNoteContent,
   selectedNote,
+  sourceIdleSave,
   sourceSelectionProbe,
   suggestionNotes,
   tableOfContentsTarget,
@@ -350,6 +356,7 @@ function TabletEditorPanelHost({
       onTableOfContentsScrollProof={onTableOfContentsScrollProof}
       onToggleFavorite={onToggleFavorite}
       onUpdateContent={onUpdateNoteContent}
+      sourceIdleSave={sourceIdleSave}
       sourceSelectionProbe={sourceSelectionProbe}
       tableOfContentsTarget={tableOfContentsTarget}
       vaultRootUri={vaultRootUri}

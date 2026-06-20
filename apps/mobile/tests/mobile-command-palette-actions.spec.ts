@@ -1,4 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
+import { workspaceScenarioForId } from '../src/fixtures/workspaceFixtures'
+import {
+  HOST_WORKSPACE_NOTE_CONTENTS_GLOBAL_KEY,
+  HOST_WORKSPACE_SNAPSHOT_GLOBAL_KEY,
+  HOST_WORKSPACE_SNAPSHOT_STORAGE_KEY,
+  HOST_WORKSPACE_WRITES_GLOBAL_KEY,
+} from '../src/workspace/readOnlyWorkspaceRepository'
+import type { MobileWorkspaceWrite } from '../src/workspace/mobileWorkspaceEditing'
 
 const mobileClipboardAttemptsGlobalKey = '__TOLARIA_MOBILE_CLIPBOARD_ATTEMPTS__'
 const mobileFileRevealAttemptsGlobalKey = '__TOLARIA_MOBILE_FILE_REVEAL_ATTEMPTS__'
@@ -109,6 +117,32 @@ test.describe('mobile command palette actions', () => {
     await expect(page.getByTestId(rowTestId)).toBeHidden()
   })
 
+  test('flushes the active source editor draft from the tablet command palette save command', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'tablet-landscape', 'Command palette save checks use the full-width tablet layout.')
+
+    const initialMarkdown = '# Workflow Orchestration Essay\n\nOriginal host body.\n'
+    const markdown = '# Workflow Orchestration Essay\n\nSaved from the live source editor command.\n'
+
+    await installFixtureHostWorkspace(page, initialMarkdown)
+    await page.goto('/?source=host-vault&editorMode=source&disableEditorIdleSave=1')
+    const editor = page.getByTestId('editor-markdown-input')
+    await expect(editor).toBeVisible()
+    await expect(editor).toHaveValue(initialMarkdown)
+    await editor.fill(markdown)
+    await expect(hostWorkspaceWrites(page)).resolves.toEqual([])
+
+    await openCommandPalette(page)
+    await runCommand(page, 'save note', 'file-save')
+
+    await expect(page.getByTestId('mobile-command-palette')).toBeHidden()
+    await expect.poll(() => hostWorkspaceWrites(page)).toEqual([
+      expect.objectContaining({
+        content: markdown,
+        kind: 'saveNote',
+      }),
+    ])
+  })
+
   test('dispatches workspace commands from the phone command palette', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'phone-portrait', 'Phone command palette checks run on the phone shell.')
 
@@ -212,4 +246,33 @@ async function globalAttempts(page: Page, key: string) {
     const attempts = (window as unknown as Record<string, unknown>)[globalKey]
     return Array.isArray(attempts) ? attempts : []
   }, key)
+}
+
+async function installFixtureHostWorkspace(page: Page, selectedNoteContent: string) {
+  const snapshot = workspaceScenarioForId('default')
+  const selectedNote = snapshot.notes.find((note) => note.id === snapshot.selectedNoteId) ?? snapshot.notes[0]
+  const noteContents = selectedNote?.path ? { [selectedNote.path]: selectedNoteContent } : {}
+
+  await page.addInitScript(
+    ({ contentKey, globalKey, key, noteContents, snapshot, value }) => {
+      Reflect.set(window, globalKey, snapshot)
+      Reflect.set(window, contentKey, noteContents)
+      window.localStorage.setItem(key, value)
+    },
+    {
+      contentKey: HOST_WORKSPACE_NOTE_CONTENTS_GLOBAL_KEY,
+      globalKey: HOST_WORKSPACE_SNAPSHOT_GLOBAL_KEY,
+      key: HOST_WORKSPACE_SNAPSHOT_STORAGE_KEY,
+      noteContents,
+      snapshot,
+      value: JSON.stringify(snapshot),
+    },
+  )
+}
+
+async function hostWorkspaceWrites(page: Page): Promise<MobileWorkspaceWrite[]> {
+  return page.evaluate((globalKey) => {
+    const writes = (window as unknown as Record<string, unknown>)[globalKey]
+    return Array.isArray(writes) ? writes : []
+  }, HOST_WORKSPACE_WRITES_GLOBAL_KEY) as Promise<MobileWorkspaceWrite[]>
 }

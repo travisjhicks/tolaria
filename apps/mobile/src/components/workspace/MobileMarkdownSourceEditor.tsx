@@ -60,6 +60,7 @@ export type MobileMarkdownSourceEditorProps = {
   onImportAttachment?: () => Promise<MobileAttachmentImport | null>
   onRegisterEditorCommands?: RegisterMobileEditorCommands
   onUpdateContent: (noteId: string, content: string) => void
+  idleSave?: boolean
   plainText?: boolean
   sourceSelectionProbe?: boolean
 }
@@ -84,6 +85,7 @@ export function MobileMarkdownSourceEditor(props: MobileMarkdownSourceEditorProp
     onImportAttachment,
     onRegisterEditorCommands,
     onUpdateContent,
+    idleSave = true,
     plainText = false,
     sourceSelectionProbe = false,
   } = props
@@ -93,7 +95,9 @@ export function MobileMarkdownSourceEditor(props: MobileMarkdownSourceEditorProp
       <MobilePlainTextSourceEditor
         compact={compact}
         note={note}
+        onRegisterEditorCommands={onRegisterEditorCommands}
         onUpdateContent={onUpdateContent}
+        idleSave={idleSave}
         sourceSelectionProbe={sourceSelectionProbe}
       />
     )
@@ -109,6 +113,7 @@ export function MobileMarkdownSourceEditor(props: MobileMarkdownSourceEditorProp
       onImportAttachment={onImportAttachment}
       onRegisterEditorCommands={onRegisterEditorCommands}
       onUpdateContent={onUpdateContent}
+      idleSave={idleSave}
       sourceSelectionProbe={sourceSelectionProbe}
     />
   )
@@ -124,6 +129,7 @@ function MarkdownSourceEditor(props: Omit<MobileMarkdownSourceEditorProps, 'plai
     onImportAttachment,
     onRegisterEditorCommands,
     onUpdateContent,
+    idleSave,
     sourceSelectionProbe,
   } = props
 
@@ -134,6 +140,7 @@ function MarkdownSourceEditor(props: Omit<MobileMarkdownSourceEditorProps, 'plai
   })
   const editorDraft = useMobileSourceEditorDraft({
     noteId: note.id,
+    idleSave,
     onCommit: onUpdateContent,
     sourceContent,
   })
@@ -149,6 +156,7 @@ function MarkdownSourceEditor(props: Omit<MobileMarkdownSourceEditorProps, 'plai
     pastePlainText: () => {
       void autocomplete.applyFormat('pastePlainText')
     },
+    save: editorDraft.save,
   })
   useNativeSourceSelectionProbe(sourceSelectionProbe === true)
 
@@ -191,13 +199,19 @@ function MarkdownSourceEditor(props: Omit<MobileMarkdownSourceEditorProps, 'plai
 function MobilePlainTextSourceEditor({
   compact,
   note,
+  onRegisterEditorCommands,
   onUpdateContent,
+  idleSave,
   sourceSelectionProbe,
-}: Pick<MobileMarkdownSourceEditorProps, 'compact' | 'note' | 'onUpdateContent' | 'sourceSelectionProbe'>) {
+}: Pick<MobileMarkdownSourceEditorProps, 'compact' | 'idleSave' | 'note' | 'onRegisterEditorCommands' | 'onUpdateContent' | 'sourceSelectionProbe'>) {
   const editorDraft = useMobileSourceEditorDraft({
     noteId: note.id,
+    idleSave,
     onCommit: onUpdateContent,
     sourceContent: note.rawContent ?? '',
+  })
+  useRegisteredMobileEditorCommands(onRegisterEditorCommands, {
+    save: editorDraft.save,
   })
   useNativeSourceSelectionProbe(sourceSelectionProbe === true)
 
@@ -218,10 +232,12 @@ function MobilePlainTextSourceEditor({
 }
 
 function useMobileSourceEditorDraft({
+  idleSave = true,
   noteId,
   onCommit,
   sourceContent,
 }: {
+  idleSave?: boolean
   noteId: string
   onCommit: (noteId: string, content: string) => void
   sourceContent: string
@@ -261,9 +277,9 @@ function useMobileSourceEditorDraft({
     const nextDraft = editMobileEditorDraft(draftRef.current, nextContent)
     draftRef.current = nextDraft
     setDraft(nextDraft)
-    if (mobileEditorDraftNeedsCommit(nextDraft)) scheduleCommit()
+    if (mobileEditorDraftNeedsCommit(nextDraft) && idleSave) scheduleCommit()
     else clearScheduledCommit()
-  }, [clearScheduledCommit, scheduleCommit])
+  }, [clearScheduledCommit, idleSave, scheduleCommit])
 
   useEffect(() => {
     setDraft((current) => {
@@ -278,6 +294,7 @@ function useMobileSourceEditorDraft({
 
   return {
     content: draft.draftContent,
+    save: commitDraft,
     updateContent,
   }
 }
