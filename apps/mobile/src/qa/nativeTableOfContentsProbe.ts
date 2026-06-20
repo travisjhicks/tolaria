@@ -19,6 +19,11 @@ export type NativeTableOfContentsScrollProofInput = {
   targetId: string
 }
 
+type NativeTableOfContentsProofFields = Pick<
+  NativeTableOfContentsProof,
+  'afterY' | 'beforeY' | 'expectedY' | 'targetId'
+>
+
 export const nativeTableOfContentsLogPrefix = 'TOLARIA_MOBILE_TABLE_OF_CONTENTS_PROBE'
 
 const minimumScrollDelta = 80
@@ -101,30 +106,48 @@ function parseNativeTableOfContentsProofLine(line: string): NativeTableOfContent
   const jsonStart = line.indexOf('{', index)
   if (jsonStart === -1) return null
 
-  return normalizeNativeTableOfContentsProof(JSON.parse(line.slice(jsonStart)))
+  try {
+    return normalizeNativeTableOfContentsProof(JSON.parse(line.slice(jsonStart)))
+  } catch {
+    return null
+  }
 }
 
 function normalizeNativeTableOfContentsProof(value: unknown): NativeTableOfContentsProof | null {
-  if (!value || typeof value !== 'object') return null
+  if (!isProofRecord(value)) return null
+  if (!isNativeTableOfContentsProofId(value.id)) return null
+  if (typeof value.passed !== 'boolean') return null
 
-  const proof = value as Partial<NativeTableOfContentsProof>
-  if (
-    proof.id !== 'editor.tableOfContents.scroll'
-    || typeof proof.afterY !== 'number'
-    || typeof proof.beforeY !== 'number'
-    || typeof proof.expectedY !== 'number'
-    || typeof proof.passed !== 'boolean'
-    || typeof proof.targetId !== 'string'
-  ) {
-    return null
-  }
+  const fields = nativeTableOfContentsProofFields(value)
+  if (!fields) return null
 
   return {
-    afterY: proof.afterY,
-    beforeY: proof.beforeY,
-    expectedY: proof.expectedY,
-    id: proof.id,
-    passed: proof.passed,
-    targetId: proof.targetId,
+    ...fields,
+    id: value.id,
+    passed: value.passed,
+  }
+}
+
+function isProofRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object')
+}
+
+function isNativeTableOfContentsProofId(value: unknown): value is NativeTableOfContentsProof['id'] {
+  return value === 'editor.tableOfContents.scroll'
+}
+
+function nativeTableOfContentsProofFields(
+  value: Record<string, unknown>,
+): NativeTableOfContentsProofFields | null {
+  if (typeof value.afterY !== 'number') return null
+  if (typeof value.beforeY !== 'number') return null
+  if (typeof value.expectedY !== 'number') return null
+  if (typeof value.targetId !== 'string') return null
+
+  return {
+    afterY: value.afterY,
+    beforeY: value.beforeY,
+    expectedY: value.expectedY,
+    targetId: value.targetId,
   }
 }

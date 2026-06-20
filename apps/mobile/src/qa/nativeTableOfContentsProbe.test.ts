@@ -37,6 +37,10 @@ describe('native table of contents probe', () => {
     expect(assertNativeTableOfContentsProofs(proofs)).toEqual([])
   })
 
+  it('ignores malformed simulator log lines', () => {
+    expect(parseNativeTableOfContentsProofs('noise\nTOLARIA_MOBILE_TABLE_OF_CONTENTS_PROBE {bad json')).toEqual([])
+  })
+
   it('reports missing or failed scroll proofs', () => {
     expect(formatNativeTableOfContentsFailures(assertNativeTableOfContentsProofs([]))).toContain('editor.tableOfContents.scroll')
     expect(assertNativeTableOfContentsProofs([
