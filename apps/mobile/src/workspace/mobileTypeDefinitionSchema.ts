@@ -13,6 +13,7 @@ import {
   mobileWikilinkTargetForNote,
   parseMobileWikilink,
 } from './mobileWikilinks'
+import { SUGGESTED_RELATIONSHIP_KEYS } from '../../../../src/utils/workspaceSuggestionContracts'
 
 export type MobileTypeSchemaProperty = {
   key: SchemaKey
@@ -48,7 +49,7 @@ type SchemaIndex = number
 type SchemaKey = string
 type WikilinkRef = string
 
-const builtInRelationshipSchemaKeys = new Set(['belongs_to', 'has', 'related_to'])
+const builtInRelationshipSchemaKeys = new Set<string>(SUGGESTED_RELATIONSHIP_KEYS)
 
 export function typeSchemaPropertiesForForm(
   definition: MobileTypeDefinition | undefined,
