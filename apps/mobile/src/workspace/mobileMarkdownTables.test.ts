@@ -68,38 +68,43 @@ describe('mobile markdown tables', () => {
   })
 
   it('preserves desktop markdown table column alignment when editing cells', () => {
-    const content = [
-      'Intro',
-      '',
-      '| Surface | Desktop | Mobile |',
-      '| :--- | :---: | ---: |',
-      '| Editor | BlockNote | TenTap |',
-      '',
-      'Tail',
-    ].join('\n')
+    const content = tableNote({
+      divider: '| :--- | :---: | ---: |',
+      row: '| Editor | BlockNote | TenTap |',
+    })
 
     const [table] = readMobileMarkdownTables({ markdown: content })
     expect(table?.alignments).toEqual(['left', 'center', 'right'])
 
-    const result = updateMobileMarkdownTable({
-      markdown: content,
+    expectUpdatedTable({
+      content,
+      expectedDivider: '| :--- | :---: | ---: |',
+      expectedRow: '| Editor | BlockNote | Native WYSIWYG |',
       update: {
         headers: ['Surface', 'Desktop', 'Mobile'],
         key: 'line:2',
         rows: [['Editor', 'BlockNote', 'Native WYSIWYG']],
       },
     })
+  })
 
-    expect(result.updated).toBe(true)
-    expect(result.markdown).toBe([
-      'Intro',
-      '',
-      '| Surface | Desktop | Mobile |',
-      '| :--- | :---: | ---: |',
-      '| Editor | BlockNote | Native WYSIWYG |',
-      '',
-      'Tail',
-    ].join('\n'))
+  it('updates desktop markdown table column alignment without changing cells', () => {
+    const content = tableNote({
+      divider: '| --- | :---: | ---: |',
+      row: '| Editor | BlockNote | TenTap |',
+    })
+
+    expectUpdatedTable({
+      content,
+      expectedDivider: '| :--- | --- | :---: |',
+      expectedRow: '| Editor | BlockNote | TenTap |',
+      update: {
+        alignments: ['left', 'default', 'center'],
+        headers: ['Surface', 'Desktop', 'Mobile'],
+        key: 'line:2',
+        rows: [['Editor', 'BlockNote', 'TenTap']],
+      },
+    })
   })
 
   it('serializes new columns with default alignment while preserving existing aligned columns', () => {
@@ -147,3 +152,35 @@ describe('mobile markdown tables', () => {
     })).toEqual({ markdown: content, updated: false })
   })
 })
+
+function tableNote({ divider, row }: { divider: string; row: string }): string {
+  return [
+    'Intro',
+    '',
+    '| Surface | Desktop | Mobile |',
+    divider,
+    row,
+    '',
+    'Tail',
+  ].join('\n')
+}
+
+function expectUpdatedTable({
+  content,
+  expectedDivider,
+  expectedRow,
+  update,
+}: {
+  content: string
+  expectedDivider: string
+  expectedRow: string
+  update: Parameters<typeof updateMobileMarkdownTable>[0]['update']
+}) {
+  const result = updateMobileMarkdownTable({ markdown: content, update })
+
+  expect(result.updated).toBe(true)
+  expect(result.markdown).toBe(tableNote({
+    divider: expectedDivider,
+    row: expectedRow,
+  }))
+}

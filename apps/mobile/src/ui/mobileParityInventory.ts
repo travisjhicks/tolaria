@@ -141,11 +141,18 @@ export const mobileParityInventory = [
     surface: 'Note more actions',
   },
   {
-    assertions: ['source-backed markdown table resize and cell edit checks'],
+    assertions: ['source-backed markdown table resize, alignment, and cell edit checks'],
     contracts: ['desktopEditorParity', 'desktopToolbarActionParity'],
     desktopSource: 'BlockNote table editing, markdown table serialization, and editor command actions',
     mobileFile: 'src/components/workspace/MobileTableMoreActions.tsx',
     surface: 'Table more actions',
+  },
+  {
+    assertions: ['source-backed markdown table column alignment edit checks'],
+    contracts: ['desktopEditorParity', 'desktopToolbarActionParity'],
+    desktopSource: 'BlockNote table column alignment and markdown table serialization',
+    mobileFile: 'src/components/workspace/MobileTableAlignmentControls.tsx',
+    surface: 'Table alignment controls',
   },
   {
     assertions: ['source-backed code, math, and Mermaid block edit checks'],

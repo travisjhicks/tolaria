@@ -653,6 +653,11 @@ files:
     editor.sourceBlock.language: 4994a8ffeba4ac3140beb89e8d41f174
     editor.table.addColumn: b61b8f498d489f2e2b916b887b7062bc
     editor.table.addRow: 19f6e26702652b72fdc06294ed1594ef
+    editor.table.alignCenter: 4f1f6016fc9f3f2353c0cc7c67b292bd
+    editor.table.alignDefault: 7a1920d61156abc05a60135aefe8bc67
+    editor.table.alignLeft: 945d5e233cf7d6240f6b783b36a374ff
+    editor.table.alignRight: 92b09c7c48c520c3c55e497875da437c
+    editor.table.alignment: a63706eecfa33f67b315f978392ad7ae
     editor.table.cell: 44669a7cb93d75e9667b59dadb43f89c
     editor.table.column: 213c10963fd6d5f83f212a655d85d29a
     editor.table.edit: b9198d8ad9f4be9a51c2ea05711be865

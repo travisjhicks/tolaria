@@ -10,6 +10,7 @@ export type MobileMarkdownTable = {
 }
 
 type MarkdownTableUpdate = {
+  alignments?: MobileMarkdownTableAlignment[]
   headers: string[]
   key: string
   rows: string[][]
@@ -61,7 +62,7 @@ export function updateMobileMarkdownTable({
   if (!table) return { markdown, updated: false }
 
   const nextSource = mobileMarkdownTableSource({
-    alignments: table.alignments,
+    alignments: update.alignments ?? table.alignments,
     headers: update.headers,
     rows: update.rows,
   })

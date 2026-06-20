@@ -29,7 +29,7 @@ async function writeMarkdownTable(page: Page) {
     '# Table Source',
     '',
     '| Surface | Target |',
-    '| --- | --- |',
+    '| :--- | ---: |',
     '| Editor | Mobile |',
   ].join('\n'))
   await page.getByTestId('editor-edit-action').click()
@@ -42,10 +42,12 @@ async function editMarkdownTable(page: Page) {
   await expect(page.getByTestId('workspace-table-editor')).toBeVisible()
   await expect(page.getByTestId('workspace-table-header-input-0')).toHaveValue('Surface')
   await expect(page.getByTestId('workspace-table-header-input-1')).toHaveValue('Target')
+  await page.getByTestId('workspace-table-alignment-1-center').click()
   await page.getByTestId('workspace-table-header-input-1').fill('Desktop')
   await page.getByTestId('workspace-table-cell-input-0-1').fill('Native')
   await page.getByRole('button', { exact: true, name: 'Add row' }).click()
   await page.getByRole('button', { exact: true, name: 'Add column' }).click()
+  await page.getByTestId('workspace-table-alignment-2-left').click()
   await page.getByTestId('workspace-table-header-input-2').fill('Status')
   await page.getByTestId('workspace-table-cell-input-0-2').fill('Covered')
   await page.getByTestId('workspace-table-cell-input-1-0').fill('Inspector')
@@ -58,6 +60,7 @@ async function editMarkdownTable(page: Page) {
 async function assertMarkdownTableSource(page: Page) {
   await page.getByTestId('editor-source-action').click()
   await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/\| Surface \| Desktop \| Status \|/u)
+  await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/\| :--- \| :---: \| :--- \|/u)
   await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/\| Editor \| Native \| Covered \|/u)
   await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/\| Inspector \| Properties \| Ready \|/u)
 }

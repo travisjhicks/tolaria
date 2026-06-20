@@ -11,9 +11,11 @@ import { mobileNoteEditableContent } from '../../workspace/mobileDocumentContent
 import {
   readMobileMarkdownTables,
   updateMobileMarkdownTable,
+  type MobileMarkdownTableAlignment,
   type MobileMarkdownTable,
 } from '../../workspace/mobileMarkdownTables'
 import type { MobileEditorBlock, MobileNote } from '../../workspace/mobileWorkspaceModel'
+import { MobileTableAlignmentControls } from './MobileTableAlignmentControls'
 
 type MobileTableMoreActionsProps = {
   editorBlocks: MobileEditorBlock[]
@@ -92,13 +94,14 @@ function MobileTableSourceEditor({
   table: MobileMarkdownTable
   tables: MobileMarkdownTable[]
 }) {
+  const [alignments, setAlignments] = useState(table.alignments)
   const [headers, setHeaders] = useState(table.headers)
   const [rows, setRows] = useState(table.rows)
 
   const saveTable = () => {
     const result = updateMobileMarkdownTable({
       markdown: sourceContent,
-      update: { headers, key: table.key, rows },
+      update: { alignments, headers, key: table.key, rows },
     })
     if (result.updated) onUpdateNoteContent(noteId, result.markdown)
     onClose()
@@ -112,15 +115,27 @@ function MobileTableSourceEditor({
         canRemoveColumn={headers.length > 1}
         canRemoveRow={rows.length > 0}
         onAddColumn={() => {
+          setAlignments(addColumnToAlignments)
           setHeaders(addColumnToHeaders)
           setRows(addColumnToRows)
         }}
         onAddRow={() => setRows((current) => addTableRow({ columnCount: headers.length, rows: current }))}
         onRemoveColumn={() => {
+          setAlignments(removeLastItem)
           setHeaders(removeLastItem)
           setRows(removeLastColumn)
         }}
         onRemoveRow={() => setRows(removeLastItem)}
+      />
+      <MobileTableAlignmentControls
+        alignments={alignments}
+        columnCount={headers.length}
+        onChangeAlignment={(columnIndex, alignment) => setAlignments((current) => replaceAlignmentAt({
+          alignments: current,
+          columnCount: headers.length,
+          columnIndex,
+          value: alignment,
+        }))}
       />
       <TableFields
         headers={headers}
@@ -256,6 +271,10 @@ function addColumnToHeaders(headers: string[]): string[] {
   return [...headers, '']
 }
 
+function addColumnToAlignments(alignments: MobileMarkdownTableAlignment[]): MobileMarkdownTableAlignment[] {
+  return [...alignments, 'default']
+}
+
 function addColumnToRows(rows: string[][]): string[][] {
   return rows.map((row) => [...row, ''])
 }
@@ -274,6 +293,22 @@ function removeLastItem<T>(items: T[]): T[] {
 
 function replaceAt({ index, value, values }: { index: number; value: string; values: string[] }): string[] {
   return values.map((current, currentIndex) => currentIndex === index ? value : current)
+}
+
+function replaceAlignmentAt({
+  alignments,
+  columnCount,
+  columnIndex,
+  value,
+}: {
+  alignments: MobileMarkdownTableAlignment[]
+  columnCount: number
+  columnIndex: number
+  value: MobileMarkdownTableAlignment
+}): MobileMarkdownTableAlignment[] {
+  return Array.from({ length: columnCount }, (_current, currentIndex) => (
+    currentIndex === columnIndex ? value : alignments[currentIndex] ?? 'default'
+  ))
 }
 
 function updateTableCell({
