@@ -8,8 +8,8 @@ import type {
   MobileViewFilterOp,
 } from './mobileWorkspaceModel'
 import { parseDateFilterInput } from '../../../../src/utils/filterDates'
+import { compileSafeUserRegex } from '../../../../src/utils/safeRegex'
 import { evaluateArrayFieldCondition } from '../../../../src/utils/viewFilterArrayFields'
-import safeRegex from 'safe-regex2'
 
 type ViewFileSource = {
   content: string
@@ -87,8 +87,6 @@ const supportedFilterOps = new Set<MobileViewFilterOp>([
 ])
 const builtInSortFields = new Set(['created', 'modified', 'status', 'title'])
 const regexFilterOps = new Set<MobileViewFilterOp>(['contains', 'equals', 'not_contains', 'not_equals'])
-const maxUserRegexLength = 256
-const regexRepeatLimit = 25
 const sortableDatePrefixPattern = /^\d{4}-\d{2}-\d{2}/u
 const unknownStatusSortOrder = 999
 const statusSortOrder = new Map<string, number>([
@@ -438,15 +436,8 @@ function textMatchResult(op: MobileViewFilterOp, matched: boolean): boolean {
 function conditionRegex(condition: MobileViewFilterCondition): RegExp | null {
   if (!usesRegex(condition)) return null
 
-  const source = textValue(condition.value)
-  if (source.length > maxUserRegexLength) return null
-
-  try {
-    const pattern = new RegExp(source, 'i')
-    return safeRegex(source, { limit: regexRepeatLimit }) ? pattern : null
-  } catch {
-    return null
-  }
+  const compiled = compileSafeUserRegex(textValue(condition.value), 'i')
+  return compiled.ok ? compiled.pattern : null
 }
 
 function usesRegex(condition: MobileViewFilterCondition): boolean {
