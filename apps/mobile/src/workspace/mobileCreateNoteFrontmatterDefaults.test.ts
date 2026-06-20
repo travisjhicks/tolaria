@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { workspaceScenarioForId } from '../fixtures/workspaceFixtures'
+import { mobileCreateNoteDefaultsForType } from './mobileCreateNoteDefaults'
 import { applyMobileWorkspaceEditWithWrites } from './mobileWorkspaceEditing'
 
 describe('mobile create-note frontmatter defaults', () => {
@@ -41,6 +42,31 @@ describe('mobile create-note frontmatter defaults', () => {
       content: expect.stringContaining('Author:\n  - "[[person/frank-herbert]]"\n  - "[[person/beverly-herbert]]"'),
       kind: 'createNote',
       path: 'dune-notes.md',
+    }])
+  })
+
+  it('writes Type schema relationship defaults when creating typed notes', () => {
+    const defaults = mobileCreateNoteDefaultsForType('Project', {
+      Project: {
+        properties: { Priority: 'High' },
+        relationships: { belongs_to: ['[[Tolaria MVP]]'] },
+      },
+    })
+    const result = applyMobileWorkspaceEditWithWrites(workspaceScenarioForId('default'), {
+      defaults,
+      title: 'Launch Plan',
+      type: 'createNote',
+    })
+
+    expect(defaults).toEqual({
+      properties: { Priority: 'High' },
+      relationships: { belongs_to: ['[[Tolaria MVP]]'] },
+      type: 'Project',
+    })
+    expect(result.writes).toEqual([{
+      content: expect.stringContaining('belongs_to: "[[Tolaria MVP]]"'),
+      kind: 'createNote',
+      path: 'launch-plan.md',
     }])
   })
 })

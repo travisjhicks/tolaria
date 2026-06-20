@@ -12,6 +12,7 @@ describe('tablet workspace create actions', () => {
       typeDefinitions: {
         Project: {
           properties: { priority: 'High' },
+          relationships: { belongs_to: ['[[Tolaria MVP]]'] },
           template: '## Objective\n',
         },
       },
@@ -21,6 +22,7 @@ describe('tablet workspace create actions', () => {
     expect(applyEdit).toHaveBeenCalledWith({
       defaults: {
         properties: { priority: 'High' },
+        relationships: { belongs_to: ['[[Tolaria MVP]]'] },
         template: '## Objective\n',
         type: 'Project',
       },
