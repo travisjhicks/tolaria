@@ -79,6 +79,7 @@ import { normalizeMobileNoteWidth } from './mobileNoteWidth'
 import {
   mobileNoteForWikilinkTarget,
   mobileWikilinkTargetForNote,
+  parseMobileWikilink,
 } from './mobileWikilinks'
 import {
   mobileAllNotesFileVisibilityFromVaultConfig,
@@ -442,7 +443,7 @@ export function replaceTrailingWikilinkQuery(
   query: string,
   selectedNote: MobileNote,
 ): MarkdownContent {
-  const target = wikilinkTargetForNote(selectedNote)
+  const target = mobileWikilinkTargetForNote(selectedNote)
   const replacement = `[[${target}]]`
   const pattern = new RegExp(`\\[\\[${escapeRegExp(query)}$`)
   if (pattern.test(content)) return content.replace(pattern, replacement)
@@ -891,7 +892,7 @@ function snapshotWithRelationshipTargetRef({
   targetNote: MobileNote
   targetSnapshot: MobileWorkspaceSnapshot
 }): MobileWorkspaceSnapshot {
-  const targetRef = `[[${wikilinkTargetForNote(targetNote, sourceNote)}]]`
+  const targetRef = `[[${mobileWikilinkTargetForNote(targetNote, sourceNote)}]]`
   const context = {
     relationshipKey,
     sourceNoteId,
@@ -1308,7 +1309,7 @@ function resolveRelationshipTarget(notes: MobileNote[], target: WikilinkTarget):
 function relationshipRefForTitle(title: NoteTitle, notes: MobileNote[], sourceNote: MobileNote): WikilinkRef {
   if (/^\[\[[^\]]+\]\]$/.test(title)) return title
   const targetNote = resolveRelationshipTarget(notes, title)
-  const target = targetNote ? wikilinkTargetForNote(targetNote, sourceNote) : slugifyTitle(title)
+  const target = targetNote ? mobileWikilinkTargetForNote(targetNote, sourceNote) : slugifyTitle(title)
   return `[[${target}]]`
 }
 
@@ -1319,13 +1320,8 @@ function normalizedRelationshipRef(ref: WikilinkRef | undefined): WikilinkRef | 
   return `[[${trimmed}]]`
 }
 
-function wikilinkTargetForNote(note: MobileNote, sourceNote?: MobileNote | null): WikilinkTarget {
-  return mobileWikilinkTargetForNote(note, sourceNote)
-}
-
 function wikilinkTarget(value: WikilinkRef): WikilinkTarget {
-  const match = value.match(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/)
-  return (match?.[1] ?? value).trim()
+  return parseMobileWikilink(value)?.target ?? value.trim()
 }
 
 function relationshipKind(label: FrontmatterKey): MobileRelationshipKind {
