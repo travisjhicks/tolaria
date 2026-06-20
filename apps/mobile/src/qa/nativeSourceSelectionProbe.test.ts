@@ -10,7 +10,7 @@ import {
 } from './nativeSourceSelectionLog'
 
 describe('native source selection probe', () => {
-  it('builds a passing proof for source editor cursor preservation', () => {
+  it('builds a passing proof for source editor cursor and autocomplete preservation', () => {
     expect(assertNativeSourceSelectionProofs([nativeSourceSelectionProof()])).toEqual([])
   })
 
@@ -27,5 +27,18 @@ describe('native source selection probe', () => {
   it('detects source selection probe query params', () => {
     expect(nativeSourceSelectionProbeEnabled(new globalThis.URLSearchParams('sourceSelectionProbe=1'))).toBe(true)
     expect(nativeSourceSelectionProbeEnabled(new globalThis.URLSearchParams('sourceSelectionProbe=0'))).toBe(false)
+  })
+
+  it('reports native source autocomplete trigger and replacement regressions', () => {
+    const proof = {
+      ...nativeSourceSelectionProof(),
+      emojiAutocompletePreserved: false,
+      personReplacementPreserved: false,
+    }
+
+    expect(assertNativeSourceSelectionProofs([proof]).map((failure) => failure.id)).toEqual([
+      'editor.source.selection.personReplacement',
+      'editor.source.selection.emojiAutocomplete',
+    ])
   })
 })

@@ -1,4 +1,10 @@
-import { activeMobileWikilinkQuery } from '../workspace/mobileWikilinkAutocomplete'
+import {
+  activeMobileEmojiShortcodeQuery,
+  activeMobilePersonMentionQuery,
+  activeMobileWikilinkQuery,
+  replaceActiveMobileEmojiShortcodeQuery,
+  replaceActiveMobilePersonMentionQuery,
+} from '../workspace/mobileWikilinkAutocomplete'
 import { mobileMarkdownSelectionAfterTextChange } from '../workspace/mobileMarkdownSourceSelection'
 import type { NativeSourceSelectionProof } from './nativeSourceSelectionLog'
 
@@ -20,14 +26,32 @@ export function nativeSourceSelectionProof(): NativeSourceSelectionProof {
     17,
   )
   const autocompleteCursor = selectionAfter('Links [[Pro today', 'Links [[Proj today', 11)
+  const personAutocompleteCursor = selectionAfter('Assign @Ma today', 'Assign @Mar today', 10)
+  const emojiAutocompleteCursor = selectionAfter('Mood :roc today', 'Mood :rock today', 9)
+  const personReplacement = replaceActiveMobilePersonMentionQuery(
+    'Assign @Mar today',
+    personAutocompleteCursor,
+    'People/Maria Rossi',
+  )
+  const emojiReplacement = replaceActiveMobileEmojiShortcodeQuery(
+    'Mood :rock today',
+    emojiAutocompleteCursor,
+    '🚀',
+  )
 
   return {
     autocompleteCursor,
     autocompletePreserved: activeMobileWikilinkQuery('Links [[Proj today', autocompleteCursor)?.query === 'Proj',
     deletionCursor,
     deletionPreserved: deletionCursor === 14,
+    emojiAutocompleteCursor,
+    emojiAutocompletePreserved: activeMobileEmojiShortcodeQuery('Mood :rock today', emojiAutocompleteCursor)?.query === 'rock',
+    emojiReplacementPreserved: emojiReplacement?.text === 'Mood 🚀 today',
     insertionCursor,
     insertionPreserved: insertionCursor === 28,
+    personAutocompleteCursor,
+    personAutocompletePreserved: activeMobilePersonMentionQuery('Assign @Mar today', personAutocompleteCursor)?.query === 'Mar',
+    personReplacementPreserved: personReplacement?.text === 'Assign [[People/Maria Rossi]] today',
     replacementCursor,
     replacementPreserved: replacementCursor === 25,
   }
