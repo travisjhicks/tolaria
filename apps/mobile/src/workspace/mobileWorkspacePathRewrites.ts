@@ -80,14 +80,23 @@ function movedNoteTargetRewrites(
   newTarget: WikilinkTarget,
 ): Map<WikilinkTarget, WikilinkTarget> {
   const rewrites = new Map(localMovedNoteTargets(previousNote).map((target) => [target, newTarget]))
-  const workspaceAlias = previousNote.workspaceAlias?.trim().toLowerCase()
-  if (!workspaceAlias) return rewrites
+  const workspaceAliases = workspaceAliasTargets(previousNote)
+  if (workspaceAliases.length === 0) return rewrites
 
   for (const target of localMovedNoteTargets(previousNote)) {
-    rewrites.set(`${workspaceAlias}/${target}`, `${workspaceAlias}/${newTarget}`)
+    for (const workspaceAlias of workspaceAliases) {
+      rewrites.set(`${workspaceAlias}/${target}`, `${workspaceAlias}/${newTarget}`)
+    }
   }
 
   return rewrites
+}
+
+function workspaceAliasTargets(note: MobileNote): WikilinkTarget[] {
+  const workspaceAlias = note.workspaceAlias?.trim()
+  if (!workspaceAlias) return []
+
+  return [...new Set([workspaceAlias, workspaceAlias.toLowerCase()])]
 }
 
 function localMovedNoteTargets(note: MobileNote): WikilinkTarget[] {
