@@ -9,7 +9,8 @@ import {
   SUGGESTED_PROPERTY_SLOTS,
   SUGGESTED_RELATIONSHIP_KEYS,
 } from '../../../../src/utils/workspaceSuggestionContracts'
-import { systemMetadataAliases } from '../../../../src/utils/systemMetadata'
+import { normalizePropertyKey, systemMetadataAliases } from '../../../../src/utils/systemMetadata'
+import { humanizePropertyKey } from '../../../../src/utils/propertyLabels'
 
 type SlotSource = 'suggested' | 'typeDerived'
 
@@ -187,7 +188,7 @@ function isVisiblePlaceholderValue(value: MobilePropertyValue): boolean {
 }
 
 function canonicalSlotKey(key: string): string {
-  return key.trim().toLowerCase().replace(/\s+/g, '_')
+  return normalizePropertyKey(key)
 }
 
 function rawKeysWithSlots(
@@ -204,7 +205,5 @@ function rawSlotKey(key: string): string {
 }
 
 function humanizeSlotKey(key: string): string {
-  const spaced = key.replace(/^_+/, '').replace(/[_-]/g, ' ')
-  if (!spaced) return spaced
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
+  return humanizePropertyKey(key)
 }
