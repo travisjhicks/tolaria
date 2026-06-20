@@ -6,6 +6,7 @@ import {
   mobileQuickOpenResults,
   mobileQuickOpenSelectedNote,
 } from './mobileQuickOpen'
+import type { MobileNote } from './mobileWorkspaceModel'
 
 describe('mobile quick open', () => {
   it('returns the first active notes for an empty query', () => {
@@ -56,6 +57,42 @@ describe('mobile quick open', () => {
     expect(mobileQuickOpenResults([note], 'Cafe Notes').map((result) => result.id)).toEqual(['cafe-notes'])
   })
 
+  it('ranks exact title, alias, and prefix matches like desktop quick open', () => {
+    const notes = [
+      note({ aliases: ['Refactoring'], id: 'ideas', path: 'ideas.md', title: 'Refactoring Ideas' }),
+      note({ id: 'manual', path: 'manual.md', title: 'Refactoring Manual' }),
+      note({ id: 'refactoring', path: 'refactoring.md', title: 'Refactoring' }),
+    ]
+
+    expect(mobileQuickOpenResults(notes, 'Refactoring').map((result) => result.id)).toEqual([
+      'refactoring',
+      'ideas',
+      'manual',
+    ])
+  })
+
+  it('ranks alias exact matches above title prefix matches', () => {
+    const notes = [
+      note({ id: 'reference', path: 'reference.md', title: 'Reference Manual' }),
+      note({ aliases: ['ref'], id: 'meeting', path: 'meeting.md', title: 'Meeting Notes' }),
+    ]
+
+    expect(mobileQuickOpenResults(notes, 'ref').map((result) => result.id)).toEqual([
+      'meeting',
+      'reference',
+    ])
+  })
+
+  it('matches desktop quick-open fuzzy and slugified filename forms', () => {
+    const notes = [
+      note({ id: 'alpha', path: 'projects/alpha-project.md', title: 'Alpha Project' }),
+      note({ id: 'workflow', path: 'essays/workflow-orchestration.md', title: 'Workflow Orchestration' }),
+    ]
+
+    expect(mobileQuickOpenResults(notes, 'wko').map((result) => result.id)).toEqual(['workflow'])
+    expect(mobileQuickOpenResults(notes, 'Alpha Project!').map((result) => result.id)).toEqual(['alpha'])
+  })
+
   it('returns no results for unmatched queries', () => {
     expect(mobileQuickOpenResults(workspaceScenarioForId('default').notes, 'zzzzzzz')).toEqual([])
   })
@@ -74,3 +111,18 @@ describe('mobile quick open', () => {
     expect(mobileQuickOpenSelectedNote(results, 99)).toBeNull()
   })
 })
+
+function note(overrides: Partial<MobileNote>): MobileNote {
+  return {
+    ...workspaceScenarioForId('default').notes[0]!,
+    aliases: [],
+    archived: false,
+    relationships: [],
+    snippet: '',
+    status: '',
+    tags: [],
+    type: 'Note',
+    typeTone: 'gray',
+    ...overrides,
+  }
+}
