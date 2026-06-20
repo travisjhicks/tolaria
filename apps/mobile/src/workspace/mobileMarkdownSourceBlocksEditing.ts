@@ -1,3 +1,5 @@
+import { mobileMarkdownFenceForContent } from './mobileMarkdownCodeFence'
+
 export type MobileMarkdownEditableSourceBlockKind = 'codeBlock' | 'mathBlock' | 'mermaid'
 
 export type MobileMarkdownEditableSourceBlock = {
@@ -96,11 +98,21 @@ export function mobileMarkdownEditableSourceBlockSource({
   language: string
 }): string {
   if (kind === 'mathBlock') return `$$\n${content.trimEnd()}\n$$`
+  const blockContent = content.trimEnd()
+  const blockFence = mobileMarkdownFenceForContent({
+    content: blockContent,
+    fenceChar: sourceBlockFenceChar(fence),
+    minLength: fence.length,
+  })
   const blockInfo = sourceBlockInfo({
     infoSuffix,
     language: kind === 'mermaid' ? 'mermaid' : language,
   })
-  return `${fence}${blockInfo}\n${content.trimEnd()}\n${fence}`
+  return `${blockFence}${blockInfo}\n${blockContent}\n${blockFence}`
+}
+
+function sourceBlockFenceChar(fence: string): '`' | '~' {
+  return fence.startsWith('~') ? '~' : '`'
 }
 
 function readSourceBlockAt({

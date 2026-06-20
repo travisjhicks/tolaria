@@ -487,6 +487,21 @@ Updated body.
     expect(tiptapJsonToMobileMarkdown(document)).toBe('```ts\nconst parity = "desktop"\n```')
   })
 
+  it('serializes native codeBlock nodes with longer fences when code contains backticks', () => {
+    const document: TiptapJsonNode = {
+      type: 'doc',
+      content: [
+        {
+          attrs: { language: 'md' },
+          content: [{ text: '```ts\nconst nested = true\n```', type: 'text' }],
+          type: 'codeBlock',
+        },
+      ],
+    }
+
+    expect(tiptapJsonToMobileMarkdown(document)).toBe('````md\n```ts\nconst nested = true\n```\n````')
+  })
+
   it('serializes plain TenTap wikilinks without redundant display aliases', () => {
     const document: TiptapJsonNode = {
       type: 'doc',

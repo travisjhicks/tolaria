@@ -7,7 +7,11 @@ import {
 } from './mobileDisplayMath'
 import { mobileEditorBlocksToMarkdown, mobileFallbackBulletsToMarkdown } from './mobileEditorBlockMarkdown'
 import { mobilePortableAttachmentHref } from './mobileAttachmentUris'
-import { isMobileMarkdownCodeFenceClose, readMobileMarkdownCodeFence } from './mobileMarkdownCodeFence'
+import {
+  isMobileMarkdownCodeFenceClose,
+  mobileMarkdownFenceForContent,
+  readMobileMarkdownCodeFence,
+} from './mobileMarkdownCodeFence'
 import { mobileMarkdownListHtml, type MobileMarkdownListItem } from './mobileMarkdownListHtml'
 import { mobileImageNodeMarkdown, mobileMarkdownImageHtml } from './mobileMarkdownImage'
 import { readMobileInlineMathAt } from './mobileInlineMath'
@@ -1119,7 +1123,9 @@ function mobileMarkdownTableAlignment(value: unknown): MobileMarkdownTableAlignm
 
 function codeBlockMarkdown(node: TiptapJsonNode): MarkdownBody {
   const language = typeof node.attrs?.language === 'string' ? node.attrs.language : ''
-  return `\`\`\`${language}\n${plainText(node.content ?? [])}\n\`\`\``
+  const code = plainText(node.content ?? [])
+  const fence = mobileMarkdownFenceForContent({ content: code })
+  return `${fence}${language}\n${code}\n${fence}`
 }
 
 function displayMathMarkdown(node: TiptapJsonNode): MarkdownBody {

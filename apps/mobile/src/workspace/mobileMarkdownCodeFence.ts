@@ -1,4 +1,5 @@
 type MarkdownCodeFenceMarker = 'backtick' | 'tilde'
+type MarkdownFenceCharacter = '`' | '~'
 
 export type MobileMarkdownCodeFence = {
   info: string | null
@@ -33,6 +34,35 @@ export function isMobileMarkdownCodeFenceClose(
     && marker.length >= opening.marker.length
     && trimmed.slice(marker.length).trim() === '',
   )
+}
+
+export function mobileMarkdownFenceForContent({
+  content,
+  fenceChar = '`',
+  minLength = 3,
+}: {
+  content: string
+  fenceChar?: MarkdownFenceCharacter
+  minLength?: number
+}): string {
+  return fenceChar.repeat(mobileMarkdownFenceLengthForContent({ content, fenceChar, minLength }))
+}
+
+function mobileMarkdownFenceLengthForContent({
+  content,
+  fenceChar,
+  minLength,
+}: {
+  content: string
+  fenceChar: MarkdownFenceCharacter
+  minLength: number
+}): number {
+  const longestRun = Math.max(0, ...Array.from(content.matchAll(fenceRunPattern(fenceChar)), match => match[0].length))
+  return Math.max(minLength, longestRun + 1)
+}
+
+function fenceRunPattern(fenceChar: MarkdownFenceCharacter): RegExp {
+  return fenceChar === '`' ? /`+/gu : /~+/gu
 }
 
 function readFenceMarkerKind(line: string): MarkdownCodeFenceMarker | null {

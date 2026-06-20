@@ -1,5 +1,6 @@
 import {
   isMobileMarkdownCodeFenceClose,
+  mobileMarkdownFenceForContent,
   readMobileMarkdownCodeFence,
 } from './mobileMarkdownCodeFence'
 
@@ -94,7 +95,7 @@ export function mobileTldrawFenceSource({
 }: Pick<MobileTldrawWhiteboard, 'boardId' | 'height' | 'snapshot' | 'width'> & {
   metadataSuffix?: string
 }): string {
-  const fence = '`'.repeat(fenceLengthForSnapshot({ snapshot }))
+  const fence = mobileMarkdownFenceForContent({ content: snapshot })
   return `${fence}tldraw${mobileTldrawFenceMetadata({
     boardId,
     height,
@@ -219,11 +220,6 @@ function normalizedSnapshot({ snapshot }: { snapshot: string }): string {
 
 function snapshotBody({ snapshot }: { snapshot: string }): string {
   return snapshot.endsWith('\n') ? snapshot : `${snapshot}\n`
-}
-
-function fenceLengthForSnapshot({ snapshot }: { snapshot: string }): number {
-  const longestRun = Math.max(0, ...Array.from(snapshot.matchAll(/`+/gu), match => match[0].length))
-  return Math.max(3, longestRun + 1)
 }
 
 function escapeFenceAttribute({ value }: { value: string }): string {

@@ -131,6 +131,43 @@ describe('mobile markdown source block editing', () => {
     ].join('\n'))
   })
 
+  it('lengthens source block fences when edited content contains the original fence marker', () => {
+    const markdown = [
+      'Intro',
+      '',
+      '~~~md title="Nested fence"',
+      'old',
+      '~~~',
+      '',
+      'Tail',
+    ].join('\n')
+
+    const result = updateMobileMarkdownEditableSourceBlock({
+      markdown,
+      update: {
+        content: '```ts\nconst nested = true\n```\n~~~',
+        infoSuffix: 'title="Nested fence"',
+        key: 'line:2',
+        kind: 'codeBlock',
+        language: 'md',
+      },
+    })
+
+    expect(result.updated).toBe(true)
+    expect(result.markdown).toBe([
+      'Intro',
+      '',
+      '~~~~md title="Nested fence"',
+      '```ts',
+      'const nested = true',
+      '```',
+      '~~~',
+      '~~~~',
+      '',
+      'Tail',
+    ].join('\n'))
+  })
+
   it('skips tldraw fences so whiteboards keep their dedicated editor', () => {
     const blocks = readMobileMarkdownEditableSourceBlocks({ markdown: [
       '```tldraw id="board"',
