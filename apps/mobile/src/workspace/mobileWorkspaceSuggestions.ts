@@ -18,6 +18,7 @@ import {
   SUGGESTED_PROPERTY_KEYS,
   SUGGESTED_RELATIONSHIP_KEYS,
 } from '../../../../src/utils/workspaceSuggestionContracts'
+import { systemMetadataAliases } from '../../../../src/utils/systemMetadata'
 
 type PropertyKey = string
 type PropertyValueText = string
@@ -45,7 +46,7 @@ type RelationshipTargetSuggestionOptions = {
 }
 
 const VIEW_FIELD_SUGGESTION_LIMIT = 12
-const ICON_PROPERTY_KEYS = ['icon', '_icon'] as const
+const ICON_PROPERTY_KEYS = systemMetadataAliases('_icon')
 const BUILT_IN_VIEW_VALUE_RESOLVERS: Record<string, ViewValueResolver> = {
   archived: (note) => [String(note.archived === true)],
   body: (note) => note.snippet ? [note.snippet] : [],
@@ -443,8 +444,12 @@ function specialPropertyValuesForSuggestion(
 ): PropertyValueText[] | null {
   if (normalizedKey === 'status') return note.status ? [note.status] : []
   if (normalizedKey === 'tags') return note.tags
-  if (normalizedKey === 'icon' || normalizedKey === '_icon') return note.icon ? [note.icon] : []
+  if (isIconPropertyKey(normalizedKey)) return note.icon ? [note.icon] : []
   return null
+}
+
+function isIconPropertyKey(normalizedKey: NormalizedSuggestionKey): boolean {
+  return ICON_PROPERTY_KEYS.some((alias) => canonicalSuggestionKey(alias) === normalizedKey)
 }
 
 function propertyValueTexts(

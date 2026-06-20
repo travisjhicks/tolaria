@@ -11,6 +11,8 @@ const SYSTEM_METADATA_ALIAS_GROUPS = {
   _width: ['_width', 'width'],
 } as const
 
+export type SystemMetadataKey = keyof typeof SYSTEM_METADATA_ALIAS_GROUPS
+
 const FRONTMATTER_ALIAS_GROUPS = {
   title: ['title'],
   type: ['type', 'is_a', 'is a'],
@@ -65,12 +67,16 @@ export function canonicalSystemMetadataKey(key: string): string {
   return canonicalFrontmatterKey(key)
 }
 
+export function systemMetadataAliases(canonicalKey: SystemMetadataKey): readonly string[] {
+  return SYSTEM_METADATA_ALIAS_GROUPS[canonicalKey]
+}
+
 export function isSystemMetadataKey(key: string): boolean {
   const canonical = canonicalFrontmatterKey(key)
   return canonical.startsWith('_') || CANONICAL_BY_ALIAS.has(normalizePropertyKey(key))
 }
 
-export function hasSystemMetadataKey(keys: Iterable<string>, canonicalKey: keyof typeof SYSTEM_METADATA_ALIAS_GROUPS): boolean {
+export function hasSystemMetadataKey(keys: Iterable<string>, canonicalKey: SystemMetadataKey): boolean {
   for (const key of keys) {
     if (canonicalFrontmatterKey(key) === canonicalKey) {
       return true

@@ -5,6 +5,11 @@ import type {
   MobileTypeDefinition,
   MobileTypeDefinitions,
 } from './mobileWorkspaceModel'
+import {
+  SUGGESTED_PROPERTY_SLOTS,
+  SUGGESTED_RELATIONSHIP_KEYS,
+} from '../../../../src/utils/workspaceSuggestionContracts'
+import { systemMetadataAliases } from '../../../../src/utils/systemMetadata'
 
 type SlotSource = 'suggested' | 'typeDerived'
 
@@ -20,15 +25,8 @@ export type MobileInspectorRelationshipSlot = {
   source: SlotSource
 }
 
-const SUGGESTED_PROPERTY_SLOTS = [
-  { key: 'Status', label: 'Status' },
-  { key: 'Date', label: 'Date' },
-  { key: 'URL', label: 'URL' },
-  { key: 'icon', label: 'Icon' },
-] as const
-const SUGGESTED_RELATIONSHIP_KEYS = ['belongs_to', 'related_to', 'has'] as const
-const ICON_PROPERTY_KEYS = ['icon', '_icon'] as const
-const RELATIONSHIP_SCHEMA_KEYS = new Set(SUGGESTED_RELATIONSHIP_KEYS)
+const ICON_PROPERTY_KEYS = systemMetadataAliases('_icon')
+const RELATIONSHIP_SCHEMA_KEYS = new Set<string>(SUGGESTED_RELATIONSHIP_KEYS)
 
 export function mobileInspectorPropertySlots(
   note: MobileNote,
@@ -181,7 +179,7 @@ function isVisibleTypeDerivedProperty(
 }
 
 function isRelationshipSchemaKey(key: string): boolean {
-  return RELATIONSHIP_SCHEMA_KEYS.has(canonicalSlotKey(key) as (typeof SUGGESTED_RELATIONSHIP_KEYS)[number])
+  return RELATIONSHIP_SCHEMA_KEYS.has(canonicalSlotKey(key))
 }
 
 function isVisiblePlaceholderValue(value: MobilePropertyValue): boolean {
