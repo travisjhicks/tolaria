@@ -21,6 +21,7 @@ import {
   mobileQuickOpenSelectedNote,
 } from '../../workspace/mobileQuickOpen'
 import {
+  canSubmitMobilePropertyValue,
   isMobileListPropertyKey,
   mobilePropertyValueKindForKey,
   type MobilePropertyValueKind,
@@ -847,6 +848,11 @@ function AddPropertyContent({
   const editingProperty = action === 'editProperty'
   const lockedListKind = isMobileListPropertyKey(propertyName)
   const selectedValueKind = mobilePropertyValueKindForKey(propertyName, propertyValueKind)
+  const canSaveProperty = canSubmitMobilePropertyValue({
+    key: propertyName,
+    kind: propertyValueKind,
+    valueText: propertyValue,
+  })
   const keySuggestions = editingProperty ? [] : mobilePropertyKeySuggestions(notes, selectedNote, propertyName, typeDefinitions)
   const valueSuggestions = mobilePropertyValueSuggestions(notes, propertyName, propertyValue, selectedValueKind, {
     selectedNote,
@@ -883,7 +889,7 @@ function AddPropertyContent({
       />
       <SheetFooter>
         <MobileButton label={mobileText('common.cancel')} variant="ghost" onPress={onClose} />
-        <MobileButton disabled={propertyName.trim().length === 0} label={mobileText('common.save')} variant="primary" onPress={onSaveProperty} />
+        <MobileButton disabled={!canSaveProperty} label={mobileText('common.save')} variant="primary" onPress={onSaveProperty} />
       </SheetFooter>
     </ScrollView>
   )

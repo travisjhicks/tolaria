@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  canSubmitMobilePropertyValue,
   mobilePropertyValueFormText,
   mobilePropertyValueKind,
   mobilePropertyValueKindForKey,
@@ -68,6 +69,15 @@ describe('mobile property values', () => {
     expect(parseMobilePropertyValue({ key: 'Status', kind: 'status', valueText: ' Active ' })).toBe('Active')
     expect(parseMobilePropertyValue({ key: 'URL', kind: 'url', valueText: ' https://example.com ' })).toBe('https://example.com')
     expect(parseMobilePropertyValue({ key: 'Brand color', kind: 'color', valueText: ' #3b82f6 ' })).toBe('#3b82f6')
+  })
+
+  it('matches desktop submit validation for number property values', () => {
+    expect(canSubmitMobilePropertyValue({ key: 'Estimate', kind: 'number', valueText: '13.5' })).toBe(true)
+    expect(canSubmitMobilePropertyValue({ key: 'Estimate', kind: 'number', valueText: '-1' })).toBe(true)
+    expect(canSubmitMobilePropertyValue({ key: 'Estimate', kind: 'number', valueText: '' })).toBe(false)
+    expect(canSubmitMobilePropertyValue({ key: 'Estimate', kind: 'number', valueText: 'later' })).toBe(false)
+    expect(canSubmitMobilePropertyValue({ key: 'Priority', kind: 'string', valueText: 'later' })).toBe(true)
+    expect(canSubmitMobilePropertyValue({ key: '', kind: 'string', valueText: 'later' })).toBe(false)
   })
 
   it('formats existing values for editing', () => {

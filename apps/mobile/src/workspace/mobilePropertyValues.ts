@@ -34,6 +34,12 @@ export type MobilePropertySuggestionValueInput = MobilePropertyValueInput & {
   suggestion: string
 }
 
+export function canSubmitMobilePropertyValue(input: MobilePropertyValueInput): boolean {
+  if (!input.key.trim()) return false
+  const kind = mobilePropertyValueKindForKey(input.key, input.kind)
+  return kind !== 'number' || isValidNumberPropertyValue(input.valueText)
+}
+
 export function mobilePropertyValueFormText(value: MobilePropertyValue): string {
   if (Array.isArray(value)) return formatMobileCommaListText(value)
   return String(value)
@@ -124,6 +130,11 @@ function isBooleanFalseText(value: MobilePropertyValueText): boolean {
 function numberPropertyValue(value: MobilePropertyValueText): number | string {
   const parsed = Number(value.trim())
   return Number.isFinite(parsed) ? parsed : value.trim()
+}
+
+function isValidNumberPropertyValue(value: MobilePropertyValueText): boolean {
+  const trimmed = value.trim()
+  return trimmed !== '' && Number.isFinite(Number(trimmed))
 }
 
 const stringPropertyValueKindDetectors: readonly {
