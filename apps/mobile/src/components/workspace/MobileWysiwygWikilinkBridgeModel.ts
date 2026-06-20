@@ -6,6 +6,7 @@ import {
 import {
   activeMobileEmojiShortcodeQuery,
   activeMobilePersonMentionQuery,
+  activeMobileSlashCommandQuery,
   activeMobileWikilinkQuery,
 } from '../../workspace/mobileWikilinkAutocomplete'
 import type { TiptapJsonNode } from '../../workspace/mobileDocumentContent'
@@ -43,7 +44,7 @@ export type NativeWysiwygSelection = {
   from: number
   to: number
 }
-export type NativeWysiwygInlineAutocompleteKind = 'emoji' | 'personMention' | 'wikilink'
+export type NativeWysiwygInlineAutocompleteKind = 'emoji' | 'personMention' | 'slashCommand' | 'wikilink'
 export type NativeWysiwygInlineAutocomplete = {
   kind: NativeWysiwygInlineAutocompleteKind
   query: string
@@ -127,6 +128,23 @@ export function nativeWysiwygDocumentWithInsertedMarkdownBlock({
   if (!isTiptapDocument(json)) return null
 
   return insertBlockAfterSelection(json, nativeWysiwygMarkdownBlockNode(payload.action), selection).node
+}
+
+export function nativeWysiwygDocumentWithInsertedSlashCommandBlock({
+  json,
+  payload,
+  selection,
+}: {
+  json: unknown
+  payload: NativeWysiwygMarkdownBlockPayload
+  selection?: NativeWysiwygSelection
+}): TiptapJsonNode | null {
+  if (!isTiptapDocument(json)) return null
+
+  const block = nativeWysiwygMarkdownBlockNode(payload.action)
+  if (!selection) return insertBlockAfterSelection(json, block).node
+
+  return insertSlashCommandBlockAtSelection(json, block, normalizedSelection(selection))
 }
 
 export function nativeWysiwygDocumentWithInsertedPlainText({
@@ -366,14 +384,25 @@ function inlineAutocompleteForContainer(
   }
 
   const emojiMatch = activeMobileEmojiShortcodeQuery(projection.text, projection.cursor)
-  if (!emojiMatch) return null
+  if (emojiMatch) {
+    return inlineAutocompleteMatch({
+      kind: 'emoji',
+      position,
+      projection,
+      query: emojiMatch.query,
+      start: emojiMatch.start,
+    })
+  }
+
+  const slashCommandMatch = activeMobileSlashCommandQuery(projection.text, projection.cursor)
+  if (!slashCommandMatch) return null
 
   return inlineAutocompleteMatch({
-    kind: 'emoji',
+    kind: 'slashCommand',
     position,
     projection,
-    query: emojiMatch.query,
-    start: emojiMatch.start,
+    query: slashCommandMatch.query,
+    start: slashCommandMatch.start,
   })
 }
 
@@ -467,6 +496,86 @@ function blockInsertionIndex(
   }
 
   return children.length
+}
+
+function insertSlashCommandBlockAtSelection(
+  node: TiptapJsonNode,
+  block: TiptapJsonNode,
+  selection: NativeWysiwygSelection,
+): TiptapJsonNode {
+  const children = node.content ?? []
+  const result = slashCommandBlockChildren(children, block, selection)
+  return result.inserted
+    ? { ...node, content: result.children }
+    : insertBlockAfterSelection(node, block, selection).node
+}
+
+function slashCommandBlockChildren(
+  children: TiptapJsonNode[],
+  block: TiptapJsonNode,
+  selection: NativeWysiwygSelection,
+): { children: TiptapJsonNode[]; inserted: boolean } {
+  const nextChildren: TiptapJsonNode[] = []
+  let childStart = 0
+  let inserted = false
+
+  for (const child of children) {
+    const childEnd = childStart + tiptapNodeSize(child)
+    if (inserted) {
+      nextChildren.push(cloneNode(child))
+    } else if (slashCommandSelectionTargetsChild(child, selection, childStart, childEnd)) {
+      nextChildren.push(...slashCommandReplacementBlocks(child, block, selection, childStart + 1))
+      inserted = true
+    } else {
+      nextChildren.push(cloneNode(child))
+    }
+    childStart = childEnd
+  }
+
+  return { children: nextChildren, inserted }
+}
+
+function slashCommandSelectionTargetsChild(
+  child: TiptapJsonNode,
+  selection: NativeWysiwygSelection,
+  childStart: number,
+  childEnd: number,
+): boolean {
+  if (!isInlineContainer(child)) return false
+  if (selection.from < childStart) return false
+  return selection.to <= childEnd
+}
+
+function slashCommandReplacementBlocks(
+  node: TiptapJsonNode,
+  block: TiptapJsonNode,
+  selection: NativeWysiwygSelection,
+  contentStart: number,
+): TiptapJsonNode[] {
+  const remainingContent = inlineContentWithoutTrailingWhitespace([
+    ...inlineNodesBefore(node.content ?? [], selection.from, contentStart),
+    ...inlineNodesAfter(node.content ?? [], [], selection.to, contentStart),
+  ])
+  const prefixBlock = inlineContentHasMeaningfulText(remainingContent)
+    ? [{ ...node, content: remainingContent }]
+    : []
+
+  return [...prefixBlock, cloneNode(block)]
+}
+
+function inlineContentWithoutTrailingWhitespace(nodes: TiptapJsonNode[]): TiptapJsonNode[] {
+  const lastNode = nodes.at(-1)
+  if (typeof lastNode?.text !== 'string') return nodes
+
+  const trimmedText = lastNode.text.replace(/\s+$/u, '')
+  const prefix = nodes.slice(0, -1)
+  return trimmedText ? [...prefix, textNodeWithText(lastNode, trimmedText)] : prefix
+}
+
+function inlineContentHasMeaningfulText(nodes: TiptapJsonNode[]): boolean {
+  return nodes.some((node) => (
+    typeof node.text === 'string' ? node.text.trim().length > 0 : true
+  ))
 }
 
 function appendWikilinkToNodeType(

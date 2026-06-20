@@ -5,6 +5,7 @@ import {
   nativeWysiwygDocumentWithInsertedAttachment,
   nativeWysiwygDocumentWithInsertedMarkdownBlock,
   nativeWysiwygDocumentWithInsertedPlainText,
+  nativeWysiwygDocumentWithInsertedSlashCommandBlock,
   nativeWysiwygInlineAutocompleteAtSelection,
   nativeWysiwygAttachmentContent,
   nativeWysiwygPlainTextContent,
@@ -171,6 +172,32 @@ describe('native WYSIWYG wikilink bridge', () => {
     )
   })
 
+  it('replaces a native slash-command query with the selected markdown block', () => {
+    const nextDocument = nativeWysiwygDocumentWithInsertedSlashCommandBlock({
+      json: documentNode(paragraphNode('/table'), paragraphNode('Tail')),
+      payload: { action: 'table' },
+      selection: { from: 1, to: 7 },
+    })
+
+    expect(tiptapJsonToMobileMarkdown(nextDocument)).toBe([
+      '| Column | Value |',
+      '| --- | --- |',
+      '| Item | Detail |',
+      '',
+      'Tail',
+    ].join('\n'))
+  })
+
+  it('keeps text before a native slash-command query when inserting a markdown block', () => {
+    const nextDocument = nativeWysiwygDocumentWithInsertedSlashCommandBlock({
+      json: documentNode(paragraphNode('Insert /divider'), paragraphNode('Tail')),
+      payload: { action: 'divider' },
+      selection: { from: 8, to: 16 },
+    })
+
+    expect(tiptapJsonToMobileMarkdown(nextDocument)).toBe('Insert\n\n---\n\nTail')
+  })
+
   it('inserts the wikilink at the current native editor selection', () => {
     expect(insertedWikilinkMarkdown({
       text: 'Read  today.',
@@ -243,6 +270,14 @@ describe('native WYSIWYG wikilink bridge', () => {
       kind: 'emoji',
       query: 'rock',
       range: { from: 6, to: 11 },
+    })
+  })
+
+  it('detects an active native slash-command autocomplete query', () => {
+    expectAutocomplete('Insert /table', 14, {
+      kind: 'slashCommand',
+      query: 'table',
+      range: { from: 8, to: 14 },
     })
   })
 

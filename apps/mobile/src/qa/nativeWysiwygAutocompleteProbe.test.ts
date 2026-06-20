@@ -20,7 +20,7 @@ describe('native WYSIWYG autocomplete probe', () => {
     expect(nativeWysiwygAutocompleteProbeSelection()).toEqual({ from: 9, to: 9 })
   })
 
-  it('runs native documents for wikilink, person mention, and emoji autocomplete', () => {
+  it('runs native documents for wikilink, person mention, emoji, and slash-command autocomplete', () => {
     expect(nativeWysiwygAutocompleteProbeSteps()).toEqual([
       {
         content: {
@@ -43,6 +43,13 @@ describe('native WYSIWYG autocomplete probe', () => {
         },
         selection: { from: 11, to: 11 },
       },
+      {
+        content: {
+          content: [{ content: [{ text: 'Insert /table', type: 'text' }], type: 'paragraph' }],
+          type: 'doc',
+        },
+        selection: { from: 14, to: 14 },
+      },
     ])
   })
 
@@ -62,14 +69,30 @@ describe('native WYSIWYG autocomplete probe', () => {
       query: 'rock',
       range: { from: 6, to: 11 },
     })
+    const slashCommandProof = nativeWysiwygAutocompleteProof({
+      kind: 'slashCommand',
+      query: 'table',
+      range: { from: 8, to: 14 },
+    })
     const log = [
       nativeWysiwygAutocompleteLogLine(wikilinkProof),
       nativeWysiwygAutocompleteLogLine(personMentionProof),
       nativeWysiwygAutocompleteLogLine(emojiProof),
+      nativeWysiwygAutocompleteLogLine(slashCommandProof),
     ].join('\n')
 
-    expect(parseNativeWysiwygAutocompleteProofs(log)).toEqual([wikilinkProof, personMentionProof, emojiProof])
-    expect(assertNativeWysiwygAutocompleteProofs([wikilinkProof, personMentionProof, emojiProof])).toEqual([])
+    expect(parseNativeWysiwygAutocompleteProofs(log)).toEqual([
+      wikilinkProof,
+      personMentionProof,
+      emojiProof,
+      slashCommandProof,
+    ])
+    expect(assertNativeWysiwygAutocompleteProofs([
+      wikilinkProof,
+      personMentionProof,
+      emojiProof,
+      slashCommandProof,
+    ])).toEqual([])
   })
 
   it('reports missing and failed autocomplete proofs', () => {
@@ -88,6 +111,10 @@ describe('native WYSIWYG autocomplete probe', () => {
       {
         id: 'editor.wysiwyg.autocomplete.emoji',
         message: 'Native WYSIWYG detects emoji shortcode autocomplete with the exact replacement range',
+      },
+      {
+        id: 'editor.wysiwyg.autocomplete.slashCommand',
+        message: 'Native WYSIWYG detects slash-command autocomplete with the exact replacement range',
       },
     ])
   })

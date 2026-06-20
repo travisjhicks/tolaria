@@ -3,6 +3,7 @@ import type { MobileNote } from './mobileWorkspaceModel'
 import {
   activeMobileEmojiShortcodeQuery,
   activeMobilePersonMentionQuery,
+  activeMobileSlashCommandQuery,
   activeMobileWikilinkQuery,
   mobilePersonMentionAutocompleteSuggestions,
   mobileWikilinkAutocompleteSuggestions,
@@ -172,6 +173,21 @@ describe('mobile wikilink autocomplete', () => {
       cursor: 7,
       text: 'Ship 🚀 today',
     })
+  })
+
+  it('detects desktop-style slash command queries at block text boundaries', () => {
+    expect(activeMobileSlashCommandQuery('/tab', 4)).toEqual({
+      cursor: 4,
+      query: 'tab',
+      start: 0,
+    })
+    expect(activeMobileSlashCommandQuery('Insert /table', 13)).toEqual({
+      cursor: 13,
+      query: 'table',
+      start: 7,
+    })
+    expect(activeMobileSlashCommandQuery('https://example.com', 8)).toBeNull()
+    expect(activeMobileSlashCommandQuery('Insert /two words', 17)).toBeNull()
   })
 })
 

@@ -44,6 +44,10 @@ export function nativeWysiwygAutocompleteProbeSteps(): NativeWysiwygAutocomplete
       content: textProbeContent('Ship :rock'),
       selection: { from: 11, to: 11 },
     },
+    {
+      content: textProbeContent('Insert /table'),
+      selection: { from: 14, to: 14 },
+    },
   ]
 }
 
@@ -108,6 +112,11 @@ export function assertNativeWysiwygAutocompleteProofs(
       hasAutocompleteProof(proofs, { kind: 'emoji', query: 'rock', rangeFrom: 6, rangeTo: 11 }),
       'editor.wysiwyg.autocomplete.emoji',
       'Native WYSIWYG detects emoji shortcode autocomplete with the exact replacement range',
+    ),
+    proofFailure(
+      hasAutocompleteProof(proofs, { kind: 'slashCommand', query: 'table', rangeFrom: 8, rangeTo: 14 }),
+      'editor.wysiwyg.autocomplete.slashCommand',
+      'Native WYSIWYG detects slash-command autocomplete with the exact replacement range',
     ),
   ].filter((failure): failure is NativeWysiwygAutocompleteAssertionFailure => failure !== null)
 }

@@ -3,6 +3,8 @@ import type { MobileNote } from '../../workspace/mobileWorkspaceModel'
 import {
   mobileWysiwygEmojiPayloadForEntry,
   mobileWysiwygEmojiPickerSuggestions,
+  mobileWysiwygSlashCommandPayloadForAction,
+  mobileWysiwygSlashCommandPickerSuggestions,
   mobileWysiwygWikilinkPayloadForNote,
   mobileWysiwygWikilinkPickerSuggestions,
 } from './MobileWysiwygWikilinkPickerModel'
@@ -40,6 +42,19 @@ describe('native WYSIWYG wikilink picker model', () => {
       name: 'rocket',
     })
     expect(mobileWysiwygEmojiPayloadForEntry(firstSuggestion)).toEqual({ text: '🚀' })
+  })
+
+  it('offers desktop-style native slash-command suggestions for durable block insertions', () => {
+    expect(mobileWysiwygSlashCommandPickerSuggestions('').map((suggestion) => suggestion.action)).toEqual([
+      'divider',
+      'codeBlock',
+      'mathBlock',
+      'mermaid',
+      'table',
+      'whiteboard',
+    ])
+    expect(mobileWysiwygSlashCommandPickerSuggestions('flow').map((suggestion) => suggestion.action)).toEqual(['mermaid'])
+    expect(mobileWysiwygSlashCommandPayloadForAction('table')).toEqual({ action: 'table' })
   })
 
   it('builds the native insertion payload with the note title as label and canonical path target', () => {

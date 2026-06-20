@@ -35,6 +35,7 @@ import {
   nativeWysiwygDocumentWithInsertedAttachment,
   nativeWysiwygDocumentWithInsertedMarkdownBlock,
   nativeWysiwygDocumentWithInsertedPlainText,
+  nativeWysiwygDocumentWithInsertedSlashCommandBlock,
   nativeWysiwygInlineAutocompleteAtSelection,
   type NativeWysiwygAttachmentPayload,
   type NativeWysiwygInlineAutocomplete,
@@ -142,6 +143,7 @@ type NativeTentapEditorSurfaceProps = {
   insertAttachment: (payload: NativeWysiwygAttachmentPayload, selection?: NativeWysiwygSelection) => void
   insertMarkdownBlock: (payload: NativeWysiwygMarkdownBlockPayload, selection?: NativeWysiwygSelection) => void
   insertPlainText: (payload: NativeWysiwygPlainTextPayload, selection?: NativeWysiwygSelection) => void
+  insertSlashCommandBlock: (payload: NativeWysiwygMarkdownBlockPayload, selection?: NativeWysiwygSelection) => void
   layoutProbe?: MobileLayoutProbe
   notes: MobileNote[]
   onCloseWikilinkPicker: () => void
@@ -268,6 +270,7 @@ function NativeTentapEditorSurface({
   insertAttachment,
   insertMarkdownBlock,
   insertPlainText,
+  insertSlashCommandBlock,
   insertWikilink,
   layoutProbe,
   notes,
@@ -299,6 +302,10 @@ function NativeTentapEditorSurface({
     insertPlainText(payload, pickerState?.replacementRange)
     onCloseWikilinkPicker()
   }, [insertPlainText, onCloseWikilinkPicker, pickerState?.replacementRange])
+  const handleInsertSlashCommand = useCallback((payload: NativeWysiwygMarkdownBlockPayload) => {
+    insertSlashCommandBlock(payload, pickerState?.replacementRange)
+    onCloseWikilinkPicker()
+  }, [insertSlashCommandBlock, onCloseWikilinkPicker, pickerState?.replacementRange])
 
   return (
     <View {...probeProps(layoutProbe, 'editor.wysiwyg.form')} style={nativeEditorStyles.container} testID="editor-wysiwyg-form">
@@ -329,6 +336,7 @@ function NativeTentapEditorSurface({
           notes={notes}
           sourceNote={sourceNote}
           onClose={onCloseWikilinkPicker}
+          onSelectMarkdownBlock={handleInsertSlashCommand}
           onSelect={handleInsertWikilink}
           onSelectEmoji={handleInsertEmoji}
         />
@@ -440,6 +448,12 @@ function useNativeTentapEditorBridge({
     refs,
     warning: '[mobile-editor] Failed to insert native WYSIWYG markdown block:',
   })
+  const insertSlashCommandBlock = useNativeWysiwygInserter({
+    flushEditorDocument,
+    insertIntoEditor: insertSlashCommandBlockIntoNativeEditor,
+    refs,
+    warning: '[mobile-editor] Failed to insert native WYSIWYG slash command block:',
+  })
   const insertPlainText = useNativeWysiwygInserter({
     flushEditorDocument,
     insertIntoEditor: insertPlainTextIntoNativeEditor,
@@ -483,7 +497,7 @@ function useNativeTentapEditorBridge({
   useNativeWysiwygMutationProbe({ enabled: wysiwygMutationProbe, flushEditorDocument, refs, vaultRootUri })
   useFlushOnUnmount(refs, flushEditorDocument)
 
-  return { editor, injectEditorCss, insertAttachment, insertMarkdownBlock, insertPlainText, insertWikilink }
+  return { editor, injectEditorCss, insertAttachment, insertMarkdownBlock, insertPlainText, insertSlashCommandBlock, insertWikilink }
 }
 
 function useNativeTentapEditorRefs(initialDocumentContent: string): NativeTentapEditorRefs {
@@ -917,6 +931,14 @@ async function insertMarkdownBlockIntoNativeEditor(
   selection?: NativeWysiwygSelection,
 ): Promise<boolean> {
   return insertPayloadIntoNativeEditor(editor, payload, selection, nativeWysiwygDocumentWithInsertedMarkdownBlock)
+}
+
+async function insertSlashCommandBlockIntoNativeEditor(
+  editor: EditorBridge | null,
+  payload: NativeWysiwygMarkdownBlockPayload,
+  selection?: NativeWysiwygSelection,
+): Promise<boolean> {
+  return insertPayloadIntoNativeEditor(editor, payload, selection, nativeWysiwygDocumentWithInsertedSlashCommandBlock)
 }
 
 async function insertPlainTextIntoNativeEditor(

@@ -13,20 +13,35 @@ import { MobileTypeIcon } from './MobileWorkspaceIcons'
 import {
   mobileWysiwygEmojiPayloadForEntry,
   mobileWysiwygEmojiPickerSuggestions,
+  mobileWysiwygSlashCommandPayloadForAction,
+  mobileWysiwygSlashCommandPickerSuggestions,
+  type MobileWysiwygSlashCommandSuggestion,
   mobileWysiwygWikilinkPayloadForNote,
   mobileWysiwygWikilinkPickerSuggestions,
 } from './MobileWysiwygWikilinkPickerModel'
 import type {
   NativeWysiwygInlineAutocompleteKind,
+  NativeWysiwygMarkdownBlockPayload,
   NativeWysiwygPlainTextPayload,
   NativeWysiwygWikilinkPayload,
 } from './MobileWysiwygWikilinkBridgeModel'
+import type { NativeWysiwygMarkdownBlockAction } from './MobileWysiwygFormatCommands'
+
+const slashCommandLabelKeys = {
+  codeBlock: 'editor.formatting.codeBlock',
+  divider: 'editor.formatting.divider',
+  mathBlock: 'editor.formatting.mathBlock',
+  mermaid: 'editor.formatting.mermaid',
+  table: 'editor.formatting.table',
+  whiteboard: 'editor.formatting.whiteboard',
+} as const satisfies Record<NativeWysiwygMarkdownBlockAction, Parameters<typeof mobileText>[0]>
 
 type MobileWysiwygWikilinkPickerProps = {
   initialQuery?: string
   kind?: NativeWysiwygInlineAutocompleteKind
   notes: MobileNote[]
   onClose: () => void
+  onSelectMarkdownBlock: (payload: NativeWysiwygMarkdownBlockPayload) => void
   onSelect: (payload: NativeWysiwygWikilinkPayload) => void
   onSelectEmoji: (payload: NativeWysiwygPlainTextPayload) => void
   sourceNote?: MobileNote | null
@@ -37,6 +52,7 @@ export function MobileWysiwygWikilinkPicker({
   kind = 'wikilink',
   notes,
   onClose,
+  onSelectMarkdownBlock,
   onSelect,
   onSelectEmoji,
   sourceNote = null,
@@ -50,7 +66,11 @@ export function MobileWysiwygWikilinkPicker({
     () => kind === 'emoji' ? mobileWysiwygEmojiPickerSuggestions(query) : [],
     [kind, query],
   )
-  const hasSuggestions = kind === 'emoji' ? emojiSuggestions.length > 0 : suggestions.length > 0
+  const slashCommandSuggestions = useMemo(
+    () => kind === 'slashCommand' ? mobileWysiwygSlashCommandPickerSuggestions(query) : [],
+    [kind, query],
+  )
+  const hasSuggestions = pickerHasSuggestions({ emojiSuggestions, kind, slashCommandSuggestions, suggestions })
 
   return (
     <View style={styles.host} testID="editor-wysiwyg-wikilink-picker">
@@ -84,6 +104,15 @@ export function MobileWysiwygWikilinkPicker({
                 onPress={() => onSelectEmoji(mobileWysiwygEmojiPayloadForEntry(entry))}
               />
             ))}
+            {slashCommandSuggestions.map((suggestion) => (
+              <MobileListRow
+                key={suggestion.action}
+                subtitle={slashCommandSubtitle(suggestion)}
+                testID={`editor-wysiwyg-slash-command-${testIdSegment(suggestion.action)}`}
+                title={slashCommandLabel(suggestion.action)}
+                onPress={() => onSelectMarkdownBlock(mobileWysiwygSlashCommandPayloadForAction(suggestion.action))}
+              />
+            ))}
             {suggestions.map((note) => (
               <MobileListRow
                 chips={<MobileChip label={note.type} tone={note.typeTone} />}
@@ -103,27 +132,48 @@ export function MobileWysiwygWikilinkPicker({
 }
 
 function pickerTitle(kind: NativeWysiwygInlineAutocompleteKind) {
-  return kind === 'emoji'
-    ? mobileText('editor.formatting.emoji')
-    : mobileText('editor.formatting.wikilink')
+  if (kind === 'emoji') return mobileText('editor.formatting.emoji')
+  if (kind === 'slashCommand') return mobileText('editor.formatting.toolbar')
+  return mobileText('editor.formatting.wikilink')
 }
 
 function pickerSearchLabel(kind: NativeWysiwygInlineAutocompleteKind) {
-  return kind === 'emoji'
-    ? mobileText('editor.formatting.searchEmoji')
-    : mobileText('noteList.searchAction')
+  if (kind === 'emoji') return mobileText('editor.formatting.searchEmoji')
+  return mobileText('noteList.searchAction')
 }
 
 function pickerSearchPlaceholder(kind: NativeWysiwygInlineAutocompleteKind) {
-  return kind === 'emoji'
-    ? mobileText('editor.formatting.searchEmojiPlaceholder')
-    : mobileText('noteList.searchPlaceholder')
+  if (kind === 'emoji') return mobileText('editor.formatting.searchEmojiPlaceholder')
+  return mobileText('noteList.searchPlaceholder')
 }
 
 function pickerEmptyLabel(kind: NativeWysiwygInlineAutocompleteKind) {
-  return kind === 'emoji'
-    ? mobileText('editor.formatting.noMatchingEmoji')
-    : mobileText('noteList.empty.noMatching')
+  if (kind === 'emoji') return mobileText('editor.formatting.noMatchingEmoji')
+  return mobileText('noteList.empty.noMatching')
+}
+
+function pickerHasSuggestions({
+  emojiSuggestions,
+  kind,
+  slashCommandSuggestions,
+  suggestions,
+}: {
+  emojiSuggestions: unknown[]
+  kind: NativeWysiwygInlineAutocompleteKind
+  slashCommandSuggestions: unknown[]
+  suggestions: unknown[]
+}) {
+  if (kind === 'emoji') return emojiSuggestions.length > 0
+  if (kind === 'slashCommand') return slashCommandSuggestions.length > 0
+  return suggestions.length > 0
+}
+
+function slashCommandLabel(action: NativeWysiwygMarkdownBlockAction): string {
+  return mobileText(slashCommandLabelKeys[action])
+}
+
+function slashCommandSubtitle(suggestion: MobileWysiwygSlashCommandSuggestion): string {
+  return suggestion.keywords.join(', ')
 }
 
 function testIdSegment(value: string) {
