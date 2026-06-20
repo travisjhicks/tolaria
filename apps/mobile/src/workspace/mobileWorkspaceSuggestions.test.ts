@@ -175,6 +175,8 @@ describe('mobile workspace suggestions', () => {
     expect(mobileRelationshipTargetSuggestions(notes, 'Cafe').map((note) => note.id)).toEqual(['journal/cafe-notes.md'])
     expect(mobileRelationshipTargetSuggestions(notes, 'weekly review').map((note) => note.id)).toEqual(['journal/cafe-notes.md'])
     expect(mobileRelationshipTargetSuggestions(notes, 'cafe-notes.md').map((note) => note.id)).toEqual(['journal/cafe-notes.md'])
+    expect(mobileRelationshipTargetSuggestions(notes, '[[journal/cafe-notes]]').map((note) => note.id)).toEqual(['journal/cafe-notes.md'])
+    expect(mobileRelationshipTargetSuggestions(notes, '[[Cafe Notes.md]]').map((note) => note.id)).toEqual(['journal/cafe-notes.md'])
     expect(mobileRelationshipTargetSuggestions(notes, 'travel').map((note) => note.id)).toEqual(['journal/cafe-notes.md'])
     expect(mobileRelationshipTargetSuggestions(notes, 'cns').map((note) => note.id)).toEqual(['journal/cafe-notes.md'])
     expect(mobileRelationshipTargetSuggestions(notes, 'archived weekly')).toEqual([])
@@ -202,6 +204,7 @@ describe('mobile workspace suggestions', () => {
     expect(shouldShowMobileRelationshipCreateTarget(notes, 'Open Source')).toBe(true)
     expect(shouldShowMobileRelationshipCreateTarget(notes, 'How I Run an Open Source Project')).toBe(false)
     expect(shouldShowMobileRelationshipCreateTarget(notes, 'Tolaria/Mobile UI/How I Run an Open Source Project')).toBe(false)
+    expect(shouldShowMobileRelationshipCreateTarget(notes, '[[Tolaria/Mobile UI/How I Run an Open Source Project]]')).toBe(false)
   })
 
   it('suggests active relationship targets before typing and excludes existing targets', () => {

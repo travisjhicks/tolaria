@@ -102,13 +102,13 @@ export function mobileRelationshipTargetSuggestions(
 ): MobileNote[] {
   const candidates = notes.filter((note) => isRelationshipTargetSuggestion(note, notes, options))
 
-  return sortMobileNotesByIdentityMatch(candidates, query)
+  return sortMobileNotesByIdentityMatch(candidates, relationshipTargetQuery(query))
     .slice(0, 6)
 }
 
 export function shouldShowMobileRelationshipCreateTarget(notes: MobileNote[], title: SuggestionText): boolean {
   const trimmedTitle = title.trim()
-  return trimmedTitle.length > 0 && mobileNoteForWikilinkTarget(notes, trimmedTitle) === null
+  return trimmedTitle.length > 0 && mobileNoteForWikilinkTarget(notes, relationshipTargetQuery(trimmedTitle)) === null
 }
 
 export function mobileTypeSuggestions(
@@ -272,6 +272,10 @@ function selectedRelationshipForSuggestions(
 
 function parsedRelationshipRefTarget(ref: string): string {
   return parseMobileWikilink(ref)?.target ?? ref
+}
+
+function relationshipTargetQuery(value: SuggestionText): SuggestionText {
+  return parseMobileWikilink(value)?.target ?? value
 }
 
 function folderPathForNote(note: MobileNote | null): FolderPath {
