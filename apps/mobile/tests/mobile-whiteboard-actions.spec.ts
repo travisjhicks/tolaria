@@ -43,7 +43,9 @@ async function editWhiteboardFence(page: Page) {
   await expect(page.getByTestId('workspace-whiteboard-height-input')).toHaveValue('520')
   await page.getByTestId('workspace-whiteboard-height-input').fill('640')
   await page.getByTestId('workspace-whiteboard-width-input').fill('900')
-  await page.getByTestId('workspace-whiteboard-snapshot-input').fill('{ "document": { "edited": true } }')
+  await page.getByTestId('workspace-whiteboard-snapshot-input').fill(JSON.stringify(desktopStoreSnapshot({ name: 'Tablet board' })))
+  await page.getByTestId('workspace-whiteboard-text-shape-input').fill('Tablet board note')
+  await page.getByTestId('workspace-whiteboard-structured-editor').getByRole('button', { name: 'Add' }).click()
   await page.getByTestId('workspace-whiteboard-editor').getByRole('button', { name: 'Save' }).click()
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
 }
@@ -51,9 +53,36 @@ async function editWhiteboardFence(page: Page) {
 async function assertWhiteboardFenceSource(page: Page) {
   await page.getByTestId('editor-source-action').click()
   await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/```tldraw id="qa-board" height="640" width="900"/u)
-  await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/\{ "document": \{ "edited": true \} \}/u)
+  await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/"schemaVersion": 2/u)
+  await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/Tablet board note/u)
+  await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/"type": "text"/u)
 }
 
 function noteRowSlug(title: string) {
   return title.trim().toLowerCase().replace(/\s+/gu, '-')
+}
+
+function desktopStoreSnapshot({ name }: { name: string }) {
+  return {
+    schema: {
+      schemaVersion: 2,
+      sequences: {},
+    },
+    store: {
+      'document:document': {
+        gridSize: 20,
+        id: 'document:document',
+        meta: {},
+        name,
+        typeName: 'document',
+      },
+      'page:page': {
+        id: 'page:page',
+        index: 'a1',
+        meta: {},
+        name: 'Page 1',
+        typeName: 'page',
+      },
+    },
+  }
 }

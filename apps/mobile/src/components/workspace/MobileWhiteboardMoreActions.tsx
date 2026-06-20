@@ -13,6 +13,10 @@ import {
   updateMobileTldrawWhiteboard,
   type MobileTldrawWhiteboard,
 } from '../../workspace/mobileTldrawWhiteboards'
+import {
+  addMobileTldrawTextShapeToSnapshot,
+  canAddMobileTldrawTextShapeToSnapshot,
+} from '../../workspace/mobileTldrawSnapshot'
 import type { MobileEditorBlock, MobileNote } from '../../workspace/mobileWorkspaceModel'
 
 type MobileWhiteboardMoreActionsProps = {
@@ -98,7 +102,16 @@ function MobileWhiteboardSourceEditor({
 }: MobileWhiteboardSourceEditorProps) {
   const [height, setHeight] = useState(whiteboard.height)
   const [snapshot, setSnapshot] = useState(whiteboard.snapshot)
+  const [textShape, setTextShape] = useState('')
   const [width, setWidth] = useState(whiteboard.width)
+  const canAddTextShape = textShape.trim().length > 0 && canAddMobileTldrawTextShapeToSnapshot({ snapshot })
+
+  const addTextShape = () => {
+    const result = addMobileTldrawTextShapeToSnapshot({ snapshot, text: textShape })
+    if (!result.added) return
+    setSnapshot(result.snapshot)
+    setTextShape('')
+  }
 
   const saveWhiteboard = () => {
     const result = updateMobileTldrawWhiteboard({
@@ -134,6 +147,22 @@ function MobileWhiteboardSourceEditor({
           value={width}
           onChangeText={setWidth}
         />
+      </View>
+      <View style={styles.structuredEditor} testID="workspace-whiteboard-structured-editor">
+        <MobileTextInput
+          label={mobileText('inspector.properties.valueKind.text')}
+          testID="workspace-whiteboard-text-shape-input"
+          value={textShape}
+          onChangeText={setTextShape}
+        />
+        <View style={styles.structuredEditorFooter}>
+          <MobileButton
+            density="status"
+            disabled={!canAddTextShape}
+            label={mobileText('inspector.relationship.add')}
+            onPress={addTextShape}
+          />
+        </View>
       </View>
       <MobileTextInput
         multiline
@@ -259,6 +288,18 @@ const styles = StyleSheet.create({
   },
   snapshotInput: {
     minHeight: 160,
+  },
+  structuredEditor: {
+    gap: mobileSpace.sm,
+    borderColor: mobileColors.border,
+    borderRadius: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: mobileSpace.sm,
+  },
+  structuredEditorFooter: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
   },
   title: {
     color: mobileColors.text,

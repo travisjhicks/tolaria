@@ -113,7 +113,7 @@ export const mobileParityInventory = [
     surface: 'Workspace type icons',
   },
   {
-    assertions: ['search/create/properties/more writable user-flow checks', 'source-backed tldraw whiteboard metadata and snapshot edit checks'],
+    assertions: ['search/create/properties/more writable user-flow checks', 'source-backed tldraw whiteboard metadata, snapshot, and text-shape edit checks'],
     contracts: ['desktopPanelParity', 'desktopPropertyParity', 'desktopToolbarActionParity'],
     desktopSource: 'Desktop command dialogs, note-list search, inspector property forms, and tldraw fenced markdown persistence',
     mobileFile: 'src/components/workspace/MobileWorkspaceActionSheet.tsx',
@@ -127,7 +127,7 @@ export const mobileParityInventory = [
     surface: 'Workspace command palette',
   },
   {
-    assertions: ['note-more action user-flow checks', 'source-backed markdown table and tldraw edit checks'],
+    assertions: ['note-more action user-flow checks', 'source-backed markdown table and tldraw metadata/text-shape edit checks'],
     contracts: ['desktopPanelParity', 'desktopToolbarActionParity'],
     desktopSource: 'Desktop note context menu, BreadcrumbBar note actions, editor command actions, markdown tables, and tldraw fenced markdown persistence',
     mobileFile: 'src/components/workspace/MobileWorkspaceMoreActionsContent.tsx',
@@ -162,7 +162,7 @@ export const mobileParityInventory = [
     surface: 'Source block more actions',
   },
   {
-    assertions: ['source-backed tldraw whiteboard metadata and snapshot edit checks'],
+    assertions: ['source-backed tldraw whiteboard metadata, snapshot, and text-shape edit checks'],
     contracts: ['desktopEditorParity', 'desktopToolbarActionParity'],
     desktopSource: 'Desktop tldraw fenced markdown persistence and editor command actions',
     mobileFile: 'src/components/workspace/MobileWhiteboardMoreActions.tsx',
