@@ -13,10 +13,10 @@ import {
 
 const defaultExpoGoBundleId = 'host.exp.Exponent'
 const defaultLogWindow = '90s'
-const proofPollTimeoutMs = 12000
+const proofPollTimeoutMs = 30000
 
 function printHelp() {
-  console.log(`Assert native iOS Simulator WYSIWYG wikilink insertion.
+  console.log(`Assert native iOS Simulator WYSIWYG wikilink, person mention, and emoji insertion.
 
 Usage:
   node apps/mobile/scripts/assert-ios-wysiwyg-wikilink-insert.mjs [options]
@@ -77,7 +77,7 @@ function selectDevice(requestedDevice, preferPhone) {
 }
 
 async function openProbeUrl(device, openUrl, waitMs) {
-  assertNativeQaOpenUrl(openUrl, 'Native iOS WYSIWYG wikilink and person mention insertion')
+  assertNativeQaOpenUrl(openUrl, 'Native iOS WYSIWYG wikilink, person mention, and emoji insertion')
   terminateExpoGo(device)
   await sleep(500)
   openSimulatorUrl(device, wikilinkInsertProbeUrl(openUrl))
@@ -166,7 +166,7 @@ async function main() {
     throw new Error(`Native WYSIWYG wikilink insertion proof failed:\n${formatNativeWysiwygWikilinkInsertFailures(failures)}`)
   }
 
-  console.log('Native iOS WYSIWYG wikilink and person mention insertion proof passed.')
+  console.log('Native iOS WYSIWYG wikilink, person mention, and emoji insertion proof passed.')
 }
 
 main().catch((error) => {

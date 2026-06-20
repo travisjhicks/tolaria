@@ -1,4 +1,5 @@
 import type {
+  NativeWysiwygPlainTextPayload,
   NativeWysiwygSelection,
   NativeWysiwygWikilinkPayload,
 } from '../components/workspace/MobileWysiwygWikilinkBridgeModel'
@@ -10,6 +11,8 @@ type ProbeLine = string
 
 export type NativeWysiwygWikilinkInsertProof = {
   contentLength: number
+  insertedEmojiSaved: boolean
+  insertedEmojiSourceRemoved: boolean
   insertedPersonMentionSaved: boolean
   insertedPersonMentionSourceRemoved: boolean
   insertedWikilinkSaved: boolean
@@ -28,6 +31,18 @@ const personMentionProbeLabel = 'Luca'
 const personMentionProbeTarget = 'People/Luca'
 const personMentionProbeSource = 'Ask @Lu'
 const expectedPersonMentionWikilink = `[[${personMentionProbeTarget}|${personMentionProbeLabel}]]`
+const emojiProbeSource = 'Ship :rock'
+const emojiProbeShortcode = ':rock'
+const expectedEmoji = String.fromCodePoint(0x1F680)
+const proofFieldTypes = {
+  contentLength: 'number',
+  insertedEmojiSaved: 'boolean',
+  insertedEmojiSourceRemoved: 'boolean',
+  insertedPersonMentionSaved: 'boolean',
+  insertedPersonMentionSourceRemoved: 'boolean',
+  insertedWikilinkSaved: 'boolean',
+  noteId: 'string',
+} as const
 
 export function nativeWysiwygWikilinkInsertProbePayload(): NativeWysiwygWikilinkPayload {
   return {
@@ -43,11 +58,21 @@ export function nativeWysiwygPersonMentionInsertProbePayload(): NativeWysiwygWik
   }
 }
 
+export function nativeWysiwygEmojiInsertProbePayload(): NativeWysiwygPlainTextPayload {
+  return {
+    text: expectedEmoji,
+  }
+}
+
 export function nativeWysiwygPersonMentionInsertProbeContent(): object {
   return {
     content: [
       {
         content: [{ text: personMentionProbeSource, type: 'text' }],
+        type: 'paragraph',
+      },
+      {
+        content: [{ text: emojiProbeSource, type: 'text' }],
         type: 'paragraph',
       },
     ],
@@ -59,6 +84,10 @@ export function nativeWysiwygPersonMentionInsertProbeSelection(): NativeWysiwygS
   return { from: 5, to: 8 }
 }
 
+export function nativeWysiwygEmojiInsertProbeSelection(): NativeWysiwygSelection {
+  return { from: 15, to: 20 }
+}
+
 export function nativeWysiwygWikilinkInsertProof({
   content,
   noteId,
@@ -68,6 +97,8 @@ export function nativeWysiwygWikilinkInsertProof({
 }): NativeWysiwygWikilinkInsertProof {
   return {
     contentLength: content.length,
+    insertedEmojiSaved: content.includes(expectedEmoji),
+    insertedEmojiSourceRemoved: !content.includes(emojiProbeShortcode),
     insertedPersonMentionSaved: content.includes(expectedPersonMentionWikilink),
     insertedPersonMentionSourceRemoved: !content.includes('@Lu'),
     insertedWikilinkSaved: content.includes(expectedWikilink),
@@ -114,6 +145,16 @@ export function assertNativeWysiwygWikilinkInsertProofs(
       'editor.wysiwyg.wikilinkInsert.personMentionReplacement',
       'Native WYSIWYG person mention insertion replaces the typed @ query',
     ),
+    proofFailure(
+      latest.insertedEmojiSaved,
+      'editor.wysiwyg.wikilinkInsert.emojiSaved',
+      'Native WYSIWYG emoji insertion saves as plain markdown emoji text',
+    ),
+    proofFailure(
+      latest.insertedEmojiSourceRemoved,
+      'editor.wysiwyg.wikilinkInsert.emojiReplacement',
+      'Native WYSIWYG emoji insertion replaces the typed shortcode query',
+    ),
   ].filter((failure): failure is NativeWysiwygWikilinkInsertAssertionFailure => failure !== null)
 }
 
@@ -140,22 +181,26 @@ function parseProofLine(line: ProbeLine): NativeWysiwygWikilinkInsertProof | nul
 }
 
 function parsedProof(value: unknown): NativeWysiwygWikilinkInsertProof | null {
-  if (!value || typeof value !== 'object') return null
-
-  const candidate = value as Partial<NativeWysiwygWikilinkInsertProof>
-  if (typeof candidate.contentLength !== 'number') return null
-  if (typeof candidate.insertedPersonMentionSaved !== 'boolean') return null
-  if (typeof candidate.insertedPersonMentionSourceRemoved !== 'boolean') return null
-  if (typeof candidate.insertedWikilinkSaved !== 'boolean') return null
-  if (typeof candidate.noteId !== 'string') return null
+  if (!hasProofShape(value)) return null
 
   return {
-    contentLength: candidate.contentLength,
-    insertedPersonMentionSaved: candidate.insertedPersonMentionSaved,
-    insertedPersonMentionSourceRemoved: candidate.insertedPersonMentionSourceRemoved,
-    insertedWikilinkSaved: candidate.insertedWikilinkSaved,
-    noteId: candidate.noteId,
+    contentLength: value.contentLength,
+    insertedEmojiSaved: value.insertedEmojiSaved,
+    insertedEmojiSourceRemoved: value.insertedEmojiSourceRemoved,
+    insertedPersonMentionSaved: value.insertedPersonMentionSaved,
+    insertedPersonMentionSourceRemoved: value.insertedPersonMentionSourceRemoved,
+    insertedWikilinkSaved: value.insertedWikilinkSaved,
+    noteId: value.noteId,
   }
+}
+
+function hasProofShape(value: unknown): value is NativeWysiwygWikilinkInsertProof {
+  if (!value || typeof value !== 'object') return false
+
+  const candidate = value as Record<string, unknown>
+  return Object.entries(proofFieldTypes).every(([field, type]) => (
+    typeof candidate[field] === type
+  ))
 }
 
 function proofFailure(

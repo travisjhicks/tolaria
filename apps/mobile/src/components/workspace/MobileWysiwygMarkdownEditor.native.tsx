@@ -57,10 +57,6 @@ import {
 } from '../../qa/nativeWysiwygInputTransformProbe'
 import {
   nativeWysiwygWikilinkInsertLogLine,
-  nativeWysiwygPersonMentionInsertProbeContent,
-  nativeWysiwygPersonMentionInsertProbePayload,
-  nativeWysiwygPersonMentionInsertProbeSelection,
-  nativeWysiwygWikilinkInsertProbePayload,
   nativeWysiwygWikilinkInsertProof,
 } from '../../qa/nativeWysiwygWikilinkInsertProbe'
 import {
@@ -72,6 +68,7 @@ import {
   publishNativeWysiwygMarkdownBlockProof,
 } from '../../qa/nativeWysiwygMarkdownBlockProbe'
 import { useNativeWysiwygFormatCommandProbe } from './MobileWysiwygFormatCommandProbe.native'
+import { insertNativeWysiwygWikilinkProbe } from './MobileWysiwygWikilinkInsertProbe.native'
 import {
   publishNativeWysiwygMutationProof,
   useNativeWysiwygMutationProbe,
@@ -955,36 +952,6 @@ async function insertMarkdownBlocksIntoNativeEditor(
   refs.markdownBlockRenderProofRef.current = await nativeWysiwygBlockMathRenderProof(editor)
   refs.markdownBlockProofReadyRef.current = true
   return true
-}
-
-async function insertNativeWysiwygWikilinkProbe(editor: EditorBridge | null): Promise<boolean> {
-  if (!isContentSettableEditorBridge(editor) || !isJsonReadableEditorBridge(editor)) return false
-
-  const personMentionJson = nativeWysiwygDocumentWithInsertedWikilink({
-    json: nativeWysiwygPersonMentionInsertProbeContent(),
-    payload: nativeWysiwygPersonMentionInsertProbePayload(),
-    selection: nativeWysiwygPersonMentionInsertProbeSelection(),
-  })
-  if (!personMentionJson) return false
-
-  const combinedJson = nativeWysiwygDocumentWithInsertedWikilink({
-    json: personMentionJson,
-    payload: nativeWysiwygWikilinkInsertProbePayload(),
-  })
-  if (!combinedJson) return false
-
-  editor.setContent(combinedJson)
-  await settleNativeWysiwygEditorContent()
-  const nextContent = nativeWysiwygDocumentContentFromJson({
-    currentContent: '',
-    initialBodyHasContent: false,
-    isFirstSerialization: false,
-    json: await editor.getJSON(),
-  })
-  const proof = nativeWysiwygWikilinkInsertProof({ content: nextContent.content, noteId: 'probe' })
-  return proof.insertedWikilinkSaved
-    && proof.insertedPersonMentionSaved
-    && proof.insertedPersonMentionSourceRemoved
 }
 
 function insertNativeWysiwygMarkdownBlockProbe(
