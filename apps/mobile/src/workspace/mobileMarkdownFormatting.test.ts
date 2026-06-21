@@ -41,6 +41,24 @@ describe('mobile markdown formatting', () => {
     })
   })
 
+  it('inserts desktop markdown links and selects the next editable segment', () => {
+    expect(applyMobileMarkdownFormat('Read Tolaria docs', { start: 5, end: 17 }, 'link')).toEqual({
+      selection: { start: 20, end: 28 },
+      text: 'Read [Tolaria docs](https://)',
+    })
+    expect(applyMobileMarkdownFormat('Read ', { start: 5, end: 5 }, 'link')).toEqual({
+      selection: { start: 6, end: 15 },
+      text: 'Read [link text](https://)',
+    })
+  })
+
+  it('escapes markdown link labels when wrapping selected text', () => {
+    expect(applyMobileMarkdownFormat('Read Project [Alpha]', { start: 5, end: 20 }, 'link')).toEqual({
+      selection: { start: 25, end: 33 },
+      text: 'Read [Project \\[Alpha\\]](https://)',
+    })
+  })
+
   it.each([
     ['heading1', '# Old heading\nBody', 13],
     ['heading2', '## Old heading\nBody', 14],
@@ -64,6 +82,17 @@ describe('mobile markdown formatting', () => {
     expect(applyMobileMarkdownFormat('One\nTwo', { start: 0, end: 7 }, action)).toEqual({
       selection: { start: cursor, end: cursor },
       text,
+    })
+  })
+
+  it('nests and unnests selected markdown lines like desktop block nesting controls', () => {
+    expect(applyMobileMarkdownFormat('- One\n- Two', { start: 0, end: 11 }, 'indent')).toEqual({
+      selection: { start: 15, end: 15 },
+      text: '  - One\n  - Two',
+    })
+    expect(applyMobileMarkdownFormat('  - One\n\t- Two\n - Three', { start: 0, end: 23 }, 'outdent')).toEqual({
+      selection: { start: 19, end: 19 },
+      text: '- One\n- Two\n- Three',
     })
   })
 

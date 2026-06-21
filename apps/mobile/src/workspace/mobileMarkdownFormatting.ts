@@ -18,10 +18,13 @@ export type MobileMarkdownFormatAction =
   | 'heading5'
   | 'heading6'
   | 'highlight'
+  | 'indent'
   | 'italic'
+  | 'link'
   | 'mathBlock'
   | 'mermaid'
   | 'orderedList'
+  | 'outdent'
   | 'pastePlainText'
   | 'quote'
   | 'strike'
@@ -99,6 +102,8 @@ const lineMarkers: Partial<Record<MobileMarkdownFormatAction, LineMarker>> = {
 }
 
 const markdownTableSnippet = mobileMarkdownSourceBlockText('table')
+const linkDestinationPlaceholder = 'https://'
+const linkLabelPlaceholder = 'link text'
 
 export function applyMobileMarkdownFormat(
   text: string,
@@ -136,20 +141,11 @@ class MarkdownEditSession {
   }
 
   apply(): MobileMarkdownFormatResult {
-    const inlineFormat = inlineFormats[this.action]
-    if (inlineFormat) return this.applyInlineFormat(inlineFormat)
-
-    const lineMarker = lineMarkers[this.action]
-    if (lineMarker) return this.applyMarkedLineTransform(lineMarker)
-
-    if (this.action === 'orderedList') return this.applyLineTransform((line) => this.numberedLine(line))
-    if (this.action === 'table') return this.insertTable()
-    if (this.action === 'wikilink') return this.applyWikilinkFormat()
-
-    const sourceBlockFormat = mobileMarkdownSourceBlockFormat(this.action)
-    if (sourceBlockFormat) return this.insertSourceBlock(sourceBlockFormat)
-
-    return { selection: this.range, text: this.text }
+    return this.applyInlineAction()
+      ?? this.applyLineMarkerAction()
+      ?? this.applyExplicitAction()
+      ?? this.applySourceBlockAction()
+      ?? { selection: this.range, text: this.text }
   }
 
   insertText(value: string): MobileMarkdownFormatResult {
@@ -165,6 +161,36 @@ class MarkdownEditSession {
       selection: collapsedSelection(this.range.start + value.length),
       text: this.replaceRange({ value }),
     }
+  }
+
+  private applyInlineAction(): MobileMarkdownFormatResult | null {
+    const inlineFormat = inlineFormats[this.action]
+    if (inlineFormat) return this.applyInlineFormat(inlineFormat)
+    return null
+  }
+
+  private applyLineMarkerAction(): MobileMarkdownFormatResult | null {
+    const lineMarker = lineMarkers[this.action]
+    if (lineMarker) return this.applyMarkedLineTransform(lineMarker)
+    return null
+  }
+
+  private applyExplicitAction(): MobileMarkdownFormatResult | null {
+    if (this.action === 'indent') return this.applyLineTransform((line) => this.indentedLine(line))
+    if (this.action === 'link') return this.applyLinkFormat()
+    if (this.action === 'orderedList') return this.applyLineTransform((line) => this.numberedLine(line))
+    if (this.action === 'outdent') return this.applyLineTransform((line) => this.outdentedLine(line))
+    if (this.action === 'table') return this.insertTable()
+    if (this.action === 'wikilink') return this.applyWikilinkFormat()
+
+    return null
+  }
+
+  private applySourceBlockAction(): MobileMarkdownFormatResult | null {
+    const sourceBlockFormat = mobileMarkdownSourceBlockFormat(this.action)
+    if (sourceBlockFormat) return this.insertSourceBlock(sourceBlockFormat)
+
+    return null
   }
 
   private applyInlineFormat(format: InlineFormat): MobileMarkdownFormatResult {
@@ -192,6 +218,31 @@ class MarkdownEditSession {
     const replacement = `[[${selected}]]`
     return {
       selection: collapsedSelection(this.range.start + replacement.length),
+      text: this.replaceRange({ value: replacement }),
+    }
+  }
+
+  private applyLinkFormat(): MobileMarkdownFormatResult {
+    const selected = this.selectedText().trim()
+    if (!selected) {
+      const replacement = `[${linkLabelPlaceholder}](${linkDestinationPlaceholder})`
+      const labelStart = this.range.start + 1
+
+      return {
+        selection: { start: labelStart, end: labelStart + linkLabelPlaceholder.length },
+        text: this.replaceRange({ value: replacement }),
+      }
+    }
+
+    const label = escapedMarkdownLinkLabel(selected)
+    const replacement = `[${label}](${linkDestinationPlaceholder})`
+    const destinationStart = this.range.start + label.length + 3
+
+    return {
+      selection: {
+        start: destinationStart,
+        end: destinationStart + linkDestinationPlaceholder.length,
+      },
       text: this.replaceRange({ value: replacement }),
     }
   }
@@ -231,6 +282,14 @@ class MarkdownEditSession {
     const marker = `${line.index + 1}. `
     if (line.value.trim().length === 0) return marker
     return `${marker}${line.value.replace(/^\d+[.)]\s+/u, '')}`
+  }
+
+  private indentedLine(line: MarkdownLine): string {
+    return `  ${line.value}`
+  }
+
+  private outdentedLine(line: MarkdownLine): string {
+    return line.value.replace(/^(?: {1,2}|\t)/u, '')
   }
 
   private insertSourceBlock(format: MobileMarkdownSourceBlockFormat): MobileMarkdownFormatResult {
@@ -322,4 +381,8 @@ class MarkdownEditSession {
 
 function collapsedSelection(offset: number): MobileMarkdownSelection {
   return { start: offset, end: offset }
+}
+
+function escapedMarkdownLinkLabel(text: string): string {
+  return text.replace(/[\\[\]]/gu, (character) => `\\${character}`)
 }

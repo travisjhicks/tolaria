@@ -631,6 +631,7 @@ files:
     editor.formatting.italic: 1d874710ccdcd46b95397049d2e7500c
     editor.formatting.strikethrough: 926a51baad949d12035107e5d06e2fdb
     editor.formatting.code: ca0dbad92a874b2f69b549293387925e
+    editor.formatting.link: 97e7c9a7d06eac006a28bf05467fcc8b
     editor.formatting.wikilink: e0ee5416c95077b05ea46d40dee513a7
     editor.formatting.emoji: 68305e25f5788db069d06c54924af087
     editor.formatting.searchEmoji: 21cb93f165892484afe2431194e15b43
@@ -645,6 +646,8 @@ files:
     editor.formatting.bulletList: 7e0df159e037db49a0ce97098f05b5ac
     editor.formatting.orderedList: 4b985b57aabbd3110aac1d53b1a921c1
     editor.formatting.taskList: a5d727df2ce2d168bae39c78df4b9054
+    editor.formatting.indent: 497470e76a40fc53e14c0df9b4e4ec9f
+    editor.formatting.outdent: 016839db155e0468864ef3cd23d1ae44
     editor.formatting.quote: c48e929b2b1eabba2ba036884433345e
     editor.formatting.divider: 2908050e771fb91a3afbb7809972e90c
     editor.formatting.codeBlock: 10a7314bd561c0d130bd189a6f836e5e

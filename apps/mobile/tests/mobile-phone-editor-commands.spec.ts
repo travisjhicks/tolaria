@@ -79,6 +79,11 @@ async function applyPhoneFormattingCommands(page: Page) {
   await page.getByTestId('editor-format-heading-2').click()
   await expect(input).toHaveValue(/## Section title/u)
 
+  await input.fill('# Phone Editor Commands\n\n')
+  await page.getByTestId('editor-format-link').scrollIntoViewIfNeeded()
+  await page.getByTestId('editor-format-link').click()
+  await expect(input).toHaveValue('# Phone Editor Commands\n\n[link text](https://)')
+
   await input.fill('# Phone Editor Commands\n\nPaste: ')
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
   await page.evaluate(() => navigator.clipboard.writeText('Plain\nClipboard'))
@@ -102,6 +107,15 @@ async function applyPhoneFormattingCommands(page: Page) {
   await page.getByTestId('editor-format-task-list').scrollIntoViewIfNeeded()
   await page.getByTestId('editor-format-task-list').click()
   await expect(input).toHaveValue(/- \[ \] Follow up/u)
+
+  const listDraft = '# Phone Editor Commands\n\n- One\n- Two'
+  await input.fill(listDraft)
+  await page.getByTestId('editor-format-indent').scrollIntoViewIfNeeded()
+  await page.getByTestId('editor-format-indent').click()
+  await expect(input).toHaveValue('# Phone Editor Commands\n\n- One\n  - Two')
+  await page.getByTestId('editor-format-outdent').scrollIntoViewIfNeeded()
+  await page.getByTestId('editor-format-outdent').click()
+  await expect(input).toHaveValue(listDraft)
 
   await input.fill('# Phone Editor Commands\n\n')
   await page.getByTestId('editor-format-table').scrollIntoViewIfNeeded()

@@ -5,6 +5,7 @@ import {
   ColumnsPlusRight,
   ClipboardText,
   FlowArrow,
+  Link,
   LinkSimple,
   ListBullets,
   ListChecks,
@@ -24,7 +25,9 @@ import {
   TextHSix,
   TextHThree,
   TextHTwo,
+  TextIndent,
   TextItalic,
+  TextOutdent,
   TextStrikethrough,
 } from 'phosphor-react-native'
 import type { ReactNode } from 'react'
@@ -87,6 +90,12 @@ const formattingCommands: FormattingCommand[] = [
     testID: 'editor-format-highlight',
   },
   {
+    action: 'link',
+    icon: (color) => <Link color={color} size={desktopToolbarActionParity.iconSize} />,
+    label: mobileText('editor.formatting.link'),
+    testID: 'editor-format-link',
+  },
+  {
     action: 'wikilink',
     icon: (color) => <LinkSimple color={color} size={desktopToolbarActionParity.iconSize} />,
     label: mobileText('editor.formatting.wikilink'),
@@ -145,6 +154,18 @@ const formattingCommands: FormattingCommand[] = [
     icon: (color) => <ListChecks color={color} size={desktopToolbarActionParity.iconSize} />,
     label: mobileText('editor.formatting.taskList'),
     testID: 'editor-format-task-list',
+  },
+  {
+    action: 'indent',
+    icon: (color) => <TextIndent color={color} size={desktopToolbarActionParity.iconSize} />,
+    label: mobileText('editor.formatting.indent'),
+    testID: 'editor-format-indent',
+  },
+  {
+    action: 'outdent',
+    icon: (color) => <TextOutdent color={color} size={desktopToolbarActionParity.iconSize} />,
+    label: mobileText('editor.formatting.outdent'),
+    testID: 'editor-format-outdent',
   },
   {
     action: 'quote',
