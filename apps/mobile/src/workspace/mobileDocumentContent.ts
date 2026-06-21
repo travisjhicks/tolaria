@@ -13,7 +13,12 @@ import {
   readMobileMarkdownCodeFence,
 } from './mobileMarkdownCodeFence'
 import { mobileMarkdownListHtml, type MobileMarkdownListItem } from './mobileMarkdownListHtml'
-import { mobileImageNodeMarkdown, mobileMarkdownImageHtml } from './mobileMarkdownImage'
+import {
+  mobileImageNodeMarkdown,
+  mobileMarkdownImageHtml,
+  readMobileMarkdownImageAt,
+  type MobileMarkdownImage,
+} from './mobileMarkdownImage'
 import { readMobileInlineMathAt } from './mobileInlineMath'
 import {
   mobileMarkdownTableSource,
@@ -38,6 +43,8 @@ type CodeFenceSourceMode = 'indented' | 'root'
 type NoteTitleText = string
 type PlainText = string
 type ReadHtmlBlockResult = { html: HtmlSnippet; nextIndex: number }
+type InlineMarkdownSpan = { endIndex: number; html: HtmlSnippet }
+type InlineMarkdownTokenReader = (markdown: MarkdownLine, index: number) => InlineMarkdownSpan | null
 type ReadListSourceLinesResult = {
   hasContinuation: boolean
   hasHardBreak: boolean
@@ -513,9 +520,7 @@ function readParagraph(lines: MarkdownLines, startIndex: number): ReadParagraphR
 
 function readParagraphHtml(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult {
   const paragraph = readParagraph(lines, startIndex)
-  return hasInlineMarkdownImageSource(paragraph.lines.join('\n'))
-    ? sourceLinesParagraphBlock(paragraph.lines, paragraph.nextIndex)
-    : { html: `<p>${paragraphLinesToHtml(paragraph.lines)}</p>`, nextIndex: paragraph.nextIndex }
+  return { html: `<p>${paragraphLinesToHtml(paragraph.lines)}</p>`, nextIndex: paragraph.nextIndex }
 }
 
 function paragraphLinesToHtml(lines: MarkdownLines): HtmlSnippet {
@@ -647,13 +652,15 @@ function tableCellAlignmentHtmlAttrs(alignment: MobileMarkdownTableAlignment): s
 function inlineMarkdownToHtml(markdown: MarkdownLine): string {
   const codeSpans: string[] = []
   const escapedMarkdownChars: string[] = []
+  const inlineImageSpans: string[] = []
   const inlineMathSpans: string[] = []
   const markdownWithoutCodeSpans = markdown.replace(/`([^`]+)`/g, (_match, code: PlainText) => {
     const token = codeSpanToken(codeSpans.length)
     codeSpans.push(`<code>${escapeHtml(code)}</code>`)
     return token
   })
-  const protectedMarkdown = markdownWithoutCodeSpans.replace(
+  const markdownWithoutInlineImages = inlineImageMarkdownTokens(markdownWithoutCodeSpans, inlineImageSpans)
+  const protectedMarkdown = markdownWithoutInlineImages.replace(
     /\\([\\`*_[\]{}()#+\-.!|<>~])/g,
     (_match, char: PlainText) => {
       const token = escapedMarkdownToken(escapedMarkdownChars.length)
@@ -674,30 +681,67 @@ function inlineMarkdownToHtml(markdown: MarkdownLine): string {
     .replace(/~~([^~]+)~~/g, '<s>$1</s>')
 
   return restoreEscapedMarkdownTokens(
-    restoreCodeSpanTokens(restoreInlineMathTokens(html, inlineMathSpans), codeSpans),
+    restoreCodeSpanTokens(
+      restoreInlineImageTokens(restoreInlineMathTokens(html, inlineMathSpans), inlineImageSpans),
+      codeSpans,
+    ),
     escapedMarkdownChars,
   )
 }
 
+function inlineImageMarkdownTokens(markdown: MarkdownLine, spans: HtmlSnippet[]): MarkdownLine {
+  return inlineMarkdownTokens(markdown, spans, inlineImageToken, readInlineImageMarkdownSpan)
+}
+
 function inlineMathMarkdownTokens(markdown: MarkdownLine, spans: HtmlSnippet[]): MarkdownLine {
+  return inlineMarkdownTokens(markdown, spans, inlineMathToken, readInlineMathMarkdownSpan)
+}
+
+function inlineMarkdownTokens(
+  markdown: MarkdownLine,
+  spans: HtmlSnippet[],
+  tokenForIndex: (index: number) => string,
+  readSpan: InlineMarkdownTokenReader,
+): MarkdownLine {
   let result = ''
   let index = 0
 
   while (index < markdown.length) {
-    const math = readMobileInlineMathAt({ index, text: markdown })
-    if (!math) {
+    const span = readSpan(markdown, index)
+    if (!span) {
       result += markdown.charAt(index)
       index += 1
       continue
     }
 
-    const token = inlineMathToken(spans.length)
-    spans.push(inlineMathHtml(math.latex))
+    const token = tokenForIndex(spans.length)
+    spans.push(span.html)
     result += token
-    index = math.end + 1
+    index = span.endIndex
   }
 
   return result
+}
+
+function readInlineImageMarkdownSpan(markdown: MarkdownLine, index: number): InlineMarkdownSpan | null {
+  const image = isEscapedInlineImageStart(markdown, index)
+    ? null
+    : readMobileMarkdownImageAt(markdown, index)
+  return image ? { endIndex: image.endIndex, html: inlineImageHtml(image.image) } : null
+}
+
+function isEscapedInlineImageStart(markdown: MarkdownLine, index: number): boolean {
+  return markdown[index] === '!' && index > 0 && markdown[index - 1] === '\\'
+}
+
+function inlineImageHtml(image: MobileMarkdownImage): HtmlSnippet {
+  const title = image.title ? ` title="${escapeAttribute(image.title)}"` : ''
+  return `<img src="${escapeAttribute(image.src)}" alt="${escapeAttribute(image.alt)}"${title}>`
+}
+
+function readInlineMathMarkdownSpan(markdown: MarkdownLine, index: number): InlineMarkdownSpan | null {
+  const math = readMobileInlineMathAt({ index, text: markdown })
+  return math ? { endIndex: math.end + 1, html: inlineMathHtml(math.latex) } : null
 }
 
 function inlineMathHtml(latex: PlainText): HtmlSnippet {
@@ -1271,6 +1315,10 @@ function inlineMathToken(index: number): string {
   return `\u0000INLINEMATH${index}\u0000`
 }
 
+function inlineImageToken(index: number): string {
+  return `\u0000INLINEIMAGE${index}\u0000`
+}
+
 const plainSourceSpanPattern =
   /\b(?:https?|mailto):[^\s<>()]+(?:\([^\s<>()]*\)[^\s<>()]*)*|\b[A-Za-z0-9.!#$%&*+/=?^_`{|}~-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/gu
 
@@ -1292,6 +1340,10 @@ function restoreEscapedMarkdownTokens(html: HtmlSnippet, escapedMarkdownChars: H
 
 function restoreInlineMathTokens(html: HtmlSnippet, spans: HtmlSnippet[]): HtmlSnippet {
   return spans.reduce((current, span, index) => current.replaceAll(inlineMathToken(index), span), html)
+}
+
+function restoreInlineImageTokens(html: HtmlSnippet, spans: HtmlSnippet[]): HtmlSnippet {
+  return spans.reduce((current, span, index) => current.replaceAll(inlineImageToken(index), span), html)
 }
 
 function restorePlainSourceSpanTokens(text: PlainText, spans: PlainText[]): PlainText {

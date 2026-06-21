@@ -6,10 +6,14 @@ type MarkdownLine = string
 type PlainText = string
 type UrlText = string
 
-type MobileMarkdownImage = {
+export type MobileMarkdownImage = {
   alt: ImageAltText
   src: UrlText
   title?: PlainText
+}
+export type MobileMarkdownImageAt = {
+  endIndex: number
+  image: MobileMarkdownImage
 }
 type MobileImageNodeMarkdownOptions = {
   vaultRootUri?: string | null
@@ -21,12 +25,38 @@ type BareDestinationCursor = {
   value: UrlText
 }
 
-const MARKDOWN_IMAGE_PREFIX_PATTERN = /^\s*!\[((?:\\.|[^\]\\\n])*)\]\(/u
+const MARKDOWN_IMAGE_AT_PATTERN = /^!\[((?:\\.|[^\]\\\n])*)\]\(/u
+const MARKDOWN_IMAGE_PREFIX_PATTERN = /^(\s*)!\[((?:\\.|[^\]\\\n])*)\]\(/u
+const MARKDOWN_IMAGE_CLOSE_PATTERN = /^(?:[ \t]+"((?:\\.|[^"\\\n])*)")?\)/u
 const MARKDOWN_IMAGE_SUFFIX_PATTERN = /^(?:[ \t]+"((?:\\.|[^"\\\n])*)")?\)\s*$/u
 
 export function mobileMarkdownImageHtml(line: MarkdownLine): HtmlSnippet | null {
   const image = readMobileMarkdownImage(line)
   return image ? imageHtml(image) : null
+}
+
+export function readMobileMarkdownImageAt(
+  line: MarkdownLine,
+  startIndex: number,
+): MobileMarkdownImageAt | null {
+  const source = line.slice(startIndex)
+  const prefix = source.match(MARKDOWN_IMAGE_AT_PATTERN)
+  if (!prefix) return null
+
+  const destination = readImageDestination(source, prefix[0].length)
+  if (!destination) return null
+
+  const close = source.slice(destination.nextIndex).match(MARKDOWN_IMAGE_CLOSE_PATTERN)
+  if (!close) return null
+
+  return {
+    endIndex: startIndex + destination.nextIndex + close[0].length,
+    image: {
+      alt: unescapeMarkdownText(prefix[1] ?? ''),
+      src: unescapeMarkdownDestination(destination.value),
+      title: close[1] ? unescapeMarkdownText(close[1]) : undefined,
+    },
+  }
 }
 
 export function mobileImageNodeMarkdown(
@@ -50,7 +80,7 @@ function readMobileMarkdownImage(line: MarkdownLine): MobileMarkdownImage | null
   if (!suffix) return null
 
   return {
-    alt: unescapeMarkdownText(prefix[1] ?? ''),
+    alt: unescapeMarkdownText(prefix[2] ?? ''),
     src: unescapeMarkdownDestination(destination.value),
     title: suffix[1] ? unescapeMarkdownText(suffix[1]) : undefined,
   }
