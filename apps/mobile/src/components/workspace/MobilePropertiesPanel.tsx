@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Plus, X } from 'phosphor-react-native'
+import { Plus, WarningCircle, X } from 'phosphor-react-native'
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { Text } from '../ui/text'
 import { mobileCopy, mobileText } from '../../i18n/mobileText'
@@ -9,6 +9,7 @@ import { MobilePanel, MobileToolbar, MobileToolbarTitle } from '../../ui/MobileP
 import { MobilePropertyRow } from '../../ui/MobilePropertyRow'
 import { desktopPanelParity, desktopPropertyParity, desktopRelationshipParity } from '../../ui/desktopParity'
 import { mobileColors, mobileRadius, mobileSpace, mobileType } from '../../ui/tokens'
+import { resolveMobileMissingTypeName } from '../../workspace/mobileMissingType'
 import { mobilePropertyDisplay, type MobilePropertyDisplay } from '../../workspace/mobilePropertyDisplay'
 import type { MobileNote, MobileProperty, MobilePropertyDisplayMode, MobilePropertyValue, MobileRelationship, MobileTone, MobileTypeDefinitions } from '../../workspace/mobileWorkspaceModel'
 import type { MobileNeighborhoodGroup } from '../../workspace/mobileNeighborhood'
@@ -32,6 +33,7 @@ export function MobilePropertiesPanel({
   onDeleteProperty,
   onEditProperty,
   onEnterNeighborhood,
+  onCreateMissingType,
   onOpenChangeNoteType,
   onRemoveRelationship,
   onSelectNote,
@@ -48,6 +50,7 @@ export function MobilePropertiesPanel({
   onDeleteProperty: (noteId: string, key: string) => void
   onEditProperty: (noteId: string, key: string, value: MobilePropertyValue) => void
   onEnterNeighborhood?: (noteId: string) => void
+  onCreateMissingType: (typeName: string) => void
   onOpenChangeNoteType: () => void
   onRemoveRelationship: (noteId: string, key: string, ref: string) => void
   onSelectNote: (noteId: string) => void
@@ -80,6 +83,7 @@ export function MobilePropertiesPanel({
             onDeleteProperty={onDeleteProperty}
             onEditProperty={onEditProperty}
             onEnterNeighborhood={onEnterNeighborhood}
+            onCreateMissingType={onCreateMissingType}
             onOpenChangeNoteType={onOpenChangeNoteType}
             onRemoveRelationship={onRemoveRelationship}
             onSelectNote={onSelectNote}
@@ -101,6 +105,7 @@ function NoteProperties({
   onDeleteProperty,
   onEditProperty,
   onEnterNeighborhood,
+  onCreateMissingType,
   onOpenChangeNoteType,
   onRemoveRelationship,
   onSelectNote,
@@ -115,6 +120,7 @@ function NoteProperties({
   onDeleteProperty: (noteId: string, key: string) => void
   onEditProperty: (noteId: string, key: string, value: MobilePropertyValue) => void
   onEnterNeighborhood?: (noteId: string) => void
+  onCreateMissingType: (typeName: string) => void
   onOpenChangeNoteType: () => void
   onRemoveRelationship: (noteId: string, key: string, ref: string) => void
   onSelectNote: (noteId: string) => void
@@ -124,17 +130,17 @@ function NoteProperties({
 }) {
   const propertySlots = mobileInspectorPropertySlots(note, typeDefinitions)
   const relationshipSlots = mobileInspectorRelationshipSlots(note, typeDefinitions)
+  const missingTypeName = resolveMobileMissingTypeName(note, typeDefinitions)
 
   return (
     <>
-      <MobilePropertyRow label="Type" testID="property-row-type" value={(
-        <EditableChipValue
-          label={note.type}
-          testID="property-row-type-edit"
-          tone={chipTone(note.typeTone)}
-          onPress={onOpenChangeNoteType}
-        />
-      )} layoutProbe={layoutProbe} layoutProbeId="properties.row.type" />
+      <TypePropertyRow
+        layoutProbe={layoutProbe}
+        missingTypeName={missingTypeName}
+        note={note}
+        onCreateMissingType={onCreateMissingType}
+        onOpenChangeNoteType={onOpenChangeNoteType}
+      />
       {note.status ? (
         <MobilePropertyRow label={mobileText('noteList.sort.status')} testID="property-row-status" value={(
           <EditableChipValue
@@ -208,6 +214,65 @@ function NoteProperties({
       <PropertyActionRow label={mobileText('inspector.relationship.addRelationship')} testID="property-action-add-relationship" onPress={() => onAddRelationship()} />
       <ReferenceGroups groups={referenceGroups} onSelectNote={onSelectNote} />
     </>
+  )
+}
+
+function TypePropertyRow({
+  layoutProbe,
+  missingTypeName,
+  note,
+  onCreateMissingType,
+  onOpenChangeNoteType,
+}: {
+  layoutProbe: MobileLayoutProbe
+  missingTypeName: string | null
+  note: MobileNote
+  onCreateMissingType: (typeName: string) => void
+  onOpenChangeNoteType: () => void
+}) {
+  return (
+    <MobilePropertyRow label="Type" testID="property-row-type" value={(
+      <View style={typeStyles.value}>
+        <EditableChipValue
+          label={note.type}
+          testID="property-row-type-edit"
+          tone={chipTone(note.typeTone)}
+          onPress={onOpenChangeNoteType}
+        />
+        {missingTypeName ? (
+          <MissingTypeButton
+            typeName={missingTypeName}
+            onPress={() => onCreateMissingType(missingTypeName)}
+          />
+        ) : null}
+      </View>
+    )} layoutProbe={layoutProbe} layoutProbeId="properties.row.type" />
+  )
+}
+
+function MissingTypeButton({
+  onPress,
+  typeName,
+}: {
+  onPress: () => void
+  typeName: string
+}) {
+  const label = mobileText('inspector.properties.missingTypeAria').replace('{type}', typeName)
+
+  return (
+    <Pressable
+      accessibilityHint={mobileText('sidebar.action.createType')}
+      accessibilityLabel={label}
+      accessibilityRole="button"
+      style={({ pressed }) => [typeStyles.missingButton, pressed ? propertyStyles.editableValuePressed : null]}
+      testID="missing-type-warning"
+      onPress={onPress}
+    >
+      <WarningCircle color={mobileColors.orange} size={14} weight="bold" />
+      <Text numberOfLines={1} style={typeStyles.missingText}>
+        {mobileText('inspector.properties.missingType')}
+      </Text>
+    </Pressable>
   )
 }
 
@@ -845,6 +910,32 @@ const propertyStyles = StyleSheet.create({
     fontWeight: '400',
     paddingHorizontal: 6,
     paddingVertical: 2,
+  },
+})
+
+const typeStyles = StyleSheet.create({
+  value: {
+    minWidth: 0,
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: mobileSpace.xs,
+    justifyContent: 'flex-end',
+  },
+  missingButton: {
+    minHeight: desktopPropertyParity.chipHeight,
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 3,
+    borderRadius: desktopPropertyParity.chipRadius,
+    backgroundColor: mobileColors.orangeSoft,
+    paddingHorizontal: desktopPropertyParity.chipPaddingHorizontal,
+  },
+  missingText: {
+    color: mobileColors.orange,
+    fontSize: desktopPropertyParity.chipTextSize,
+    fontWeight: '500',
+    lineHeight: desktopPropertyParity.chipHeight,
   },
 })
 

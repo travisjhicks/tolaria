@@ -163,6 +163,7 @@ export type TabletWorkspaceChromeProps = {
   onOpenCreateFolder: () => void
   onOpenCreateNote: () => void
   onOpenCreateType: () => void
+  onOpenCreateTypeWithName: (typeName: string) => void
   onOpenCreateView: () => void
   onOpenFindInNote: () => void
   onOpenFileInDefaultApp: () => void

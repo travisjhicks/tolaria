@@ -807,6 +807,7 @@ function PhonePropertiesScreen({
         onDeleteProperty={controller.onDeleteProperty}
         onEditProperty={controller.onEditProperty}
         onEnterNeighborhood={enterNeighborhood}
+        onCreateMissingType={controller.onOpenCreateTypeWithName}
         onOpenChangeNoteType={controller.onOpenChangeNoteType}
         onRemoveRelationship={controller.onRemoveRelationship}
         propertyDisplayModes={controller.snapshot.vaultConfig?.propertyDisplayModes}

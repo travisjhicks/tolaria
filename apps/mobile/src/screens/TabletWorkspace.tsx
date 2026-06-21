@@ -405,6 +405,7 @@ function TabletPropertiesPanelHost({
   onDeleteProperty,
   onEditProperty,
   onOpenChangeNoteType,
+  onOpenCreateTypeWithName,
   onEnterNeighborhood,
   onRemoveRelationship,
   onSelectNote,
@@ -425,6 +426,7 @@ function TabletPropertiesPanelHost({
         onAddRelationship={onAddRelationship}
         onDeleteProperty={onDeleteProperty}
         onEditProperty={onEditProperty}
+        onCreateMissingType={onOpenCreateTypeWithName}
         onOpenChangeNoteType={onOpenChangeNoteType}
         onEnterNeighborhood={onEnterNeighborhood}
         onSelectNote={onSelectNote}

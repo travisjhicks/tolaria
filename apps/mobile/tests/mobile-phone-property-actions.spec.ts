@@ -7,6 +7,7 @@ test.describe('phone property action parity', () => {
     await page.goto('/')
     await createPhonePropertyNote(page)
     await openPhoneProperties(page)
+    await createTypeFromMissingTypeWarning(page)
     await addNumberProperty(page)
     await addBooleanProperty(page)
     await addUrlProperty(page)
@@ -32,6 +33,22 @@ async function openPhoneProperties(page: Page) {
   await page.getByTestId('phone-properties-action').click()
   await expect(page.getByTestId('phone-properties-screen')).toBeVisible()
   await expect(page.getByTestId('properties-panel')).toBeVisible()
+}
+
+async function createTypeFromMissingTypeWarning(page: Page) {
+  await page.getByTestId('property-row-type-edit').click()
+  await expect(page.getByTestId('workspace-action-sheet-changeNoteType')).toBeVisible()
+  await page.getByTestId('workspace-change-type-input').fill('Hotel')
+  await page.getByTestId('workspace-action-sheet-changeNoteType').getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+  await expect(page.getByTestId('property-row-type')).toContainText('Hotel')
+  await expect(page.getByTestId('missing-type-warning')).toBeVisible()
+
+  await page.getByTestId('missing-type-warning').click()
+  await expect(page.getByTestId('workspace-action-sheet-createType')).toBeVisible()
+  await expect(page.getByTestId('workspace-create-type-name-input')).toHaveValue('Hotel')
+  await page.getByTestId('workspace-action-sheet-createType').getByRole('button', { name: 'Create' }).click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
 }
 
 async function addNumberProperty(page: Page) {

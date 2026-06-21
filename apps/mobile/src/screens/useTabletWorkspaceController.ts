@@ -442,6 +442,7 @@ function coreWorkspaceActionOpeners({
     }),
     onOpenCreateNote: () => setOpenAction('createNote'),
     onOpenCreateType: () => openAction('createType', [{ key: 'typeName', value: '' }]),
+    onOpenCreateTypeWithName: (typeName: string) => openAction('createType', [{ key: 'typeName', value: typeName }]),
     onOpenCreateView: () => openCreateView({ setOpenAction, updateReadOnlyForm }),
     onOpenSearch: () => setOpenAction('search'),
   }
