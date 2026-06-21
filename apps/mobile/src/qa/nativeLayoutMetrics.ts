@@ -113,6 +113,7 @@ const wysiwygToolbarActionMetricIds = [
   'editor.wysiwyg.toolbar.action.strike',
   'editor.wysiwyg.toolbar.action.code',
   'editor.wysiwyg.toolbar.action.highlight',
+  'editor.wysiwyg.toolbar.action.link',
   'editor.wysiwyg.toolbar.action.wikilink',
   'editor.wysiwyg.toolbar.action.heading1',
   'editor.wysiwyg.toolbar.action.heading2',
@@ -123,6 +124,8 @@ const wysiwygToolbarActionMetricIds = [
   'editor.wysiwyg.toolbar.action.bulletList',
   'editor.wysiwyg.toolbar.action.orderedList',
   'editor.wysiwyg.toolbar.action.taskList',
+  'editor.wysiwyg.toolbar.action.indent',
+  'editor.wysiwyg.toolbar.action.outdent',
   'editor.wysiwyg.toolbar.action.quote',
 ] as const
 export const nativeSidebarMetricContract = {

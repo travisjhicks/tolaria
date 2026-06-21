@@ -9,8 +9,17 @@ export type NativeWysiwygCommandBridge = {
   addColumnAfter?: () => void
   addRowAfter?: () => void
   addRowAndColumnAfterFirstBodyCell?: () => void
+  canLift?: boolean
+  canLiftTaskListItem?: boolean
+  canSink?: boolean
+  canSinkTaskListItem?: boolean
   deleteColumn?: () => void
   deleteRow?: () => void
+  lift?: () => void
+  liftTaskListItem?: () => void
+  setLink?: (link: string | null) => void
+  sink?: () => void
+  sinkTaskListItem?: () => void
   toggleBlockquote?: () => void
   toggleBold?: () => void
   toggleBulletList?: () => void
@@ -41,6 +50,7 @@ export const nativeWysiwygFormattingActions = [
   'strike',
   'code',
   'highlight',
+  'link',
   'wikilink',
   'heading1',
   'heading2',
@@ -51,6 +61,8 @@ export const nativeWysiwygFormattingActions = [
   'bulletList',
   'orderedList',
   'taskList',
+  'indent',
+  'outdent',
   'quote',
   ...nativeWysiwygMarkdownBlockActions,
   'tableAddColumnAfter',
@@ -74,8 +86,11 @@ const nativeWysiwygFormatCommands = [
   { action: 'heading5', run: (editor) => editor.toggleHeading?.(5) },
   { action: 'heading6', run: (editor) => editor.toggleHeading?.(6) },
   { action: 'highlight', run: (editor) => editor.toggleHighlight?.(mobileColors.yellowSoft) },
+  { action: 'indent', run: (editor) => applyNativeWysiwygIndent(editor) },
   { action: 'italic', run: (editor) => editor.toggleItalic?.() },
+  { action: 'link', run: (editor) => editor.setLink?.('https://') },
   { action: 'orderedList', run: (editor) => editor.toggleOrderedList?.() },
+  { action: 'outdent', run: (editor) => applyNativeWysiwygOutdent(editor) },
   { action: 'quote', run: (editor) => editor.toggleBlockquote?.() },
   { action: 'strike', run: (editor) => editor.toggleStrike?.() },
   { action: 'taskList', run: (editor) => editor.toggleTaskList?.() },
@@ -87,6 +102,24 @@ export function applyNativeWysiwygFormat(
 ): void {
   const command = nativeWysiwygFormatCommands.find((candidate) => candidate.action === action)
   command?.run(editor)
+}
+
+function applyNativeWysiwygIndent(editor: NativeWysiwygCommandBridge): void {
+  if (editor.canSinkTaskListItem && editor.sinkTaskListItem) {
+    editor.sinkTaskListItem()
+    return
+  }
+
+  if (editor.canSink !== false) editor.sink?.()
+}
+
+function applyNativeWysiwygOutdent(editor: NativeWysiwygCommandBridge): void {
+  if (editor.canLiftTaskListItem && editor.liftTaskListItem) {
+    editor.liftTaskListItem()
+    return
+  }
+
+  if (editor.canLift !== false) editor.lift?.()
 }
 
 export function isNativeWysiwygMarkdownBlockAction(

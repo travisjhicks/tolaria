@@ -24,6 +24,9 @@ describe('native WYSIWYG format commands', () => {
     ['heading5', 'toggleHeading', [5]],
     ['heading6', 'toggleHeading', [6]],
     ['highlight', 'toggleHighlight', [mobileColors.yellowSoft]],
+    ['indent', 'sink', []],
+    ['link', 'setLink', ['https://']],
+    ['outdent', 'lift', []],
     ['tableAddColumnAfter', 'addColumnAfter', []],
     ['tableAddRowAfter', 'addRowAfter', []],
     ['tableDeleteColumn', 'deleteColumn', []],
@@ -35,6 +38,15 @@ describe('native WYSIWYG format commands', () => {
 
     expect(editor[method]).toHaveBeenCalledWith(...args)
     expect(calledMethods(editor)).toEqual([method])
+  })
+
+  it('routes indent and outdent through task-list bridges when a task item can move', () => {
+    const editor = fakeEditor({ canLiftTaskListItem: true, canSinkTaskListItem: true })
+
+    applyNativeWysiwygFormat(editor, 'indent')
+    applyNativeWysiwygFormat(editor, 'outdent')
+
+    expect(calledMethods(editor)).toEqual(['liftTaskListItem', 'sinkTaskListItem'])
   })
 
   it('keeps inserted block markdown commands visible without mapping them to direct TenTap toolbar commands', () => {
@@ -64,15 +76,26 @@ describe('native WYSIWYG format commands', () => {
 })
 
 type FakeEditor = Required<NativeWysiwygCommandBridge>
-type FakeEditorMethod = keyof FakeEditor
+type FakeEditorMethod = {
+  [Key in keyof FakeEditor]: FakeEditor[Key] extends (...args: never[]) => unknown ? Key : never
+}[keyof FakeEditor]
 
-function fakeEditor(): FakeEditor {
+function fakeEditor(overrides: Partial<NativeWysiwygCommandBridge> = {}): FakeEditor {
   return {
     addColumnAfter: vi.fn(),
     addRowAfter: vi.fn(),
     addRowAndColumnAfterFirstBodyCell: vi.fn(),
+    canLift: true,
+    canLiftTaskListItem: false,
+    canSink: true,
+    canSinkTaskListItem: false,
     deleteColumn: vi.fn(),
     deleteRow: vi.fn(),
+    lift: vi.fn(),
+    liftTaskListItem: vi.fn(),
+    setLink: vi.fn(),
+    sink: vi.fn(),
+    sinkTaskListItem: vi.fn(),
     toggleBlockquote: vi.fn(),
     toggleBold: vi.fn(),
     toggleBulletList: vi.fn(),
@@ -83,11 +106,13 @@ function fakeEditor(): FakeEditor {
     toggleOrderedList: vi.fn(),
     toggleStrike: vi.fn(),
     toggleTaskList: vi.fn(),
+    ...overrides,
   }
 }
 
 function calledMethods(editor: FakeEditor): FakeEditorMethod[] {
   return Object.entries(editor)
-    .filter(([, method]) => vi.mocked(method).mock.calls.length > 0)
+    .filter(([, method]) => typeof method === 'function' && vi.mocked(method).mock.calls.length > 0)
     .map(([method]) => method as FakeEditorMethod)
+    .sort()
 }
