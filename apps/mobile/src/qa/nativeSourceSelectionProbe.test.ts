@@ -34,9 +34,11 @@ describe('native source selection probe', () => {
       ...nativeSourceSelectionProof(),
       emojiAutocompletePreserved: false,
       personReplacementPreserved: false,
+      wikilinkReplacementPreserved: false,
     }
 
     expect(assertNativeSourceSelectionProofs([proof]).map((failure) => failure.id)).toEqual([
+      'editor.source.selection.wikilinkReplacement',
       'editor.source.selection.personReplacement',
       'editor.source.selection.emojiAutocomplete',
     ])

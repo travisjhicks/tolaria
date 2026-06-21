@@ -4,6 +4,7 @@ import {
   activeMobileWikilinkQuery,
   replaceActiveMobileEmojiShortcodeQuery,
   replaceActiveMobilePersonMentionQuery,
+  replaceActiveMobileWikilinkQuery,
 } from '../workspace/mobileWikilinkAutocomplete'
 import { mobileMarkdownSelectionAfterTextChange } from '../workspace/mobileMarkdownSourceSelection'
 import type { NativeSourceSelectionProof } from './nativeSourceSelectionLog'
@@ -26,6 +27,11 @@ export function nativeSourceSelectionProof(): NativeSourceSelectionProof {
     17,
   )
   const autocompleteCursor = selectionAfter('Links [[Pro today', 'Links [[Proj today', 11)
+  const wikilinkReplacement = replaceActiveMobileWikilinkQuery(
+    'Links [[Proj today',
+    autocompleteCursor,
+    'projects/alpha',
+  )
   const personAutocompleteCursor = selectionAfter('Assign @Ma today', 'Assign @Mar today', 10)
   const emojiAutocompleteCursor = selectionAfter('Mood :roc today', 'Mood :rock today', 9)
   const personReplacement = replaceActiveMobilePersonMentionQuery(
@@ -54,6 +60,7 @@ export function nativeSourceSelectionProof(): NativeSourceSelectionProof {
     personReplacementPreserved: personReplacement?.text === 'Assign [[People/Maria Rossi]] today',
     replacementCursor,
     replacementPreserved: replacementCursor === 25,
+    wikilinkReplacementPreserved: wikilinkReplacement?.text === 'Links [[projects/alpha]] today',
   }
 }
 

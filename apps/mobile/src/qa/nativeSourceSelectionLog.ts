@@ -16,6 +16,7 @@ export type NativeSourceSelectionProof = {
   personReplacementPreserved: boolean
   replacementCursor: number
   replacementPreserved: boolean
+  wikilinkReplacementPreserved: boolean
 }
 
 export type NativeSourceSelectionAssertionFailure = {
@@ -47,6 +48,7 @@ export function assertNativeSourceSelectionProofs(
     proofFailure(latest.replacementPreserved, 'editor.source.selection.replacement', 'Selected text replacements keep the cursor after replacement text'),
     proofFailure(latest.deletionPreserved, 'editor.source.selection.deletion', 'Backspace-style source edits keep the cursor at the deletion point'),
     proofFailure(latest.autocompletePreserved, 'editor.source.selection.autocomplete', 'Wikilink autocomplete remains active after in-place source edits'),
+    proofFailure(latest.wikilinkReplacementPreserved, 'editor.source.selection.wikilinkReplacement', 'Wikilink autocomplete inserts the desktop-compatible wikilink target'),
     proofFailure(latest.personAutocompletePreserved, 'editor.source.selection.personAutocomplete', 'Person mention autocomplete remains active after native source edits'),
     proofFailure(latest.personReplacementPreserved, 'editor.source.selection.personReplacement', 'Person mention autocomplete inserts the desktop-compatible wikilink target'),
     proofFailure(latest.emojiAutocompletePreserved, 'editor.source.selection.emojiAutocomplete', 'Emoji shortcode autocomplete remains active after native source edits'),

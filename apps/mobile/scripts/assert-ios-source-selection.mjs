@@ -12,7 +12,7 @@ import {
 
 const defaultExpoGoBundleId = 'host.exp.Exponent'
 const defaultLogWindow = '90s'
-const proofPollTimeoutMs = 12000
+const proofPollTimeoutMs = 30000
 
 function printHelp() {
   console.log(`Assert native iOS Simulator source-editor selection behavior.
