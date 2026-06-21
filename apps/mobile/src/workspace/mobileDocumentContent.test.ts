@@ -275,10 +275,16 @@ Updated body.
     )
   })
 
-  it('keeps indented fenced code editable as source until nested block editing is supported', () => {
+  it('hydrates fenced code with non-code leading spaces as native codeBlock nodes', () => {
     const html = mobileMarkdownBodyToTentapHtml('  ```ts\n  const x = 1\n  ```\n\nDone\n')
 
-    expect(html).toBe('<p>  ```ts<br>  const x = 1<br>  ```</p>\n<p>Done</p>')
+    expect(html).toBe('<pre><code class="language-ts" data-language="ts">const x = 1</code></pre>\n<p>Done</p>')
+  })
+
+  it('keeps code-indented fenced code editable as source until indented code editing is supported', () => {
+    const html = mobileMarkdownBodyToTentapHtml('    ```ts\n    const x = 1\n    ```\n\nDone\n')
+
+    expect(html).toBe('<p>    ```ts<br>    const x = 1<br>    ```</p>\n<p>Done</p>')
     expect(html).not.toContain('<pre>')
   })
 

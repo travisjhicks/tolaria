@@ -161,13 +161,15 @@ function rawFrontmatterBoundary(content: MarkdownContent): { bodyStart: number }
 }
 
 function readCodeBlock(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
-  const opening = readMobileMarkdownCodeFence(lines[startIndex] ?? '')
+  const openingLine = lines[startIndex] ?? ''
+  const opening = readMobileMarkdownCodeFence(openingLine)
   if (!opening) return null
 
+  const openingIndent = leadingMarkdownCodeFenceIndent(openingLine)
   const codeLines: string[] = []
   let index = startIndex + 1
   while (index < lines.length && !isMobileMarkdownCodeFenceClose(lines[index] ?? '', opening)) {
-    codeLines.push(lines[index] ?? '')
+    codeLines.push(stripCodeFenceContentIndent(lines[index] ?? '', openingIndent))
     index += 1
   }
 
@@ -203,7 +205,7 @@ function simpleCodeBlockLanguage(info: string | null): string | null {
 }
 
 function readIndentedCodeFenceSourceBlock(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
-  const opening = hasLeadingWhitespace(lines[startIndex] ?? '')
+  const opening = isCodeIndentedLine(lines[startIndex] ?? '')
     ? readMobileMarkdownCodeFence(lines[startIndex] ?? '')
     : null
   if (!opening) return null
@@ -215,6 +217,16 @@ function readIndentedCodeFenceSourceBlock(lines: MarkdownLines, startIndex: numb
 
   const nextIndex = index < lines.length ? index + 1 : index
   return sourceLinesParagraphBlock(lines.slice(startIndex, nextIndex), nextIndex)
+}
+
+function leadingMarkdownCodeFenceIndent(line: MarkdownLine): number {
+  const spaces = line.match(/^ */u)?.[0].length ?? 0
+  return Math.min(spaces, 3)
+}
+
+function stripCodeFenceContentIndent(line: MarkdownLine, fenceIndent: number): MarkdownLine {
+  const removableSpaces = Math.min(line.match(/^ */u)?.[0].length ?? 0, fenceIndent)
+  return line.slice(removableSpaces)
 }
 
 const htmlBlockReaders = [
@@ -633,6 +645,10 @@ function orderedDotListSourceLineNumber(line: MarkdownLine): number | null {
 
 function isIndentedTextSourceLine(line: MarkdownLine): boolean {
   return /^(?: {4,}|\t)\S/u.test(line)
+}
+
+function isCodeIndentedLine(line: MarkdownLine): boolean {
+  return /^(?: {4,}|\t)/u.test(line)
 }
 
 function hasLeadingWhitespace(line: MarkdownLine): boolean {
