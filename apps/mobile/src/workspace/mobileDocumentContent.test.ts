@@ -321,10 +321,16 @@ Updated body.
     expect(html).toBe('<img src="attachments/file.png" alt="shot" title="starter vault">')
   })
 
-  it('keeps indented markdown images editable as source until nested image editing is supported', () => {
+  it('hydrates markdown images with non-code leading spaces as native TenTap image nodes', () => {
     const html = mobileMarkdownBodyToTentapHtml('  ![](https://example.com/agent.png)\n\nDone\n')
 
-    expect(html).toBe('<p>  ![](https://example.com/agent.png)</p>\n<p>Done</p>')
+    expect(html).toBe('<img src="https://example.com/agent.png" alt="">\n<p>Done</p>')
+  })
+
+  it('keeps code-indented markdown images editable as source until indented code editing is supported', () => {
+    const html = mobileMarkdownBodyToTentapHtml('    ![](https://example.com/agent.png)\n\nDone\n')
+
+    expect(html).toBe('<p>    ![](https://example.com/agent.png)</p>\n<p>Done</p>')
     expect(html).not.toContain('<img')
   })
 

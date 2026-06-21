@@ -285,7 +285,7 @@ function readUnsupportedHtmlSourceBlock(lines: MarkdownLines, startIndex: number
 
 function readIndentedImageSourceBlock(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
   const line = lines[startIndex] ?? ''
-  return /^\s+!\[/u.test(line) && mobileMarkdownImageHtml(line)
+  return /^(?: {4,}|\t)!\[/u.test(line) && mobileMarkdownImageHtml(line)
     ? { html: `<p>${escapeHtml(line)}</p>`, nextIndex: startIndex + 1 }
     : null
 }
