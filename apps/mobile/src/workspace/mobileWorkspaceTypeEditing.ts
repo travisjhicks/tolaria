@@ -5,6 +5,7 @@ import {
   type MobileTypeDefinitionPatch,
 } from './mobileTypeDefinitions'
 import { renameMobileTypeDefinition } from './mobileWorkspaceTypeRename'
+import { noteWritePath } from './mobileWorkspacePathRewrites'
 import type { MobileViewMoveDirection } from './mobileSavedViews'
 import type { MobileNote, MobileSidebarItem, MobileTypeDefinitions, MobileWorkspaceSnapshot } from './mobileWorkspaceModel'
 import type { MobileWorkspaceEdit, MobileWorkspaceEditResult } from './mobileWorkspaceEditing'
@@ -46,6 +47,9 @@ function createMobileTypeDefinition(
   const cleanType = normalizeCreationTypeName(typeName)
   if (!cleanType || equivalentTypeDefinitionName(snapshot.typeDefinitions, cleanType)) return { snapshot, writes: [] }
 
+  const creationPath = mobileTypeDefinitionPath(cleanType, undefined)
+  if (mobileWorkspacePathExists(snapshot, creationPath)) return { snapshot, writes: [] }
+
   const typeDefinitions = typeDefinitionsWithPatch(snapshot.typeDefinitions, cleanType, {})
   const definition = typeDefinitions[cleanType]
 
@@ -54,7 +58,7 @@ function createMobileTypeDefinition(
     writes: [{
       content: definition.rawContent ?? mobileTypeDefinitionContent(cleanType, undefined, {}),
       kind: 'createNote',
-      path: definition.path ?? mobileTypeDefinitionPath(cleanType, undefined),
+      path: definition.path ?? creationPath,
     }],
   }
 }
@@ -206,4 +210,28 @@ function slugifyTypeName(value: NoteTitle): string {
 function wikilinkTarget(value: string): string {
   const match = value.match(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/)
   return (match?.[1] ?? value).trim()
+}
+
+function mobileWorkspacePathExists(snapshot: MobileWorkspaceSnapshot, path: string): boolean {
+  const targetPath = canonicalMobilePath(path)
+  return mobileWorkspacePathCandidates(snapshot).some((candidate) => canonicalMobilePath(candidate) === targetPath)
+}
+
+function mobileWorkspacePathCandidates(snapshot: MobileWorkspaceSnapshot): string[] {
+  return [
+    ...workspaceNotePathCandidates(snapshot.allNotes ?? snapshot.notes),
+    ...typeDefinitionPathCandidates(snapshot.typeDefinitions),
+  ]
+}
+
+function workspaceNotePathCandidates(notes: MobileNote[]): string[] {
+  return notes.flatMap((note) => [note.id, note.path ?? '', noteWritePath(note)])
+}
+
+function typeDefinitionPathCandidates(typeDefinitions: MobileTypeDefinitions | undefined): string[] {
+  return Object.values(typeDefinitions ?? {}).flatMap((definition) => definition.path ? [definition.path] : [])
+}
+
+function canonicalMobilePath(path: string): string {
+  return path.replaceAll('\\', '/').split('/').filter(Boolean).join('/').toLowerCase()
 }

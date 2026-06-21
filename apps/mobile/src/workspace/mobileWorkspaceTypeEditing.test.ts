@@ -48,6 +48,54 @@ describe('mobile Type document editing', () => {
     expect(result.writes).toEqual([])
   })
 
+  it.each([
+    {
+      existingPath: 'briefing.md',
+      existingTitle: 'Briefing',
+      rejectedTypeName: 'Briefing',
+      requestedTypeName: 'Briefing',
+    },
+    {
+      existingPath: 'note.md',
+      existingTitle: 'Existing Note',
+      rejectedTypeName: 'Note',
+      requestedTypeName: 'notes',
+    },
+  ])(
+    'does not create $rejectedTypeName Type document when $existingPath already exists',
+    ({ existingPath, existingTitle, rejectedTypeName, requestedTypeName }) => {
+      const snapshot = snapshotWithOrdinaryNote(existingPath, existingTitle)
+
+      const result = applyMobileWorkspaceEditWithWrites(snapshot, {
+        type: 'createTypeDefinition',
+        typeName: requestedTypeName,
+      })
+
+      expect(result.snapshot).toBe(snapshot)
+      expect(result.snapshot.typeDefinitions?.[rejectedTypeName]).toBeUndefined()
+      expect(result.writes).toEqual([])
+    },
+  )
+
+  it('creates the built-in Note Type when notes.md is an ordinary note but note.md is free', () => {
+    const snapshot = snapshotWithOrdinaryNote('notes.md', 'Meeting Notes')
+
+    const result = applyMobileWorkspaceEditWithWrites(snapshot, {
+      type: 'createTypeDefinition',
+      typeName: 'notes',
+    })
+
+    expect(result.snapshot.typeDefinitions?.Note).toMatchObject({
+      path: 'note.md',
+      rawContent: expect.stringContaining('# Note'),
+    })
+    expect(result.writes).toEqual([{
+      content: expect.stringContaining('# Note'),
+      kind: 'createNote',
+      path: 'note.md',
+    }])
+  })
+
   it('renames Type documents and rewrites assigned notes like desktop', () => {
     const result = applyMobileWorkspaceEditWithWrites(typeRenameSnapshot(), {
       nextTypeName: 'Playbook',
@@ -155,6 +203,21 @@ describe('mobile Type document editing', () => {
     expect(result.snapshot.typeDefinitions?.essay).toBeUndefined()
     expect(result.writes).toEqual([])
   })
+
+  it('does not rename a Type document over an existing ordinary note path', () => {
+    const snapshot = typeRenamePathCollisionSnapshot()
+
+    const result = applyMobileWorkspaceEditWithWrites(snapshot, {
+      nextTypeName: 'Playbook',
+      type: 'renameTypeDefinition',
+      typeName: 'Procedure',
+    })
+
+    expect(result.snapshot).toBe(snapshot)
+    expect(result.snapshot.typeDefinitions?.Procedure).toBeDefined()
+    expect(result.snapshot.typeDefinitions?.Playbook).toBeUndefined()
+    expect(result.writes).toEqual([])
+  })
 })
 
 function typeRenameSnapshot(): MobileWorkspaceSnapshot {
@@ -238,6 +301,44 @@ function typeRenameMetadataOnlyAllNotesSnapshot(): MobileWorkspaceSnapshot {
       editorBullets: undefined,
       rawContent: undefined,
     })),
+  }
+}
+
+function typeRenamePathCollisionSnapshot(): MobileWorkspaceSnapshot {
+  const snapshot = typeRenameSnapshot()
+  const ordinaryNote: MobileNote = {
+    ...snapshot.notes[1],
+    id: 'playbook.md',
+    path: 'playbook.md',
+    rawContent: '---\ntype: Note\n---\n# Existing Playbook\n',
+    title: 'Existing Playbook',
+    type: 'Note',
+  }
+
+  return {
+    ...snapshot,
+    allNotes: [...snapshot.allNotes ?? snapshot.notes, ordinaryNote],
+    notes: [...snapshot.notes, ordinaryNote],
+  }
+}
+
+function snapshotWithOrdinaryNote(path: string, title: string): MobileWorkspaceSnapshot {
+  const base = workspaceScenarioForId('default')
+  const ordinaryNote: MobileNote = {
+    ...base.notes[0],
+    id: path,
+    path,
+    rawContent: `---\ntype: Note\n---\n# ${title}\n`,
+    title,
+    type: 'Note',
+  }
+
+  return {
+    ...base,
+    allNotes: [ordinaryNote],
+    notes: [ordinaryNote],
+    selectedNoteId: ordinaryNote.id,
+    typeDefinitions: {},
   }
 }
 

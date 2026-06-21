@@ -117,7 +117,10 @@ function typeRenameContext(
   if (conflictingTargetTypeName(snapshot.typeDefinitions, { nextTypeName, sourceTypeName })) return null
 
   const sourceDefinition = snapshot.typeDefinitions?.[sourceTypeName]
-  return sourceDefinition ? { nextTypeName, sourceDefinition, sourceTypeName } : null
+  if (!sourceDefinition) return null
+
+  const context = { nextTypeName, sourceDefinition, sourceTypeName }
+  return typeRenameTargetPathExists(snapshot, context) ? null : context
 }
 
 function conflictingTargetTypeName(
@@ -126,6 +129,36 @@ function conflictingTargetTypeName(
 ): boolean {
   const targetTypeName = existingTypeDefinitionName(definitions, rename.nextTypeName)
   return Boolean(targetTypeName && targetTypeName !== rename.sourceTypeName)
+}
+
+function typeRenameTargetPathExists(
+  snapshot: MobileWorkspaceSnapshot,
+  rename: TypeRenameContext,
+): boolean {
+  const sourcePath = canonicalMobilePath(mobileTypeDefinitionPath(rename.sourceTypeName, rename.sourceDefinition))
+  const targetPath = canonicalMobilePath(mobileTypeDefinitionPath(rename.nextTypeName, undefined))
+
+  return typeRenamePathCandidates(snapshot).some((candidate) => {
+    const candidatePath = canonicalMobilePath(candidate)
+    return candidatePath === targetPath && candidatePath !== sourcePath
+  })
+}
+
+function typeRenamePathCandidates(snapshot: MobileWorkspaceSnapshot): string[] {
+  return [
+    ...workspaceNotePoolWithDetails(snapshot).flatMap((note) => [
+      note.id,
+      note.path ?? '',
+      noteWritePath(note),
+    ]),
+    ...Object.values(snapshot.typeDefinitions ?? {}).flatMap((definition) => (
+      definition.path ? [definition.path] : []
+    )),
+  ]
+}
+
+function canonicalMobilePath(path: string): string {
+  return path.replaceAll('\\', '/').split('/').filter(Boolean).join('/').toLowerCase()
 }
 
 function renamedMobileTypeDefinition(rename: TypeRenameContext): MobileTypeDefinition {
