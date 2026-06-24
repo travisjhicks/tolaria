@@ -11,6 +11,8 @@ export const mobileActionSheetLayoutContract = {
 } as const
 
 export const mobileWorkspaceFormSheetAutoFocus = false
+export const mobileWorkspaceFormSheetMaxSuggestions = 3
+export const mobileWorkspaceRelationshipTargetMaxSuggestions = 2
 
 export function mobileSingleTextFieldSubmitDisabled({
   allowEmptyInput = false,

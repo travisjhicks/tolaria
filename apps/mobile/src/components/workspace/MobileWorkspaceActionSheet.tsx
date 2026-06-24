@@ -55,12 +55,14 @@ import type { MobileTableOfContentsTarget } from '../../workspace/mobileTableOfC
 import { MoreActionsContent } from './MobileWorkspaceMoreActionsContent'
 import { MobileFavoriteActions, MobileSavedViewActions, MobileTypeSectionActions } from './MobileWorkspaceMoveActions'
 import { MobileWorkspaceSuggestionList } from './MobileWorkspaceSuggestionList'
-import type { MobileWorkspaceSuggestionItem } from './MobileWorkspaceSuggestionList'
+import type { MobileWorkspaceSuggestionItem } from './MobileWorkspaceSuggestionListModel'
 import { chipTone, noteTypeSoftColor, statusTone, tagTone } from './mobileWorkspaceTone'
 import {
   mobileActionSheetLayoutContract,
   mobileSingleTextFieldSubmitDisabled,
+  mobileWorkspaceRelationshipTargetMaxSuggestions,
   mobileWorkspaceFormSheetAutoFocus,
+  mobileWorkspaceFormSheetMaxSuggestions,
 } from './MobileWorkspaceActionSheetModel'
 
 export type MobileWorkspaceAction =
@@ -895,6 +897,7 @@ function AddPropertyContent({
       {keySuggestions.length > 0 ? (
         <MobileWorkspaceSuggestionList
           labels={keySuggestions}
+          maxVisibleItems={mobileWorkspaceFormSheetMaxSuggestions}
           testID="workspace-property-key-suggestions"
           testIDPrefix="workspace-property-key-suggestion"
           onSelect={onPropertyNameChange}
@@ -950,6 +953,7 @@ function AddRelationshipContent({
       />
       <MobileWorkspaceSuggestionList
         labels={keySuggestions}
+        maxVisibleItems={mobileWorkspaceFormSheetMaxSuggestions}
         testID="workspace-relationship-key-suggestions"
         testIDPrefix="workspace-relationship-key-suggestion"
         onSelect={onRelationshipNameChange}
@@ -963,7 +967,7 @@ function AddRelationshipContent({
       />
       {suggestions.length > 0 ? (
         <View style={styles.suggestionList} testID="workspace-relationship-note-suggestions">
-          {suggestions.map((note) => (
+          {suggestions.slice(0, mobileWorkspaceRelationshipTargetMaxSuggestions).map((note) => (
             <Pressable
               accessibilityLabel={note.title}
               accessibilityRole="button"
@@ -1070,6 +1074,7 @@ function SuggestionInputActionContent({ config }: { config: SuggestionInputActio
       />
       <MobileWorkspaceSuggestionList
         labels={config.suggestions}
+        maxVisibleItems={mobileWorkspaceFormSheetMaxSuggestions}
         testID={config.suggestionTestId}
         testIDPrefix={config.suggestionTestIdPrefix}
         onSelect={config.onChangeText}

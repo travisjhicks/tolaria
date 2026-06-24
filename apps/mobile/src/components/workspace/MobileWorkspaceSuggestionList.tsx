@@ -1,33 +1,31 @@
 import { Pressable, StyleSheet, View } from 'react-native'
 import { Text } from '../ui/text'
 import { mobileColors, mobileSpace, mobileType } from '../../ui/tokens'
-
-export type MobileWorkspaceSuggestionItem = {
-  label: string
-  meta?: string
-  testId?: string
-  value: string
-}
+import { visibleMobileWorkspaceSuggestions, type MobileWorkspaceSuggestionItem } from './MobileWorkspaceSuggestionListModel'
 
 export function MobileWorkspaceSuggestionList({
   items,
   labels,
+  maxVisibleItems,
   onSelect,
   testID,
   testIDPrefix,
 }: {
   items?: MobileWorkspaceSuggestionItem[]
   labels?: string[]
+  maxVisibleItems?: number
   onSelect: (value: string, item: MobileWorkspaceSuggestionItem) => void
   testID: string
   testIDPrefix: string
 }) {
   const suggestions = suggestionItems(labels, items)
   if (suggestions.length === 0) return null
+  const visibleSuggestions = visibleMobileWorkspaceSuggestions(suggestions, maxVisibleItems)
+  if (visibleSuggestions.length === 0) return null
 
   return (
     <View style={styles.list} testID={testID}>
-      {suggestions.map((item) => (
+      {visibleSuggestions.map((item) => (
         <Pressable
           accessibilityLabel={humanizeSuggestionLabel(item.label)}
           accessibilityRole="button"

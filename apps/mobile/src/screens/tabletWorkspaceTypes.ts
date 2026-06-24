@@ -1,5 +1,5 @@
 import type { MobileWorkspaceAction } from '../components/workspace/MobileWorkspaceActionSheet'
-import type { MobileWorkspaceSuggestionItem } from '../components/workspace/MobileWorkspaceSuggestionList'
+import type { MobileWorkspaceSuggestionItem } from '../components/workspace/MobileWorkspaceSuggestionListModel'
 import type {
   MobileSidebarFolderSelection,
   MobileSidebarItemSelection,

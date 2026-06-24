@@ -4,7 +4,9 @@ import { mobileSpace } from '../../ui/tokens'
 import {
   mobileActionSheetLayoutContract,
   mobileSingleTextFieldSubmitDisabled,
+  mobileWorkspaceRelationshipTargetMaxSuggestions,
   mobileWorkspaceFormSheetAutoFocus,
+  mobileWorkspaceFormSheetMaxSuggestions,
 } from './MobileWorkspaceActionSheetModel'
 
 describe('mobile workspace action sheet', () => {
@@ -38,5 +40,10 @@ describe('mobile workspace action sheet', () => {
 
   it('opens workspace form sheets without forcing the native keyboard over the sheet', () => {
     expect(mobileWorkspaceFormSheetAutoFocus).toBe(false)
+  })
+
+  it('bounds form sheet suggestions so the footer remains reachable on first open', () => {
+    expect(mobileWorkspaceFormSheetMaxSuggestions).toBe(3)
+    expect(mobileWorkspaceRelationshipTargetMaxSuggestions).toBe(2)
   })
 })
