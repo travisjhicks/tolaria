@@ -57,7 +57,7 @@ Observed from the June 24 iPad recording:
 | Feedback | Status | Next action |
 | --- | --- | --- |
 | Make a complete fixed-vs-remaining list | Partial | This file is the tracker; keep it updated as each item is proved or fixed. |
-| Remove open/archived selectors altogether from the note list | Partial | Current screenshots no longer show the selectors, but add/keep a focused assertion that the note-list filter control is absent. |
+| Remove open/archived selectors altogether from the note list | Done | `mobileNoteListToolbarChrome` fixes the note-list toolbar contract to search plus direct create only, and `MobileNoteListPanelChrome.test.ts` asserts that no open/archive/filter/selector chrome is reserved in the header. Archive state remains reachable through sidebar navigation and bulk actions instead of a note-list header selector. |
 | General keyboard shortcuts should work (`Cmd+O`, `Cmd+P`, `Cmd+F`, `Cmd+K`, `Cmd+\`) | Partial | Parser/model coverage exists in `mobileWorkspaceKeyboardShortcuts.test.ts`; native Expo Go hardware-key dispatch is not proven and likely needs a native/dev-client strategy or a focused bridge. |
 | Keyboard navigation of the note list should work | Partial | Arrow-key action parsing exists; native focus and dispatch for the note list is not proven. |
 | Many type icons are not rendered correctly | Partial | Primary note-list, properties/relationship, search/action-sheet, and type-visibility surfaces now prefer the vault Type document's configured Phosphor icon names; focused tests and a native real-Laputa screenshot cover this path. Remaining lower-frequency editor toolbar/file fallback and WYSIWYG picker icons still need Type-definition plumbing or explicit acceptance. |

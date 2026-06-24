@@ -17,6 +17,7 @@ import type { MobileNote, MobilePropertyDisplayMode, MobileTypeDefinitions } fro
 import { MobileNoteListBulkActionBar } from './MobileNoteListBulkActionBar'
 import { MobileTypeIcon } from './MobileWorkspaceIcons'
 import { mobileTypeConfiguredIcon } from './MobileWorkspaceIconNames'
+import { mobileNoteListToolbarChrome } from './MobileNoteListPanelChrome'
 import {
   addMobileNoteListSelection,
   mobileNoteListSelectionIsArchived,
@@ -92,10 +93,10 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
           <MobileToolbarTitle testID="note-list-toolbar-title" title={title} />
         </View>
         <MobileToolbarSpacer />
-        <MobileIconButton accessibilityLabel={mobileCopy.searchNotes} testID="note-list-search-action" onPress={onOpenSearch}>
+        <MobileIconButton accessibilityLabel={mobileCopy.searchNotes} testID={mobileNoteListToolbarChrome.actionTestIds[0]} onPress={onOpenSearch}>
           <MagnifyingGlass color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />
         </MobileIconButton>
-        <MobileIconButton accessibilityLabel={mobileCopy.createNote} testID="note-list-create-action" onPress={onOpenCreateNote}>
+        <MobileIconButton accessibilityLabel={mobileCopy.createNote} testID={mobileNoteListToolbarChrome.actionTestIds[1]} onPress={onOpenCreateNote}>
           <Plus color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />
         </MobileIconButton>
       </MobileToolbar>
