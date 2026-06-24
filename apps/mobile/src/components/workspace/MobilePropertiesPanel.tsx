@@ -469,7 +469,10 @@ function PlaceholderPropertyRow({
       onPress={onPress}
     >
       <Text style={propertyStyles.placeholderLabel}>{slot.label}</Text>
-      <Text style={propertyStyles.placeholderValue}>{'\u2014'}</Text>
+      <View style={propertyStyles.placeholderAddValue}>
+        <Plus color={mobileColors.textFaint} size={14} />
+        <Text style={propertyStyles.placeholderValue}>{mobileText('inspector.relationship.add')}</Text>
+      </View>
     </Pressable>
   )
 }
@@ -544,7 +547,7 @@ function PlaceholderRelationshipSection({
       <Pressable
         accessibilityLabel={mobileText('inspector.relationship.add')}
         accessibilityRole="button"
-        style={({ pressed }) => [propertyStyles.placeholderButton, pressed ? propertyStyles.editableValuePressed : null]}
+        style={({ pressed }) => [propertyStyles.placeholderRelationshipButton, pressed ? propertyStyles.editableValuePressed : null]}
         testID={`${testID}-add`}
         onPress={onPress}
       >
@@ -862,6 +865,16 @@ const propertyStyles = StyleSheet.create({
     paddingHorizontal: desktopPropertyParity.rowPaddingHorizontal,
     width: '100%',
   },
+  placeholderRelationshipButton: {
+    minHeight: desktopPropertyParity.rowMinHeight,
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    gap: mobileSpace.xs,
+    borderRadius: desktopRelationshipParity.rowRadius,
+    paddingHorizontal: 0,
+    width: '100%',
+  },
   placeholderButtonText: {
     minWidth: 0,
     flex: 1,
@@ -871,6 +884,14 @@ const propertyStyles = StyleSheet.create({
   placeholderLabel: {
     color: mobileColors.textFaint,
     fontSize: desktopPropertyParity.labelTextSize,
+  },
+  placeholderAddValue: {
+    minWidth: 0,
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+    gap: mobileSpace.xs,
+    justifyContent: 'flex-end',
   },
   placeholderRow: {
     minHeight: desktopPropertyParity.rowMinHeight,

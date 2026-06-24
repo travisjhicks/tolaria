@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Dimensions, Platform, StyleSheet, useWindowDimensions, View } from 'react-native'
+import { Animated as NativeAnimated, Dimensions, Platform, StyleSheet, useWindowDimensions, View } from 'react-native'
 import { CaretLeft, CaretRight, SidebarSimple } from 'phosphor-react-native'
 import { MobileCommandPalette } from '../components/workspace/MobileCommandPalette'
 import { MobileNoteListPanel } from '../components/workspace/MobileNoteListPanel'
@@ -13,6 +13,7 @@ import {
   type ReadOnlyWorkspaceRepository,
   type ReadOnlyWorkspaceRequest,
 } from '../workspace/readOnlyWorkspaceRepository'
+import { desktopPanelParity } from '../ui/desktopParity'
 import { mobileColors } from '../ui/tokens'
 import { MobileIconButton } from '../ui/MobileIconButton'
 import { mobileText } from '../i18n/mobileText'
@@ -31,6 +32,12 @@ import { tabletScreenModeForWindow } from './tabletWorkspaceScreenMode'
 import type { TabletPanel, TabletWorkspaceChromeProps } from './tabletWorkspaceTypes'
 import { useTabletWorkspaceController } from './useTabletWorkspaceController'
 import { useMobileInspectorReferenceGroups } from './useMobileInspectorReferenceGroups'
+import {
+  tabletLeftChromeDragOffset,
+  tabletLeftChromeWidth,
+  tabletPanelTransitionDurationMs,
+  tabletPropertiesDragOffset,
+} from './tabletWorkspacePanelTransitions'
 
 export function TabletWorkspace({
   forceDesktopPanels = false,
@@ -190,8 +197,7 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
 
   return (
     <View style={styles.shell}>
-      <TabletSidebarHost {...props} gestures={gestures} onOpenCommandPalette={openCommandPalette} />
-      <TabletNoteListHost {...props} gestures={gestures} />
+      <TabletLeftChromeHost {...props} gestures={gestures} onOpenCommandPalette={openCommandPalette} />
       <TabletEditorPanelHost
         {...props}
         gestures={gestures}
@@ -242,6 +248,22 @@ function adjacentVisibleNoteId(
   return notes[nextIndex]?.id ?? null
 }
 
+function TabletLeftChromeHost(props: TabletSidebarHostProps) {
+  const { gestures } = props
+
+  if (!gestures.leftChromeVisible) return <SwipeRail edge="left" swipeHandlers={gestures.leftChromeRevealSwipe} />
+
+  return (
+    <NativeAnimated.View
+      {...gestures.leftChromeSwipe}
+      style={[styles.leftChromeHost, gestures.leftChromeMotionStyle]}
+    >
+      <TabletSidebarHost {...props} />
+      <TabletNoteListHost {...props} />
+    </NativeAnimated.View>
+  )
+}
+
 function TabletSidebarHost({
   activeFolderId,
   activeItemId,
@@ -261,10 +283,10 @@ function TabletSidebarHost({
   onSelectSidebarItem,
   snapshot,
 }: TabletSidebarHostProps) {
-  if (!gestures.showSidebar) return <SwipeRail edge="left" swipeHandlers={gestures.sidebarRevealSwipe} />
+  if (!gestures.renderSidebar) return null
 
   return (
-    <View {...gestures.sidebarSwipe} style={styles.panelHost}>
+    <View style={styles.panelHost}>
       <MobileWorkspaceSidebar
         activeFolderId={activeFolderId}
         activeItemId={activeItemId}
@@ -307,10 +329,10 @@ function TabletNoteListHost({
   selectedNoteId,
   snapshot,
 }: TabletPanelHostProps) {
-  if (!gestures.noteListVisible) return <SwipeRail edge="left" swipeHandlers={gestures.noteListRevealSwipe} />
+  if (!gestures.renderNoteList) return null
 
   return (
-    <View {...gestures.noteListSwipe} style={styles.panelHost}>
+    <View style={styles.panelHost}>
       <MobileNoteListPanel
         compact={compactTablet}
         bulkActions={{
@@ -477,10 +499,10 @@ function TabletPropertiesPanelHost({
 }: TabletPropertiesPanelHostProps) {
   const referenceGroups = useMobileInspectorReferenceGroups(selectedNote, snapshot)
 
-  if (!gestures.propertiesVisible) return <SwipeRail edge="right" swipeHandlers={gestures.propertiesRevealSwipe} />
+  if (!gestures.propertiesPanelVisible) return <SwipeRail edge="right" swipeHandlers={gestures.propertiesRevealSwipe} />
 
   return (
-    <View {...gestures.propertiesSwipe} style={styles.panelHost}>
+    <NativeAnimated.View {...gestures.propertiesSwipe} style={[styles.panelHost, gestures.propertiesMotionStyle]}>
       <MobilePropertiesPanel
         compact={compactTablet}
         layoutProbe={layoutProbe}
@@ -500,7 +522,7 @@ function TabletPropertiesPanelHost({
         referenceGroups={referenceGroups}
         typeDefinitions={snapshot.typeDefinitions}
       />
-    </View>
+    </NativeAnimated.View>
   )
 }
 
@@ -750,6 +772,140 @@ function useTabletPanelVisibility(defaultPropertiesVisible: boolean) {
 function useTabletPanelGestures(compactTablet: boolean, defaultPropertiesVisible: boolean) {
   const { hidePanel, noteListVisible, propertiesVisible, showPanel, sidebarVisible } = useTabletPanelVisibility(defaultPropertiesVisible)
   const showSidebar = !compactTablet && sidebarVisible
+  const leftChromeRendered = showSidebar || noteListVisible
+  const [leftChromePreviewVisible, setLeftChromePreviewVisible] = useState(false)
+  const [propertiesPreviewVisible, setPropertiesPreviewVisible] = useState(false)
+  const [leftChromeOffset] = useState(() => new NativeAnimated.Value(0))
+  const [propertiesOffset] = useState(() => new NativeAnimated.Value(0))
+  const leftChromeTargetSidebarVisible = !compactTablet
+  const renderSidebar = showSidebar || (leftChromePreviewVisible && leftChromeTargetSidebarVisible)
+  const renderNoteList = noteListVisible || leftChromePreviewVisible
+  const leftChromeCurrentWidth = tabletLeftChromeWidth({
+    compactTablet,
+    noteListVisible: renderNoteList,
+    previewVisible: leftChromePreviewVisible,
+    sidebarVisible: renderSidebar,
+  })
+  const leftChromeRevealWidth = tabletLeftChromeWidth({
+    compactTablet,
+    noteListVisible: true,
+    previewVisible: true,
+    sidebarVisible: leftChromeTargetSidebarVisible,
+  })
+  const propertiesPanelWidth = desktopPanelParity.inspectorWidth
+  const animateLeftChrome = useCallback((toValue: number, onDone?: () => void) => {
+    leftChromeOffset.stopAnimation()
+    NativeAnimated.timing(leftChromeOffset, {
+      duration: tabletPanelTransitionDurationMs,
+      toValue,
+      useNativeDriver: false,
+    }).start(({ finished }) => {
+      if (finished) onDone?.()
+    })
+  }, [leftChromeOffset])
+  const animateProperties = useCallback((toValue: number, onDone?: () => void) => {
+    propertiesOffset.stopAnimation()
+    NativeAnimated.timing(propertiesOffset, {
+      duration: tabletPanelTransitionDurationMs,
+      toValue,
+      useNativeDriver: false,
+    }).start(({ finished }) => {
+      if (finished) onDone?.()
+    })
+  }, [propertiesOffset])
+  const showLeftChrome = useCallback((fromGesture = false) => {
+    setLeftChromePreviewVisible(true)
+    if (!fromGesture) leftChromeOffset.setValue(-leftChromeRevealWidth)
+    animateLeftChrome(0, () => {
+      if (!compactTablet) showPanel('sidebar')
+      showPanel('noteList')
+      setLeftChromePreviewVisible(false)
+      leftChromeOffset.setValue(0)
+    })
+  }, [animateLeftChrome, compactTablet, leftChromeOffset, leftChromeRevealWidth, showPanel])
+  const hideLeftChrome = useCallback(() => {
+    if (leftChromeCurrentWidth <= 0) return
+    animateLeftChrome(-leftChromeCurrentWidth, () => {
+      hidePanel('sidebar')
+      hidePanel('noteList')
+      setLeftChromePreviewVisible(false)
+      leftChromeOffset.setValue(0)
+    })
+  }, [animateLeftChrome, hidePanel, leftChromeCurrentWidth, leftChromeOffset])
+  const showProperties = useCallback((fromGesture = false) => {
+    setPropertiesPreviewVisible(true)
+    if (!fromGesture) propertiesOffset.setValue(propertiesPanelWidth)
+    animateProperties(0, () => {
+      showPanel('properties')
+      setPropertiesPreviewVisible(false)
+      propertiesOffset.setValue(0)
+    })
+  }, [animateProperties, propertiesOffset, propertiesPanelWidth, showPanel])
+  const hideProperties = useCallback(() => {
+    animateProperties(propertiesPanelWidth, () => {
+      hidePanel('properties')
+      setPropertiesPreviewVisible(false)
+      propertiesOffset.setValue(0)
+    })
+  }, [animateProperties, hidePanel, propertiesOffset, propertiesPanelWidth])
+  const handleLeftChromeProgress = useCallback(({ dx }: { dx: number }) => {
+    const width = leftChromeRendered ? leftChromeCurrentWidth : leftChromeRevealWidth
+    if (width <= 0) return
+    if (!leftChromeRendered && dx > 0) setLeftChromePreviewVisible(true)
+    leftChromeOffset.stopAnimation()
+    leftChromeOffset.setValue(tabletLeftChromeDragOffset({
+      dx,
+      visible: leftChromeRendered,
+      width,
+    }))
+  }, [leftChromeCurrentWidth, leftChromeOffset, leftChromeRendered, leftChromeRevealWidth])
+  const handleLeftChromeEnd = useCallback((committed: boolean) => {
+    if (committed) return
+    if (leftChromeRendered) {
+      animateLeftChrome(0)
+      return
+    }
+
+    animateLeftChrome(-leftChromeRevealWidth, () => {
+      setLeftChromePreviewVisible(false)
+      leftChromeOffset.setValue(0)
+    })
+  }, [animateLeftChrome, leftChromeOffset, leftChromeRendered, leftChromeRevealWidth])
+  const handlePropertiesProgress = useCallback(({ dx }: { dx: number }) => {
+    if (!propertiesVisible && dx < 0) setPropertiesPreviewVisible(true)
+    propertiesOffset.stopAnimation()
+    propertiesOffset.setValue(tabletPropertiesDragOffset({
+      dx,
+      visible: propertiesVisible,
+      width: propertiesPanelWidth,
+    }))
+  }, [propertiesOffset, propertiesPanelWidth, propertiesVisible])
+  const handlePropertiesEnd = useCallback((committed: boolean) => {
+    if (committed) return
+    if (propertiesVisible) {
+      animateProperties(0)
+      return
+    }
+
+    animateProperties(propertiesPanelWidth, () => {
+      setPropertiesPreviewVisible(false)
+      propertiesOffset.setValue(0)
+    })
+  }, [animateProperties, propertiesOffset, propertiesPanelWidth, propertiesVisible])
+
+  useEffect(() => () => {
+    leftChromeOffset.stopAnimation()
+    propertiesOffset.stopAnimation()
+  }, [leftChromeOffset, propertiesOffset])
+
+  const leftChromeMotionStyle = useMemo(() => ({
+    marginRight: leftChromeOffset,
+    transform: [{ translateX: leftChromeOffset }],
+  }), [leftChromeOffset])
+  const propertiesMotionStyle = useMemo(() => ({
+    marginLeft: NativeAnimated.multiply(propertiesOffset, -1),
+    transform: [{ translateX: propertiesOffset }],
+  }), [propertiesOffset])
 
   return {
     showAllPanels: useCallback(() => {
@@ -766,52 +922,60 @@ function useTabletPanelGestures(compactTablet: boolean, defaultPropertiesVisible
       hidePanel('sidebar')
       hidePanel('noteList')
       hidePanel('properties')
-    }, [hidePanel]),
+      setLeftChromePreviewVisible(false)
+      setPropertiesPreviewVisible(false)
+      leftChromeOffset.setValue(0)
+      propertiesOffset.setValue(0)
+    }, [hidePanel, leftChromeOffset, propertiesOffset]),
     toggleSidebar: useCallback(() => {
       if (showSidebar) hidePanel('sidebar')
       else showPanel('sidebar')
     }, [hidePanel, showPanel, showSidebar]),
     toggleSidebarAndNoteList: useCallback(() => {
       if (showSidebar || noteListVisible) {
-        hidePanel('sidebar')
-        hidePanel('noteList')
+        hideLeftChrome()
         return
       }
-      showPanel('sidebar')
-      showPanel('noteList')
-    }, [hidePanel, noteListVisible, showPanel, showSidebar]),
-    showProperties: useCallback(() => showPanel('properties'), [showPanel]),
-    toggleProperties: useCallback(() => {
-      if (propertiesVisible) hidePanel('properties')
-      else showPanel('properties')
-    }, [hidePanel, propertiesVisible, showPanel]),
-    noteListRevealSwipe: useHorizontalSwipe({
-      disabled: noteListVisible,
-      onSwipeRight: () => showPanel('noteList'),
+      showLeftChrome()
+    }, [hideLeftChrome, noteListVisible, showLeftChrome, showSidebar]),
+    leftChromeMotionStyle,
+    leftChromeRevealSwipe: useHorizontalSwipe({
+      disabled: leftChromeRendered,
+      onSwipeEnd: handleLeftChromeEnd,
+      onSwipeProgress: handleLeftChromeProgress,
+      onSwipeRight: () => showLeftChrome(true),
     }),
-    noteListSwipe: useHorizontalSwipe({
-      disabled: !noteListVisible,
-      onSwipeLeft: () => hidePanel('noteList'),
+    leftChromeSwipe: useHorizontalSwipe({
+      disabled: !leftChromeRendered,
+      onSwipeEnd: handleLeftChromeEnd,
+      onSwipeLeft: hideLeftChrome,
+      onSwipeProgress: handleLeftChromeProgress,
     }),
+    leftChromeVisible: leftChromeRendered || leftChromePreviewVisible,
     noteListVisible,
+    propertiesMotionStyle,
+    propertiesPanelVisible: propertiesVisible || propertiesPreviewVisible,
+    showProperties: useCallback(() => showProperties(), [showProperties]),
+    toggleProperties: useCallback(() => {
+      if (propertiesVisible) hideProperties()
+      else showProperties()
+    }, [hideProperties, propertiesVisible, showProperties]),
     propertiesRevealSwipe: useHorizontalSwipe({
       disabled: propertiesVisible,
-      onSwipeLeft: () => showPanel('properties'),
+      onSwipeEnd: handlePropertiesEnd,
+      onSwipeLeft: () => showProperties(true),
+      onSwipeProgress: handlePropertiesProgress,
     }),
     propertiesSwipe: useHorizontalSwipe({
       disabled: !propertiesVisible,
-      onSwipeRight: () => hidePanel('properties'),
+      onSwipeEnd: handlePropertiesEnd,
+      onSwipeProgress: handlePropertiesProgress,
+      onSwipeRight: hideProperties,
     }),
     propertiesVisible,
+    renderNoteList,
+    renderSidebar,
     showSidebar,
-    sidebarRevealSwipe: useHorizontalSwipe({
-      disabled: showSidebar || compactTablet,
-      onSwipeRight: () => showPanel('sidebar'),
-    }),
-    sidebarSwipe: useHorizontalSwipe({
-      disabled: !showSidebar,
-      onSwipeLeft: () => hidePanel('sidebar'),
-    }),
   }
 }
 
@@ -828,6 +992,11 @@ const styles = StyleSheet.create({
   },
   panelHost: {
     alignSelf: 'stretch',
+    height: '100%',
+  },
+  leftChromeHost: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
     height: '100%',
   },
   swipeRail: {

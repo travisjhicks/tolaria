@@ -103,7 +103,7 @@ export const desktopRelationshipParity = {
   rowPaddingVertical: 6,
   rowRadius: 6,
   textFontSize: 12,
-  textFontWeight: '500',
+  textFontWeight: '400',
 } as const
 
 export const desktopEditorParity = {
