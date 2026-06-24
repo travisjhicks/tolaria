@@ -9,6 +9,7 @@ import {
   mobileWorkspaceFormSheetMaxSuggestions,
   mobileWorkspaceActionGroupLayoutContract,
   mobileWorkspaceFormSectionLayoutContract,
+  mobileWorkspaceSortPickerLayoutContract,
 } from './MobileWorkspaceActionSheetModel'
 
 describe('mobile workspace action sheet', () => {
@@ -64,6 +65,15 @@ describe('mobile workspace action sheet', () => {
       paddingHorizontal: mobileSpace.sm,
       paddingVertical: mobileSpace.xs,
       radius: 6,
+    })
+  })
+
+  it('keeps view sort options rendered as compact selectable controls', () => {
+    expect(mobileWorkspaceSortPickerLayoutContract).toEqual({
+      gap: mobileSpace.xs,
+      optionMinHeight: 32,
+      optionRadius: 6,
+      optionTextSize: 12,
     })
   })
 })

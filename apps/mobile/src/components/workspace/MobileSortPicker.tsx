@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react'
-import { Pressable, StyleSheet, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
+import { CheckCircle } from 'phosphor-react-native'
 import { Text } from '../ui/text'
 import { mobileText } from '../../i18n/mobileText'
+import { MobileButton } from '../../ui/MobileButton'
 import { MobileTextInput } from '../../ui/MobileTextInput'
 import { mobileColors, mobileSpace, mobileType } from '../../ui/tokens'
 import { MobileWorkspaceSuggestionList } from './MobileWorkspaceSuggestionList'
+import { mobileWorkspaceSortPickerLayoutContract } from './MobileWorkspaceActionSheetModel'
 import {
   mobileCustomPropertySortValue,
   mobileCustomSortFromValue,
@@ -12,16 +15,14 @@ import {
   type MobileSortDirection,
 } from './MobileSortPickerModel'
 
-const mobileSortOptions = [
-  { label: `${mobileText('noteList.sort.modified')} ${mobileText('noteList.sort.descending')}`, value: 'modified:desc' },
-  { label: `${mobileText('noteList.sort.modified')} ${mobileText('noteList.sort.ascending')}`, value: 'modified:asc' },
-  { label: `${mobileText('noteList.sort.created')} ${mobileText('noteList.sort.descending')}`, value: 'created:desc' },
-  { label: `${mobileText('noteList.sort.created')} ${mobileText('noteList.sort.ascending')}`, value: 'created:asc' },
-  { label: `${mobileText('noteList.sort.title')} ${mobileText('noteList.sort.ascending')}`, value: 'title:asc' },
-  { label: `${mobileText('noteList.sort.title')} ${mobileText('noteList.sort.descending')}`, value: 'title:desc' },
-  { label: `${mobileText('noteList.sort.status')} ${mobileText('noteList.sort.ascending')}`, value: 'status:asc' },
-  { label: `${mobileText('noteList.sort.status')} ${mobileText('noteList.sort.descending')}`, value: 'status:desc' },
+type BuiltInSortField = 'created' | 'modified' | 'status' | 'title'
+
+const mobileSortFieldRows: BuiltInSortField[][] = [
+  ['modified', 'created'],
+  ['title', 'status'],
 ]
+
+const builtInSortFields = new Set<BuiltInSortField>(['created', 'modified', 'status', 'title'])
 
 export function MobileSortPicker({
   customPropertyOptions = [],
@@ -38,6 +39,8 @@ export function MobileSortPicker({
 }) {
   const customSort = mobileCustomSortFromValue(selectedSort)
   const [customField, setCustomField] = useState(customSort.field)
+  const builtInSort = builtInSortFromValue(selectedSort)
+  const selectedDirection = builtInSort?.direction ?? 'desc'
   const customDirection = customSort.direction ?? 'asc'
   const customSuggestions = useMemo(() => {
     return customPropertyOptions
@@ -51,20 +54,43 @@ export function MobileSortPicker({
     setCustomField(trimmedField)
     onSelect(mobileCustomPropertySortValue(trimmedField, direction))
   }
+  const selectBuiltInField = (field: BuiltInSortField) => onSelect(`${field}:${selectedDirection}`)
+  const selectBuiltInDirection = (direction: MobileSortDirection) => {
+    onSelect(`${builtInSort?.field ?? 'modified'}:${direction}`)
+  }
 
   return (
     <View style={styles.section} testID={testID}>
       <Text style={styles.label}>{sortLabel()}</Text>
-      {mobileSortOptions.map((option) => (
-        <SortRow
-          key={option.value}
-          label={option.label}
-          selected={selectedSort === option.value}
-          testIDPrefix={testIDPrefix}
-          value={option.value}
-          onSelect={onSelect}
-        />
-      ))}
+      <View style={styles.optionRows} testID={`${testIDPrefix}-preset-options`}>
+        {mobileSortFieldRows.map((row) => (
+          <View key={row.join('-')} style={styles.optionRow}>
+            {row.map((field) => (
+              <SortOptionButton
+                key={field}
+                label={sortFieldLabel(field)}
+                selected={builtInSort?.field === field}
+                testID={`${testIDPrefix}-field-${field}`}
+                onPress={() => selectBuiltInField(field)}
+              />
+            ))}
+          </View>
+        ))}
+        <View style={styles.optionRow}>
+          <SortOptionButton
+            label={mobileText('noteList.sort.ascending')}
+            selected={builtInSort?.direction === 'asc'}
+            testID={`${testIDPrefix}-direction-asc`}
+            onPress={() => selectBuiltInDirection('asc')}
+          />
+          <SortOptionButton
+            label={mobileText('noteList.sort.descending')}
+            selected={builtInSort?.direction === 'desc'}
+            testID={`${testIDPrefix}-direction-desc`}
+            onPress={() => selectBuiltInDirection('desc')}
+          />
+        </View>
+      </View>
       <View style={styles.customSort} testID={`${testIDPrefix}-custom-property`}>
         <MobileTextInput
           label={mobileText('viewDialog.filter.fieldLabel')}
@@ -100,33 +126,27 @@ export function MobileSortPicker({
   )
 }
 
-function SortRow({
+function SortOptionButton({
   label,
-  onSelect,
+  onPress,
   selected,
-  testIDPrefix,
-  value,
+  testID,
 }: {
   label: string
   selected: boolean
-  testIDPrefix: string
-  value: string
-  onSelect: (value: string) => void
+  testID: string
+  onPress: () => void
 }) {
   return (
-    <Pressable
+    <MobileButton
       accessibilityLabel={label}
-      accessibilityRole="button"
-      style={({ pressed }) => [
-        styles.sortRow,
-        selected ? styles.sortRowSelected : null,
-        pressed ? styles.pressed : null,
-      ]}
-      testID={`${testIDPrefix}-${value.replace(/[^a-z0-9]+/gu, '-')}`}
-      onPress={() => onSelect(value)}
-    >
-      <Text style={[styles.rowText, selected ? styles.selectedText : null]}>{label}</Text>
-    </Pressable>
+      icon={<CheckCircle color={selected ? mobileColors.primary : mobileColors.textFaint} size={14} weight={selected ? 'fill' : 'regular'} />}
+      label={label}
+      style={[styles.sortButton, selected ? styles.sortButtonSelected : null]}
+      testID={testID}
+      variant="secondary"
+      onPress={onPress}
+    />
   )
 }
 
@@ -144,28 +164,39 @@ function CustomDirectionButton({
   testID: string
 }) {
   return (
-    <Pressable
+    <MobileButton
       accessibilityLabel={label}
-      accessibilityRole="button"
       disabled={disabled}
-      style={({ pressed }) => [
-        styles.directionButton,
-        selected ? styles.sortRowSelected : null,
-        pressed ? styles.pressed : null,
-        disabled ? styles.disabled : null,
-      ]}
+      label={label}
+      style={[styles.directionButton, selected ? styles.sortButtonSelected : null]}
       testID={testID}
+      variant="secondary"
       onPress={onPress}
-    >
-      <Text style={[styles.rowText, selected ? styles.selectedText : null, disabled ? styles.disabledText : null]}>
-        {label}
-      </Text>
-    </Pressable>
+    />
   )
 }
 
 function sortLabel() {
   return mobileText('noteList.sort.menu').replace(/\s*\{label\}/u, '').trim()
+}
+
+function sortFieldLabel(field: BuiltInSortField) {
+  return mobileText(`noteList.sort.${field}`)
+}
+
+function builtInSortFromValue(value: string): { direction: MobileSortDirection; field: BuiltInSortField } | null {
+  const [field, direction] = value.split(':')
+  if (!isBuiltInSortField(field) || !isSortDirection(direction)) return null
+
+  return { direction, field }
+}
+
+function isBuiltInSortField(value: string | undefined): value is BuiltInSortField {
+  return builtInSortFields.has(value as BuiltInSortField)
+}
+
+function isSortDirection(value: string | undefined): value is MobileSortDirection {
+  return value === 'asc' || value === 'desc'
 }
 
 const styles = StyleSheet.create({
@@ -178,44 +209,41 @@ const styles = StyleSheet.create({
     paddingTop: mobileSpace.xs,
   },
   directionButton: {
-    minHeight: 30,
+    minHeight: mobileWorkspaceSortPickerLayoutContract.optionMinHeight,
     flex: 1,
+    alignItems: 'center',
+    backgroundColor: mobileColors.control,
     justifyContent: 'center',
-    borderRadius: 6,
+    borderRadius: mobileWorkspaceSortPickerLayoutContract.optionRadius,
     paddingHorizontal: mobileSpace.sm,
-  },
-  disabled: {
-    opacity: 0.45,
-  },
-  disabledText: {
-    color: mobileColors.textMuted,
   },
   label: {
     color: mobileColors.textMuted,
     fontSize: mobileType.caption,
   },
-  pressed: {
-    backgroundColor: mobileColors.graySoft,
-  },
-  rowText: {
-    flex: 1,
-    color: mobileColors.text,
-    fontSize: mobileType.body,
-  },
   section: {
     gap: mobileSpace.xs,
   },
-  selectedText: {
-    color: mobileColors.primary,
-    fontWeight: '600',
-  },
-  sortRow: {
-    minHeight: 32,
-    justifyContent: 'center',
-    borderRadius: 6,
+  sortButton: {
+    minWidth: 0,
+    minHeight: mobileWorkspaceSortPickerLayoutContract.optionMinHeight,
+    flex: 1,
+    justifyContent: 'flex-start',
+    backgroundColor: mobileColors.control,
+    borderColor: mobileColors.borderStrong,
+    borderWidth: 1,
+    borderRadius: mobileWorkspaceSortPickerLayoutContract.optionRadius,
     paddingHorizontal: mobileSpace.sm,
   },
-  sortRowSelected: {
+  sortButtonSelected: {
     backgroundColor: mobileColors.primarySoft,
+    borderColor: mobileColors.primary,
+  },
+  optionRow: {
+    flexDirection: 'row',
+    gap: mobileWorkspaceSortPickerLayoutContract.gap,
+  },
+  optionRows: {
+    gap: mobileWorkspaceSortPickerLayoutContract.gap,
   },
 })

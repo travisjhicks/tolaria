@@ -24,6 +24,13 @@ export const mobileWorkspaceActionGroupLayoutContract = {
   radius: 6,
 } as const
 
+export const mobileWorkspaceSortPickerLayoutContract = {
+  gap: mobileSpace.xs,
+  optionMinHeight: 32,
+  optionRadius: 6,
+  optionTextSize: 12,
+} as const
+
 export const mobileWorkspaceFormSheetAutoFocus = false
 export const mobileWorkspaceFormSheetMaxSuggestions = 3
 export const mobileWorkspaceRelationshipTargetMaxSuggestions = 2
