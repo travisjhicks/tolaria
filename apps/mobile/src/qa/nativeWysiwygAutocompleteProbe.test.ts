@@ -48,22 +48,6 @@ describe('native WYSIWYG autocomplete probe', () => {
       },
       {
         content: {
-          content: [{ content: [{ text: 'Insert /table', type: 'text' }], type: 'paragraph' }],
-          type: 'doc',
-        },
-        scenario: 'slashCommand',
-        selection: { from: 14, to: 14 },
-      },
-      {
-        content: {
-          content: [{ content: [{ text: 'Insert /heading2', type: 'text' }], type: 'paragraph' }],
-          type: 'doc',
-        },
-        scenario: 'slashCommandTextBlock',
-        selection: { from: 17, to: 17 },
-      },
-      {
-        content: {
           content: [
             {
               content: [{ marks: [{ type: 'code' }], text: 'code [[AI', type: 'text' }],
@@ -108,24 +92,12 @@ describe('native WYSIWYG autocomplete probe', () => {
       query: 'rock',
       range: { from: 6, to: 11 },
     }, 'emoji')
-    const slashCommandProof = nativeWysiwygAutocompleteProof({
-      kind: 'slashCommand',
-      query: 'table',
-      range: { from: 8, to: 14 },
-    }, 'slashCommand')
-    const slashCommandTextBlockProof = nativeWysiwygAutocompleteProof({
-      kind: 'slashCommand',
-      query: 'heading2',
-      range: { from: 8, to: 17 },
-    }, 'slashCommandTextBlock')
     const inlineCodeSuppressionProof = nativeWysiwygAutocompleteProof(null, 'inlineCodeSuppression')
     const codeBlockSuppressionProof = nativeWysiwygAutocompleteProof(null, 'codeBlockSuppression')
     const log = [
       nativeWysiwygAutocompleteLogLine(wikilinkProof),
       nativeWysiwygAutocompleteLogLine(personMentionProof),
       nativeWysiwygAutocompleteLogLine(emojiProof),
-      nativeWysiwygAutocompleteLogLine(slashCommandProof),
-      nativeWysiwygAutocompleteLogLine(slashCommandTextBlockProof),
       nativeWysiwygAutocompleteLogLine(inlineCodeSuppressionProof),
       nativeWysiwygAutocompleteLogLine(codeBlockSuppressionProof),
     ].join('\n')
@@ -134,8 +106,6 @@ describe('native WYSIWYG autocomplete probe', () => {
       wikilinkProof,
       personMentionProof,
       emojiProof,
-      slashCommandProof,
-      slashCommandTextBlockProof,
       inlineCodeSuppressionProof,
       codeBlockSuppressionProof,
     ])
@@ -143,8 +113,6 @@ describe('native WYSIWYG autocomplete probe', () => {
       wikilinkProof,
       personMentionProof,
       emojiProof,
-      slashCommandProof,
-      slashCommandTextBlockProof,
       inlineCodeSuppressionProof,
       codeBlockSuppressionProof,
     ])).toEqual([])
@@ -166,14 +134,6 @@ describe('native WYSIWYG autocomplete probe', () => {
       {
         id: 'editor.wysiwyg.autocomplete.emoji',
         message: 'Native WYSIWYG detects emoji shortcode autocomplete with the exact replacement range',
-      },
-      {
-        id: 'editor.wysiwyg.autocomplete.slashCommand',
-        message: 'Native WYSIWYG detects slash-command autocomplete with the exact replacement range',
-      },
-      {
-        id: 'editor.wysiwyg.autocomplete.slashCommandTextBlock',
-        message: 'Native WYSIWYG detects desktop text-block slash commands with the exact replacement range',
       },
       {
         id: 'editor.wysiwyg.autocomplete.inlineCodeSuppression',

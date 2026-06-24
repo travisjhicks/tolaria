@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { MagnifyingGlass, Plus } from 'phosphor-react-native'
-import { FlatList, Pressable, StyleSheet, View } from 'react-native'
+import { FlatList, StyleSheet, View } from 'react-native'
 import { Text } from '../ui/text'
 import { mobileCopy, mobileText } from '../../i18n/mobileText'
 import { MobileLayoutProbeReadout } from '../../qa/MobileLayoutProbeReadout'
@@ -24,7 +24,7 @@ import {
   selectedMobileNoteListNotes,
   toggleMobileNoteListSelection,
 } from './mobileNoteListBulkSelection'
-import { noteTypeColor, noteTypeSoftColor } from './mobileWorkspaceTone'
+import { noteTypeSoftColor } from './mobileWorkspaceTone'
 
 type MobileNoteListBulkActions = {
   onArchive: (noteIds: string[], archived: boolean) => void
@@ -69,11 +69,7 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
     leading,
     layoutProbe: layoutProbeEnabled = false,
     neighborhood = null,
-    noteListFilter = 'open',
-    noteListFilterCounts,
-    noteListFilterVisible = false,
     notes,
-    onNoteListFilterChange,
     onOpenCreateNote,
     onOpenSearch,
     onSelectNote,
@@ -121,64 +117,9 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
         selectedNoteId={selectedNoteId}
         typeDefinitions={typeDefinitions}
       />
-      {noteListFilterVisible && noteListFilterCounts && onNoteListFilterChange ? (
-        <NoteListFilterPills
-          active={noteListFilter}
-          counts={noteListFilterCounts}
-          onChange={onNoteListFilterChange}
-        />
-      ) : null}
       <BulkSelectionBar bulkActions={bulkActions} bulkSelection={bulkSelection} />
       {layoutProbeEnabled ? <MobileLayoutProbeReadout metrics={layoutProbe.metrics} testID="note-list-layout-metrics" /> : null}
     </MobilePanel>
-  )
-}
-
-function NoteListFilterPills({
-  active,
-  counts,
-  onChange,
-}: {
-  active: MobileNoteListFilter
-  counts: Record<MobileNoteListFilter, number>
-  onChange: (filter: MobileNoteListFilter) => void
-}) {
-  return (
-    <View accessibilityRole="tablist" style={styles.filterPills} testID="note-list-filter-pills">
-      <NoteListFilterPill active={active === 'open'} count={counts.open} label={mobileText('noteList.filter.open')} value="open" onChange={onChange} />
-      <NoteListFilterPill active={active === 'archived'} count={counts.archived} label={mobileText('noteList.filter.archived')} value="archived" onChange={onChange} />
-    </View>
-  )
-}
-
-function NoteListFilterPill({
-  active,
-  count,
-  label,
-  onChange,
-  value,
-}: {
-  active: boolean
-  count: number
-  label: string
-  onChange: (filter: MobileNoteListFilter) => void
-  value: MobileNoteListFilter
-}) {
-  return (
-    <Pressable
-      accessibilityRole="tab"
-      accessibilityState={{ selected: active }}
-      style={({ pressed }) => [
-        styles.filterPill,
-        active ? styles.filterPillActive : null,
-        pressed ? styles.filterPillPressed : null,
-      ]}
-      testID={`note-list-filter-pill-${value}`}
-      onPress={() => onChange(value)}
-    >
-      <Text style={[styles.filterPillText, active ? styles.filterPillTextActive : null]}>{label}</Text>
-      <Text style={[styles.filterPillCount, active ? styles.filterPillCountActive : null]}>{count.toLocaleString()}</Text>
-    </Pressable>
   )
 }
 
@@ -515,7 +456,6 @@ function noteRow({
       multiSelected={multiSelected}
       selected={forceSelected || note.id === activeNoteId}
       selectedBackgroundColor={noteTypeSoftColor(note.typeTone)}
-      selectedBorderColor={noteTypeColor(note.typeTone)}
       subtitle={note.snippet}
       testID={`note-row-${note.id}`}
       title={note.title}
@@ -615,51 +555,6 @@ const styles = StyleSheet.create({
     fontSize: mobileType.title,
     fontWeight: '600',
     textAlign: 'center',
-  },
-  filterPill: {
-    minHeight: 28,
-    alignItems: 'center',
-    borderRadius: 999,
-    flexDirection: 'row',
-    gap: mobileSpace.xs,
-    justifyContent: 'center',
-    paddingHorizontal: mobileSpace.md,
-    paddingVertical: mobileSpace.xs,
-  },
-  filterPillActive: {
-    backgroundColor: mobileColors.primary,
-  },
-  filterPillCount: {
-    color: mobileColors.textMuted,
-    fontSize: mobileType.micro,
-    fontVariant: ['tabular-nums'],
-    fontWeight: '400',
-  },
-  filterPillCountActive: {
-    color: mobileColors.textInverse,
-  },
-  filterPillPressed: {
-    backgroundColor: mobileColors.selected,
-  },
-  filterPills: {
-    minHeight: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderTopColor: mobileColors.border,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
-    gap: mobileSpace.sm,
-    backgroundColor: mobileColors.card,
-    paddingHorizontal: mobileSpace.lg,
-    paddingVertical: mobileSpace.sm,
-  },
-  filterPillText: {
-    color: mobileColors.textMuted,
-    fontSize: mobileType.caption,
-    fontWeight: '500',
-  },
-  filterPillTextActive: {
-    color: mobileColors.textInverse,
   },
   groupCount: {
     color: mobileColors.textMuted,

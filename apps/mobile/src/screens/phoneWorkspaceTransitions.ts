@@ -3,6 +3,8 @@ export type PhoneWorkspaceSwipeDirection = 'left' | 'right'
 export type PhoneWorkspaceTransitionDirection = 'fade' | 'fromLeft' | 'fromRight'
 
 export const phoneWorkspaceTransitionDurationMs = 180
+export const phoneWorkspaceSidebarDrawerMaxWidth = 320
+export const phoneWorkspaceSidebarDrawerWidthRatio = 0.78
 
 const phoneStateOrder = {
   sidebar: 0,
@@ -40,8 +42,31 @@ export function phoneWorkspaceDragOffset(
 ): number {
   const direction = swipeDirectionForOffset(dx)
   if (!direction || !phoneWorkspaceSwipeDestination(state, direction)) return 0
-  const maxOffset = Math.max(0, width)
+  const maxOffset = phoneWorkspaceDragLimit(state, direction, width)
   return Math.max(-maxOffset, Math.min(maxOffset, dx))
+}
+
+export function phoneWorkspaceSidebarDrawerWidth(rootWidth: number): number {
+  return Math.min(
+    phoneWorkspaceSidebarDrawerMaxWidth,
+    Math.round(rootWidth * phoneWorkspaceSidebarDrawerWidthRatio),
+  )
+}
+
+function phoneWorkspaceDragLimit(
+  state: PhoneWorkspaceState,
+  direction: PhoneWorkspaceSwipeDirection,
+  width: number,
+): number {
+  if (isSidebarRailDrag(state, direction)) return phoneWorkspaceSidebarDrawerWidth(width)
+  return Math.max(0, width)
+}
+
+function isSidebarRailDrag(
+  state: PhoneWorkspaceState,
+  direction: PhoneWorkspaceSwipeDirection,
+) {
+  return (state === 'list' && direction === 'right') || (state === 'sidebar' && direction === 'left')
 }
 
 function swipeDirectionForOffset(dx: number): PhoneWorkspaceSwipeDirection | null {

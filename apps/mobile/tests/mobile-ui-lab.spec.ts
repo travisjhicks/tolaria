@@ -212,7 +212,7 @@ test.describe('mobile UI lab screenshots', () => {
     await page.goto('/')
 
     const sidebarTitle = page.getByText('Tolaria Vault')
-    const noteListSubtitle = page.getByText('7 open notes')
+    const noteListTitle = page.getByTestId('note-list-toolbar-title')
     const propertiesTitle = page.getByText('Properties', { exact: true })
 
     await expect(sidebarTitle).toBeVisible()
@@ -222,12 +222,12 @@ test.describe('mobile UI lab screenshots', () => {
     await swipeHorizontally(page, { x: 8, y: 220 }, { x: 140, y: 220 })
     await expect(sidebarTitle).toBeVisible()
 
-    await expect(noteListSubtitle).toBeVisible()
+    await expect(noteListTitle).toBeVisible()
     await swipeHorizontally(page, { x: 480, y: 220 }, { x: 330, y: 220 })
-    await expect(noteListSubtitle).toBeHidden()
+    await expect(noteListTitle).toBeHidden()
 
     await swipeHorizontally(page, { x: 270, y: 220 }, { x: 410, y: 220 })
-    await expect(noteListSubtitle).toBeVisible()
+    await expect(noteListTitle).toBeVisible()
 
     await expect(propertiesTitle).toBeVisible()
     await swipeHorizontally(page, { x: 1210, y: 220 }, { x: 1340, y: 220 })

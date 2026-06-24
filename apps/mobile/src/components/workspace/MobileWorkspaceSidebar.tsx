@@ -609,6 +609,9 @@ const itemStyles = StyleSheet.create({
   item: {
     justifyContent: 'center',
     borderRadius: desktopSidebarParity.itemRadius,
+    minHeight: desktopSidebarParity.itemContentHeight.regular
+      + desktopSidebarParity.itemPadding.regular.top
+      + desktopSidebarParity.itemPadding.regular.bottom,
     width: '100%',
   },
   itemContent: {
@@ -674,8 +677,10 @@ const nativeSectionTitleTextStyle = Platform.OS === 'web' ? null : nativeTextSty
 
 function sidebarItemPadding(hasCount: boolean) {
   const padding = hasCount ? desktopSidebarParity.itemPadding.withCount : desktopSidebarParity.itemPadding.regular
+  const contentHeight = hasCount ? desktopSidebarParity.itemContentHeight.withCount : desktopSidebarParity.itemContentHeight.regular
 
   return {
+    minHeight: contentHeight + padding.top + padding.bottom,
     paddingBottom: padding.bottom,
     paddingLeft: padding.left,
     paddingRight: padding.right,

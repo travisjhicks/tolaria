@@ -1,4 +1,12 @@
-import { Pressable, StyleSheet, type NativeSyntheticEvent, type TextInputSelectionChangeEventData, View } from 'react-native'
+import {
+  Pressable,
+  StyleSheet,
+  type NativeSyntheticEvent,
+  type StyleProp,
+  type TextInputSelectionChangeEventData,
+  type TextStyle,
+  View,
+} from 'react-native'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Input } from '../ui/input'
 import { Text } from '../ui/text'
@@ -8,7 +16,6 @@ import { mobileColors, mobileRadius, mobileSpace, mobileType } from '../../ui/to
 import {
   activeMobileEmojiShortcodeQuery,
   activeMobilePersonMentionQuery,
-  activeMobileSlashCommandQuery,
   activeMobileWikilinkQuery,
   mobilePersonMentionAutocompleteSuggestions,
   mobileWikilinkAutocompleteSuggestions,
@@ -55,11 +62,8 @@ import { nativeSourceSelectionProof } from '../../qa/nativeSourceSelectionProbe'
 import { nativeSourceSelectionLogLine } from '../../qa/nativeSourceSelectionLog'
 import { mobileText } from '../../i18n/mobileText'
 import { MobileMarkdownFormattingToolbar } from './MobileMarkdownFormattingToolbar'
-import type { NativeWysiwygSlashCommandAction } from './MobileWysiwygWikilinkBridgeModel'
 import {
   mobileWysiwygEmojiPickerSuggestions,
-  mobileWysiwygSlashCommandPickerSuggestions,
-  type MobileWysiwygSlashCommandSuggestion,
 } from './MobileWysiwygWikilinkPickerModel'
 
 export type MobileMarkdownSourceEditorProps = {
@@ -76,13 +80,12 @@ export type MobileMarkdownSourceEditorProps = {
   sourceSelectionProbe?: boolean
 }
 
-type InlineAutocompleteKind = 'emoji' | 'personMention' | 'slashCommand' | 'wikilink'
+type InlineAutocompleteKind = 'emoji' | 'personMention' | 'wikilink'
 type MarkdownInlineAutocompleteSuggestion = {
   chipLabel: string
   emoji?: string
   id: string
   note?: MobileNote
-  slashAction?: NativeWysiwygSlashCommandAction
   title: string
 }
 type MarkdownInlineAutocompleteReplacement = {
@@ -90,25 +93,6 @@ type MarkdownInlineAutocompleteReplacement = {
   text: string
 }
 type TimerHandle = ReturnType<typeof setTimeout>
-
-const sourceSlashCommandLabelKeys = {
-  bulletList: 'editor.formatting.bulletList',
-  codeBlock: 'editor.formatting.codeBlock',
-  divider: 'editor.formatting.divider',
-  heading1: 'editor.formatting.heading1',
-  heading2: 'editor.formatting.heading2',
-  heading3: 'editor.formatting.heading3',
-  heading4: 'editor.formatting.heading4',
-  heading5: 'editor.formatting.heading5',
-  heading6: 'editor.formatting.heading6',
-  mathBlock: 'editor.formatting.mathBlock',
-  mermaid: 'editor.formatting.mermaid',
-  orderedList: 'editor.formatting.orderedList',
-  quote: 'editor.formatting.quote',
-  table: 'editor.formatting.table',
-  taskList: 'editor.formatting.taskList',
-  whiteboard: 'editor.formatting.whiteboard',
-} as const satisfies Record<NativeWysiwygSlashCommandAction, Parameters<typeof mobileText>[0]>
 
 export function MobileMarkdownSourceEditor(props: MobileMarkdownSourceEditorProps) {
   const {
@@ -198,15 +182,10 @@ function MarkdownSourceEditor(props: Omit<MobileMarkdownSourceEditorProps, 'plai
 
   return (
     <View style={editorStyles.container} testID="editor-markdown-form">
-      <MobileMarkdownFormattingToolbar onFormat={autocomplete.applyFormat} />
       <MobileSourceFrontmatterIssueBanner issue={frontmatterIssue} />
-      <Input
-        multiline
-        scrollEnabled
-        placeholderTextColor={mobileColors.textFaint}
-        style={[editorStyles.input, compact ? editorStyles.inputCompact : null]}
+      <SourceEditorInput
+        compact={compact}
         testID="editor-markdown-input"
-        textAlignVertical="top"
         value={editorDraft.content}
         selection={autocomplete.controlledSelection}
         onChangeText={autocomplete.handleMarkdownChange}
@@ -229,6 +208,49 @@ function MarkdownSourceEditor(props: Omit<MobileMarkdownSourceEditorProps, 'plai
           ))}
         </View>
       ) : null}
+      <MobileMarkdownFormattingToolbar onFormat={autocomplete.applyFormat} />
+    </View>
+  )
+}
+
+function SourceEditorInput({
+  compact,
+  onChangeText,
+  onSelectionChange,
+  selection,
+  testID,
+  value,
+}: {
+  compact: boolean
+  onChangeText: (value: string) => void
+  onSelectionChange: (event: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => void
+  selection?: MobileMarkdownTextSelection
+  testID: string
+  value: string
+}) {
+  return (
+    <View style={[editorStyles.sourceInputHost, compact ? editorStyles.sourceInputHostCompact : null]}>
+      <View pointerEvents="none" style={editorStyles.syntaxLayer}>
+        <Text style={editorStyles.syntaxText}>
+          {markdownSyntaxTokens(value).map((token, index) => (
+            <Text key={`${index}:${token.text}`} style={token.style}>{token.text}</Text>
+          ))}
+        </Text>
+      </View>
+      <Input
+        multiline
+        scrollEnabled
+        className="border-0 bg-transparent"
+        placeholderTextColor={mobileColors.textFaint}
+        selectionColor={mobileColors.primary}
+        style={editorStyles.highlightedInput}
+        testID={testID}
+        textAlignVertical="top"
+        value={value}
+        selection={selection}
+        onChangeText={onChangeText}
+        onSelectionChange={onSelectionChange}
+      />
     </View>
   )
 }
@@ -514,10 +536,9 @@ function markdownInlineAutocompleteState(
     }
   }
 
-  const slashCommandMatch = activeMobileSlashCommandQuery(content, cursor)
   return {
-    kind: slashCommandMatch ? 'slashCommand' as const : null,
-    suggestions: slashCommandMatch ? slashCommandAutocompleteSuggestions(slashCommandMatch.query) : [],
+    kind: null,
+    suggestions: [],
   }
 }
 
@@ -538,11 +559,6 @@ function markdownInlineAutocompleteReplacement({
   if (kind === 'emoji') {
     return suggestion.emoji
       ? replacementFromCursor(replaceActiveMobileEmojiShortcodeQuery(content, cursor, suggestion.emoji))
-      : null
-  }
-  if (kind === 'slashCommand') {
-    return suggestion.slashAction
-      ? replaceActiveMobileSlashCommandQueryWithFormat(content, cursor, suggestion.slashAction)
       : null
   }
   if (!suggestion.note) return null
@@ -566,7 +582,6 @@ function replacementFromCursor(
 function hasActiveInlineAutocomplete(text: string, cursor: number): boolean {
   if (activeMobileWikilinkQuery(text, cursor)) return true
   if (activeMobilePersonMentionQuery(text, cursor)) return true
-  if (activeMobileSlashCommandQuery(text, cursor)) return true
   return activeMobileEmojiShortcodeQuery(text, cursor) !== null
 }
 
@@ -576,13 +591,11 @@ function textStartSelection(): MobileMarkdownTextSelection {
 
 function inlineAutocompleteTestId(kind: InlineAutocompleteKind | null): string {
   if (kind === 'emoji') return 'editor-emoji-suggestions'
-  if (kind === 'slashCommand') return 'editor-slash-command-suggestions'
   return kind === 'personMention' ? 'editor-person-mention-suggestions' : 'editor-wikilink-suggestions'
 }
 
 function inlineAutocompleteRowTestIdPrefix(kind: InlineAutocompleteKind | null): string {
   if (kind === 'emoji') return 'editor-emoji-suggestion'
-  if (kind === 'slashCommand') return 'editor-slash-command-suggestion'
   return kind === 'personMention' ? 'editor-person-mention-suggestion' : 'editor-wikilink-suggestion'
 }
 
@@ -604,53 +617,90 @@ function emojiAutocompleteSuggestions(query: string): MarkdownInlineAutocomplete
   }))
 }
 
-function slashCommandAutocompleteSuggestions(query: string): MarkdownInlineAutocompleteSuggestion[] {
-  return mobileWysiwygSlashCommandPickerSuggestions(query).map((suggestion) => ({
-    chipLabel: slashCommandChipLabel(suggestion),
-    id: suggestion.action,
-    slashAction: suggestion.action,
-    title: mobileText(sourceSlashCommandLabelKeys[suggestion.action]),
-  }))
-}
-
-function replaceActiveMobileSlashCommandQueryWithFormat(
-  content: string,
-  cursor: number,
-  action: NativeWysiwygSlashCommandAction,
-): MarkdownInlineAutocompleteReplacement | null {
-  const match = activeMobileSlashCommandQuery(content, cursor)
-  if (!match) return null
-
-  const result = applyMobileMarkdownFormat(
-    sourceWithoutActiveSlashCommand({ content, match }),
-    { end: match.start, start: match.start },
-    action,
-  )
-  return {
-    selection: result.selection,
-    text: result.text,
-  }
-}
-
-function sourceWithoutActiveSlashCommand({
-  content,
-  match,
-}: {
-  content: string
-  match: { cursor: number; start: number }
-}): string {
-  const before = content.slice(0, match.start)
-  const after = content.slice(match.cursor)
-  if (before.endsWith(' ') && after.startsWith(' ')) return `${before}${after.slice(1)}`
-  return `${before}${after}`
-}
-
-function slashCommandChipLabel(suggestion: MobileWysiwygSlashCommandSuggestion): string {
-  return `/${suggestion.keywords[0] ?? suggestion.action}`
-}
-
 function testIdSegment(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+}
+
+type MarkdownSyntaxToken = {
+  style?: StyleProp<TextStyle>
+  text: string
+}
+
+function markdownSyntaxTokens(content: string): MarkdownSyntaxToken[] {
+  if (!content) return []
+
+  return content
+    .split(/(\n)/u)
+    .flatMap((part) => (part === '\n' ? [{ text: part }] : markdownSyntaxLineTokens(part)))
+}
+
+function markdownSyntaxLineTokens(line: string): MarkdownSyntaxToken[] {
+  if (/^\s*---\s*$/u.test(line)) return [{ style: editorStyles.syntaxMeta, text: line }]
+
+  const frontmatterMatch = /^([A-Za-z0-9_-]+)(:\s*)/u.exec(line)
+  if (frontmatterMatch) {
+    const key = frontmatterMatch[1] ?? ''
+    const separator = frontmatterMatch[2] ?? ''
+    return [
+      { style: editorStyles.syntaxPropertyKey, text: key },
+      { style: editorStyles.syntaxMeta, text: separator },
+      ...markdownInlineSyntaxTokens(line.slice(key.length + separator.length)),
+    ]
+  }
+
+  const headingMatch = /^(\s{0,3}#{1,6}\s+)(.*)$/u.exec(line)
+  if (headingMatch) {
+    return [
+      { style: editorStyles.syntaxMeta, text: headingMatch[1] ?? '' },
+      { style: editorStyles.syntaxHeading, text: headingMatch[2] ?? '' },
+    ]
+  }
+
+  if (/^\s*```/u.test(line)) return [{ style: editorStyles.syntaxCodeFence, text: line }]
+
+  const blockquoteMatch = /^(\s*>+\s?)(.*)$/u.exec(line)
+  if (blockquoteMatch) {
+    return [
+      { style: editorStyles.syntaxMeta, text: blockquoteMatch[1] ?? '' },
+      { style: editorStyles.syntaxQuote, text: blockquoteMatch[2] ?? '' },
+    ]
+  }
+
+  const listMatch = /^(\s*(?:[-*+]|\d+[.)])\s+)(.*)$/u.exec(line)
+  if (listMatch) {
+    return [
+      { style: editorStyles.syntaxListMarker, text: listMatch[1] ?? '' },
+      ...markdownInlineSyntaxTokens(listMatch[2] ?? ''),
+    ]
+  }
+
+  if (line.includes('|')) return markdownInlineSyntaxTokens(line, editorStyles.syntaxTable)
+
+  return markdownInlineSyntaxTokens(line)
+}
+
+function markdownInlineSyntaxTokens(line: string, baseStyle?: StyleProp<TextStyle>): MarkdownSyntaxToken[] {
+  const tokens: MarkdownSyntaxToken[] = []
+  const syntaxPattern = /(`[^`]+`|\[\[[^\]]+\]\]|!\[[^\]]*\]\([^)]+\)|\*\*[^*]+\*\*|\*[^*]+\*)/gu
+  let cursor = 0
+
+  for (const match of line.matchAll(syntaxPattern)) {
+    const index = match.index ?? 0
+    if (index > cursor) tokens.push({ style: baseStyle, text: line.slice(cursor, index) })
+    tokens.push({ style: markdownInlineTokenStyle(match[0]), text: match[0] })
+    cursor = index + match[0].length
+  }
+
+  if (cursor < line.length) tokens.push({ style: baseStyle, text: line.slice(cursor) })
+  return tokens.length > 0 ? tokens : [{ style: baseStyle, text: line }]
+}
+
+function markdownInlineTokenStyle(token: string): StyleProp<TextStyle> {
+  if (token.startsWith('`')) return editorStyles.syntaxInlineCode
+  if (token.startsWith('[[')) return editorStyles.syntaxWikilink
+  if (token.startsWith('![')) return editorStyles.syntaxAttachment
+  if (token.startsWith('**')) return editorStyles.syntaxStrong
+  return editorStyles.syntaxEmphasis
 }
 
 const editorStyles = StyleSheet.create({
@@ -658,12 +708,21 @@ const editorStyles = StyleSheet.create({
     flex: 1,
     gap: mobileSpace.md,
   },
+  highlightedInput: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    color: 'rgba(55, 53, 47, 0.01)',
+    fontFamily: 'Menlo',
+    fontSize: desktopEditorParity.bodyFontSize,
+    lineHeight: desktopEditorParity.bodyLineHeight,
+    paddingHorizontal: mobileSpace.md,
+    paddingVertical: mobileSpace.md,
+  },
   input: {
     flex: 1,
     minHeight: 420,
-    borderColor: mobileColors.borderStrong,
-    borderRadius: mobileRadius.md,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 0,
     color: mobileColors.text,
     fontFamily: 'Menlo',
     fontSize: desktopEditorParity.bodyFontSize,
@@ -673,6 +732,65 @@ const editorStyles = StyleSheet.create({
   },
   inputCompact: {
     minHeight: 360,
+  },
+  sourceInputHost: {
+    flex: 1,
+    minHeight: 420,
+    position: 'relative',
+  },
+  sourceInputHostCompact: {
+    minHeight: 360,
+  },
+  syntaxAttachment: {
+    color: mobileColors.orange,
+  },
+  syntaxCodeFence: {
+    color: mobileColors.orange,
+  },
+  syntaxEmphasis: {
+    color: mobileColors.textMuted,
+    fontStyle: 'italic',
+  },
+  syntaxHeading: {
+    color: mobileColors.text,
+    fontWeight: '700',
+  },
+  syntaxInlineCode: {
+    color: mobileColors.orange,
+  },
+  syntaxLayer: {
+    ...StyleSheet.absoluteFillObject,
+    paddingHorizontal: mobileSpace.md,
+    paddingVertical: mobileSpace.md,
+  },
+  syntaxListMarker: {
+    color: mobileColors.primary,
+  },
+  syntaxMeta: {
+    color: mobileColors.textMuted,
+  },
+  syntaxPropertyKey: {
+    color: mobileColors.primary,
+  },
+  syntaxQuote: {
+    color: mobileColors.textMuted,
+    fontStyle: 'italic',
+  },
+  syntaxStrong: {
+    color: mobileColors.text,
+    fontWeight: '700',
+  },
+  syntaxTable: {
+    color: mobileColors.textMuted,
+  },
+  syntaxText: {
+    color: mobileColors.text,
+    fontFamily: 'Menlo',
+    fontSize: desktopEditorParity.bodyFontSize,
+    lineHeight: desktopEditorParity.bodyLineHeight,
+  },
+  syntaxWikilink: {
+    color: mobileColors.primary,
   },
   frontmatterIssue: {
     alignItems: 'center',

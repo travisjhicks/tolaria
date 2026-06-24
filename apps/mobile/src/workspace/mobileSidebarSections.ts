@@ -58,7 +58,11 @@ export function buildMobileSidebarSections({
     foldersSection(notes, folderPaths),
   ]
 
-  return sections.filter((section) => section.id === 'primary' || Boolean(section.items?.length || section.folders?.length))
+  return sections.filter((section) => (
+    section.id === 'primary'
+    || section.id === 'views'
+    || Boolean(section.items?.length || section.folders?.length)
+  ))
 }
 
 function primarySection(

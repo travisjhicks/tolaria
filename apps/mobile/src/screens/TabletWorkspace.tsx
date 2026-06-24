@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Dimensions, Platform, StyleSheet, useWindowDimensions, View } from 'react-native'
+import { CaretLeft, CaretRight, SidebarSimple } from 'phosphor-react-native'
 import { MobileCommandPalette } from '../components/workspace/MobileCommandPalette'
 import { MobileNoteListPanel } from '../components/workspace/MobileNoteListPanel'
 import { MobilePropertiesPanel } from '../components/workspace/MobilePropertiesPanel'
@@ -13,6 +14,8 @@ import {
   type ReadOnlyWorkspaceRequest,
 } from '../workspace/readOnlyWorkspaceRepository'
 import { mobileColors } from '../ui/tokens'
+import { MobileIconButton } from '../ui/MobileIconButton'
+import { mobileText } from '../i18n/mobileText'
 import { useHorizontalSwipe } from '../ui/useHorizontalSwipe'
 import { useMobileEditorCommandRegistry, type RegisterMobileEditorCommands } from '../workspace/mobileEditorCommands'
 import { mobileNoteIdForWikilinkTarget } from '../workspace/mobileWikilinks'
@@ -133,10 +136,16 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
   const suggestionNotes = snapshot.allNotes ?? snapshot.notes
   const openCommandPalette = useCallback(() => setCommandPaletteOpen(true), [])
   const closeCommandPalette = useCallback(() => setCommandPaletteOpen(false), [])
+  const selectNextNote = useCallback(() => selectAdjacentVisibleNote(props.notes, props.selectedNoteId, props.onSelectNote, 1), [props.notes, props.onSelectNote, props.selectedNoteId])
+  const selectPreviousNote = useCallback(() => selectAdjacentVisibleNote(props.notes, props.selectedNoteId, props.onSelectNote, -1), [props.notes, props.onSelectNote, props.selectedNoteId])
   useMobileWorkspaceKeyboardShortcuts({
     onCreateNote: props.onOpenCreateNote,
+    onOpenFindInNote: props.onOpenFindInNote,
     onOpenCommandPalette: openCommandPalette,
     onOpenSearch: props.onOpenSearch,
+    onSelectNextNote: selectNextNote,
+    onSelectPreviousNote: selectPreviousNote,
+    onToggleRawEditor: editorCommandRegistry.commands.toggleRawEditor,
   })
   const commandPaletteCommands = useMemo(() => buildMobileCommandPaletteCommands({
     ...props,
@@ -185,6 +194,7 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
       <TabletNoteListHost {...props} gestures={gestures} />
       <TabletEditorPanelHost
         {...props}
+        gestures={gestures}
         suggestionNotes={suggestionNotes}
         tableOfContentsTarget={tableOfContentsTarget}
         onRegisterEditorCommands={editorCommandRegistry.register}
@@ -210,6 +220,27 @@ type TabletPanelGestures = ReturnType<typeof useTabletPanelGestures>
 type TabletPanelHostProps = TabletWorkspaceChromeProps & { gestures: TabletPanelGestures }
 type TabletSidebarHostProps = TabletPanelHostProps & { onOpenCommandPalette: () => void }
 type TabletPropertiesPanelHostProps = TabletPanelHostProps & { onFixInvalidFrontmatter?: () => void }
+
+function selectAdjacentVisibleNote(
+  notes: MobileNote[],
+  selectedNoteId: string | null,
+  onSelectNote: (noteId: string) => void,
+  direction: -1 | 1,
+) {
+  const noteId = adjacentVisibleNoteId(notes, selectedNoteId, direction)
+  if (noteId) onSelectNote(noteId)
+}
+
+function adjacentVisibleNoteId(
+  notes: MobileNote[],
+  selectedNoteId: string | null,
+  direction: -1 | 1,
+) {
+  if (notes.length === 0) return null
+  const currentIndex = Math.max(0, notes.findIndex((note) => note.id === selectedNoteId))
+  const nextIndex = Math.max(0, Math.min(notes.length - 1, currentIndex + direction))
+  return notes[nextIndex]?.id ?? null
+}
 
 function TabletSidebarHost({
   activeFolderId,
@@ -293,6 +324,15 @@ function TabletNoteListHost({
         }}
         displayPropertyKeys={noteListProperties}
         layoutProbe={layoutProbe}
+        leading={compactTablet ? undefined : (
+          <MobileIconButton
+            accessibilityLabel={mobileText(gestures.showSidebar ? 'sidebar.action.collapse' : 'sidebar.action.expand')}
+            testID="tablet-note-list-sidebar-action"
+            onPress={gestures.toggleSidebar}
+          >
+            <SidebarSimple color={mobileColors.textMuted} size={16} />
+          </MobileIconButton>
+        )}
         neighborhood={noteListNeighborhood}
         noteListFilter={noteListFilter}
         noteListFilterCounts={noteListFilterCounts}
@@ -339,6 +379,7 @@ type TabletEditorPanelHostProps = Pick<
   | 'wysiwygWikilinkInsertProbe'
   | 'wysiwygMutationProbe'
 > & {
+  gestures: TabletPanelGestures
   onNavigateWikilink: (target: string) => void
   onRegisterEditorCommands?: RegisterMobileEditorCommands
   suggestionNotes: MobileNote[]
@@ -349,6 +390,7 @@ function TabletEditorPanelHost({
   compactTablet,
   editorBlocks,
   editorBullets,
+  gestures,
   initialEditorEditing,
   initialEditorEditingMode,
   layoutProbe,
@@ -381,6 +423,7 @@ function TabletEditorPanelHost({
       compact={compactTablet}
       initialEditing={initialEditorEditing}
       initialEditingMode={initialEditorEditingMode}
+      leading={<TabletEditorChromeToggle gestures={gestures} />}
       layoutProbe={layoutProbe}
       note={selectedNote}
       notes={suggestionNotes}
@@ -404,6 +447,21 @@ function TabletEditorPanelHost({
       wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
       wysiwygMutationProbe={wysiwygMutationProbe}
     />
+  )
+}
+
+function TabletEditorChromeToggle({ gestures }: { gestures: TabletPanelGestures }) {
+  const chromeVisible = gestures.showSidebar || gestures.noteListVisible
+  const Icon = chromeVisible ? CaretLeft : CaretRight
+
+  return (
+    <MobileIconButton
+      accessibilityLabel={mobileText(chromeVisible ? 'sidebar.action.collapse' : 'sidebar.action.expand')}
+      testID="tablet-editor-chrome-toggle"
+      onPress={gestures.toggleSidebarAndNoteList}
+    >
+      <Icon color={mobileColors.textMuted} size={16} />
+    </MobileIconButton>
   )
 }
 
@@ -717,6 +775,19 @@ function useTabletPanelGestures(compactTablet: boolean, defaultPropertiesVisible
       hidePanel('noteList')
       hidePanel('properties')
     }, [hidePanel]),
+    toggleSidebar: useCallback(() => {
+      if (showSidebar) hidePanel('sidebar')
+      else showPanel('sidebar')
+    }, [hidePanel, showPanel, showSidebar]),
+    toggleSidebarAndNoteList: useCallback(() => {
+      if (showSidebar || noteListVisible) {
+        hidePanel('sidebar')
+        hidePanel('noteList')
+        return
+      }
+      showPanel('sidebar')
+      showPanel('noteList')
+    }, [hidePanel, noteListVisible, showPanel, showSidebar]),
     showProperties: useCallback(() => showPanel('properties'), [showPanel]),
     toggleProperties: useCallback(() => {
       if (propertiesVisible) hidePanel('properties')

@@ -211,7 +211,7 @@ describe('native WYSIWYG wikilink bridge', () => {
     const nextDocument = nativeWysiwygDocumentWithInsertedSlashCommandBlock({
       json: documentNode(paragraphNode(text)),
       payload: { action },
-      selection: autocompleteRange(text, text.indexOf(' later') + 1),
+      selection: slashCommandRange(text),
     })
 
     expect(tiptapJsonToMobileMarkdown(nextDocument)).toBe(expectedMarkdown)
@@ -303,12 +303,11 @@ describe('native WYSIWYG wikilink bridge', () => {
     })
   })
 
-  it('detects an active native slash-command autocomplete query', () => {
-    expectAutocomplete('Insert /table', 14, {
-      kind: 'slashCommand',
-      query: 'table',
-      range: { from: 8, to: 14 },
-    })
+  it('does not expose desktop slash-command autocomplete on mobile', () => {
+    expect(nativeWysiwygInlineAutocompleteAtSelection({
+      json: documentNode(paragraphNode('Insert /table')),
+      selection: { from: 14, to: 14 },
+    })).toBeNull()
   })
 
   it('suppresses native autocomplete inside desktop code editing contexts', () => {
@@ -414,6 +413,16 @@ function autocompleteRange(text: string, cursor: number): NativeWysiwygSelection
     json: documentNode(paragraphNode(text)),
     selection: { from: cursor, to: cursor },
   })?.range
+}
+
+function slashCommandRange(text: string): NativeWysiwygSelection {
+  const slashIndex = text.indexOf('/')
+  const endIndex = text.indexOf(' ', slashIndex)
+
+  return {
+    from: slashIndex + 1,
+    to: (endIndex === -1 ? text.length : endIndex) + 1,
+  }
 }
 
 function documentNode(...content: TiptapJsonNode[]): TiptapJsonNode {

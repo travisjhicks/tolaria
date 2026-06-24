@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   phoneWorkspaceDragOffset,
+  phoneWorkspaceSidebarDrawerWidth,
   phoneWorkspaceSwipeDestination,
   phoneWorkspaceTransitionDirection,
   type PhoneWorkspaceState,
@@ -53,14 +54,26 @@ describe('phoneWorkspaceSwipeDestination', () => {
 })
 
 describe('phoneWorkspaceDragOffset', () => {
-  it('clamps allowed drags to the screen width', () => {
+  it('clamps editor/properties drags to the screen width', () => {
     expect(phoneWorkspaceDragOffset('editor', -400, 320)).toBe(-320)
     expect(phoneWorkspaceDragOffset('editor', 180, 320)).toBe(180)
+  })
+
+  it('clamps sidebar/list rail drags to the drawer width', () => {
+    expect(phoneWorkspaceDragOffset('list', 400, 320)).toBe(250)
+    expect(phoneWorkspaceDragOffset('sidebar', -400, 320)).toBe(-250)
   })
 
   it('ignores drags without a neighboring phone state', () => {
     expect(phoneWorkspaceDragOffset('list', -120, 320)).toBe(0)
     expect(phoneWorkspaceDragOffset('sidebar', 120, 320)).toBe(0)
     expect(phoneWorkspaceDragOffset('properties', -120, 320)).toBe(0)
+  })
+})
+
+describe('phoneWorkspaceSidebarDrawerWidth', () => {
+  it('uses the compact drawer ratio until it reaches the max drawer width', () => {
+    expect(phoneWorkspaceSidebarDrawerWidth(320)).toBe(250)
+    expect(phoneWorkspaceSidebarDrawerWidth(500)).toBe(320)
   })
 })

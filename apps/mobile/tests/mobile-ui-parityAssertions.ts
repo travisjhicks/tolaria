@@ -87,15 +87,13 @@ async function assertPanelChromeParity(page: Page) {
     page.getByTestId('editor-toolbar'),
     page.getByTestId('properties-toolbar'),
   ]) {
-    await expect(toolbar).toBeVisible()
+  await expect(toolbar).toBeVisible()
     await expectCssValue({ locator: toolbar, property: 'min-height', expected: `${desktopPanelParity.toolbarHeight}px` })
     await expectCssValue({ locator: toolbar, property: 'padding-left', expected: `${desktopToolbarParity.paddingHorizontal}px` })
     await expectCssValue({ locator: toolbar, property: 'border-bottom-color', expected: await cssColor({ page, color: desktopParityColors.borderDefault }) })
   }
 
   await expectCssValue({ locator: page.getByTestId('note-list-toolbar-title'), property: 'font-size', expected: `${desktopToolbarParity.titleFontSize}px` })
-  await expectCssValue({ locator: page.getByTestId('note-list-toolbar-subtitle'), property: 'font-size', expected: `${desktopToolbarParity.subtitleFontSize}px` })
-  await expectCssValue({ locator: page.getByTestId('note-list-toolbar-subtitle'), property: 'color', expected: await cssColor({ page, color: desktopParityColors.textSecondary }) })
   await expectCssValue({ locator: page.getByTestId('properties-toolbar-title'), property: 'font-size', expected: `${desktopToolbarParity.inspectorTitleFontSize}px` })
   await expectCssValue({ locator: page.getByTestId('properties-toolbar-title'), property: 'color', expected: await cssColor({ page, color: desktopParityColors.textSecondary }) })
 }
@@ -118,13 +116,12 @@ async function assertNoteListParity(page: Page) {
   expectClose({ actual: nextBox.y, expected: selectedBox.y + selectedBox.height, message: 'note rows are separated by the desktop border, not by wrapper margins' })
 
   await expectCssValue({ locator: selectedRow, property: 'background-color', expected: await cssColor({ page, color: desktopParityColors.accentGreenLight }) })
-  await expectCssValue({ locator: selectedRow, property: 'border-left-color', expected: await cssColor({ page, color: desktopParityColors.accentGreen }) })
-  await expectCssValue({ locator: selectedRow, property: 'border-left-width', expected: `${desktopNoteItemParity.borderLeftWidth}px` })
+  await expectCssValue({ locator: selectedRow, property: 'border-left-width', expected: '0px' })
   await expectCssValue({ locator: selectedRow, property: 'border-bottom-color', expected: await cssColor({ page, color: desktopParityColors.borderDefault }) })
   await expectCssValue({ locator: selectedRow, property: 'border-top-left-radius', expected: '0px' })
   await expectCssValue({ locator: selectedRow, property: 'margin-bottom', expected: '0px' })
   await expectChildCssValue({ locator: selectedRow, property: 'padding-top', expected: `${desktopNoteItemParity.padding.top}px` })
-  await expectChildCssValue({ locator: selectedRow, property: 'padding-left', expected: `${desktopNoteItemParity.selectedPaddingLeft}px` })
+  await expectChildCssValue({ locator: selectedRow, property: 'padding-left', expected: `${desktopNoteItemParity.padding.left}px` })
   await expectChildCssValue({ locator: selectedRow, property: 'padding-right', expected: `${desktopNoteItemParity.padding.right}px` })
 }
 

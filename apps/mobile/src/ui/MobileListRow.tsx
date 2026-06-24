@@ -16,7 +16,6 @@ type MobileListRowProps = {
   onPress?: () => void
   selected?: boolean
   selectedBackgroundColor?: string
-  selectedBorderColor?: string
   subtitle: string
   testID?: string
   title: string
@@ -95,7 +94,6 @@ function mobileListRowFrameStyle(props: MobileListRowProps, state: MobileListRow
 function mobileListRowSelectedColors(props: MobileListRowProps, state: MobileListRowState) {
   return state.desktopSelected ? {
     backgroundColor: props.selectedBackgroundColor,
-    borderLeftColor: props.selectedBorderColor,
   } : null
 }
 
@@ -103,7 +101,6 @@ const styles = StyleSheet.create({
   base: baseContentStyle,
   baseSelected: {
     ...baseContentStyle,
-    paddingLeft: desktopNoteItemParity.selectedPaddingLeft,
   },
   frame: {
     alignSelf: 'stretch',
@@ -134,7 +131,7 @@ const styles = StyleSheet.create({
     backgroundColor: mobileColors.primarySoft,
   },
   selected: {
-    borderLeftWidth: desktopNoteItemParity.borderLeftWidth,
+    borderLeftWidth: 0,
   },
   subtitle: {
     marginTop: desktopNoteItemParity.contentGap,

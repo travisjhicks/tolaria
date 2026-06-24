@@ -1,9 +1,7 @@
 import {
-  Check,
   Code,
   DotsThree,
   FileText,
-  PencilSimple,
   Star,
 } from 'phosphor-react-native'
 import {
@@ -15,6 +13,7 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { MobileEditorBlocks } from '../components/workspace/MobileEditorBlocks'
 import { MobileMarkdownSourceEditor } from '../components/workspace/MobileMarkdownSourceEditor'
 import { MobileNoteIcon, MobileTypeIcon } from '../components/workspace/MobileWorkspaceIcons'
@@ -57,6 +56,7 @@ type TabletEditorPanelProps = {
   initialEditing?: boolean
   initialEditingMode?: EditorEditingMode
   layoutProbe?: boolean
+  leading?: ReactNode
   note: MobileNote | null
   notes: MobileNote[]
   onNavigateWikilink: (target: string) => void
@@ -84,9 +84,9 @@ type EditorToolbarProps = {
   editing: boolean
   editingMode: EditorEditingMode
   fileMode: EditorFileMode
+  leading?: ReactNode
   note: MobileNote
   onOpenMoreActions: () => void
-  onToggleEditing: () => void
   onToggleSourceMode: () => void
   onToggleFavorite: () => void
 }
@@ -143,9 +143,9 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
     blocks,
     bullets,
     compact,
-    initialEditing = false,
     initialEditingMode = 'wysiwyg',
     layoutProbe: layoutProbeEnabled = false,
+    leading,
     note,
     notes,
     onNavigateWikilink,
@@ -168,7 +168,6 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
     wysiwygWikilinkInsertProbe = false,
     wysiwygMutationProbe = false,
   } = props
-  const [editing, setEditing] = useState(initialEditing)
   const [editingMode, setEditingMode] = useState<EditorEditingMode>(initialEditingMode)
   const { onScroll, onTargetLayout, setScrollViewNode } = useTableOfContentsScroll(
     tableOfContentsTarget,
@@ -177,20 +176,9 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
   const importAttachment = useMobileAttachmentImporter(vaultRootUri)
   const openLink = useMobileAttachmentLinkOpener(vaultRootUri)
   const layoutProbe = useMobileLayoutProbe(layoutProbeEnabled)
-  const toggleEditing = useCallback(() => {
-    setEditing((current) => {
-      if (!current) setEditingMode('wysiwyg')
-      return !current
-    })
-  }, [])
   const toggleSourceMode = useCallback(() => {
-    if (!editing) {
-      setEditingMode('source')
-      setEditing(true)
-      return
-    }
     setEditingMode((current) => current === 'source' ? 'wysiwyg' : 'source')
-  }, [editing])
+  }, [])
   useRegisteredMobileEditorCommands(onRegisterEditorCommands, {
     toggleRawEditor: note && editorFileMode(note) === 'markdown' ? toggleSourceMode : undefined,
   })
@@ -201,7 +189,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
 
   const fileMode = editorFileMode(note)
   const plainText = fileMode === 'text'
-  const effectiveEditing = editing || plainText
+  const effectiveEditing = fileMode !== 'binary'
   const effectiveEditingMode = plainText ? 'source' : editingMode
   const contentProps: EditorContentProps = {
     blocks,
@@ -239,9 +227,9 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
         editingMode={effectiveEditingMode}
         editing={effectiveEditing}
         fileMode={fileMode}
+        leading={leading}
         note={note}
         onOpenMoreActions={onOpenMoreActions}
-        onToggleEditing={toggleEditing}
         onToggleSourceMode={toggleSourceMode}
         onToggleFavorite={onToggleFavorite}
       />
@@ -353,14 +341,15 @@ function EditorToolbar({
   editingMode,
   editing,
   fileMode,
+  leading,
   note,
   onOpenMoreActions,
-  onToggleEditing,
   onToggleSourceMode,
   onToggleFavorite,
 }: EditorToolbarProps) {
   return (
     <MobileToolbar testID="editor-toolbar">
+      {leading}
       <FileText color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />
       <EditorToolbarIcon fileMode={fileMode} note={note} />
       <MobileToolbarTitle testID="editor-toolbar-title" title={note.title} />
@@ -371,7 +360,6 @@ function EditorToolbar({
         fileMode={fileMode}
         note={note}
         onOpenMoreActions={onOpenMoreActions}
-        onToggleEditing={onToggleEditing}
         onToggleFavorite={onToggleFavorite}
         onToggleSourceMode={onToggleSourceMode}
       />
@@ -412,15 +400,13 @@ function FileToolbarActions({ onOpenMoreActions }: EditorToolbarProps) {
 }
 
 function MarkdownToolbarActions({
-  editing,
   editingMode,
   note,
   onOpenMoreActions,
-  onToggleEditing,
   onToggleFavorite,
   onToggleSourceMode,
 }: EditorToolbarProps) {
-  const sourceModeActive = editing && editingMode === 'source'
+  const sourceModeActive = editingMode === 'source'
 
   return (
     <>
@@ -430,13 +416,6 @@ function MarkdownToolbarActions({
         onPress={onToggleFavorite}
       >
         <Star color={note.favorite ? mobileColors.primary : mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} weight={note.favorite ? 'fill' : 'regular'} />
-      </MobileIconButton>
-      <MobileIconButton
-        accessibilityLabel={mobileText(editing ? 'common.save' : 'menu.edit')}
-        testID="editor-edit-action"
-        onPress={onToggleEditing}
-      >
-        <EditorToggleIcon editing={editing} />
       </MobileIconButton>
       <MobileIconButton
         accessibilityLabel={mobileText(sourceModeActive ? 'editor.toolbar.rawReturn' : 'editor.toolbar.rawOpen')}
@@ -451,12 +430,6 @@ function MarkdownToolbarActions({
       </MobileIconButton>
     </>
   )
-}
-
-function EditorToggleIcon({ editing }: { editing: boolean }) {
-  return editing
-    ? <Check color={mobileColors.primary} size={desktopToolbarActionParity.iconSize} weight="bold" />
-    : <PencilSimple color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />
 }
 
 function EditorContent({

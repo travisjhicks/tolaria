@@ -11,15 +11,23 @@ describe('mobile workspace keyboard shortcuts', () => {
     expect(shortcut('k')).toBe('commandPalette')
   })
 
+  it('opens find in note from the desktop find shortcut', () => {
+    expect(shortcut('f')).toBe('findInNote')
+  })
+
+  it('toggles the raw editor from the desktop raw-editor shortcut', () => {
+    expect(shortcut('\\')).toBe('toggleRawEditor')
+    expect(shortcut('Backslash')).toBe('toggleRawEditor')
+  })
+
+  it('moves across visible notes with unmodified arrow keys', () => {
+    expect(unmodifiedShortcut('ArrowDown')).toBe('nextNote')
+    expect(unmodifiedShortcut('ArrowUp')).toBe('previousNote')
+  })
+
   it('ignores shifted or unmodified keys', () => {
     expect(shortcut('k', { shiftKey: true })).toBeNull()
-    expect(mobileWorkspaceKeyboardAction({
-      altKey: false,
-      ctrlKey: false,
-      key: 'k',
-      metaKey: false,
-      shiftKey: false,
-    })).toBeNull()
+    expect(unmodifiedShortcut('k')).toBeNull()
   })
 })
 
@@ -34,5 +42,15 @@ function shortcut(
     metaKey: true,
     shiftKey: false,
     ...overrides,
+  })
+}
+
+function unmodifiedShortcut(key: string) {
+  return mobileWorkspaceKeyboardAction({
+    altKey: false,
+    ctrlKey: false,
+    key,
+    metaKey: false,
+    shiftKey: false,
   })
 }

@@ -6,7 +6,6 @@ import {
 import {
   activeMobileEmojiShortcodeQuery,
   activeMobilePersonMentionQuery,
-  activeMobileSlashCommandQuery,
   activeMobileWikilinkQuery,
 } from '../../workspace/mobileWikilinkAutocomplete'
 import type { TiptapJsonNode } from '../../workspace/mobileDocumentContent'
@@ -419,16 +418,7 @@ function inlineAutocompleteForContainer(
     })
   }
 
-  const slashCommandMatch = activeMobileSlashCommandQuery(projection.text, projection.cursor)
-  if (!slashCommandMatch) return null
-
-  return inlineAutocompleteMatch({
-    kind: 'slashCommand',
-    position,
-    projection,
-    query: slashCommandMatch.query,
-    start: slashCommandMatch.start,
-  })
+  return null
 }
 
 function inlineAutocompleteMatch({

@@ -2,6 +2,11 @@ import {
   assertNativePropertiesLayoutMetrics,
   nativePropertiesMetricContract,
 } from './nativePropertiesLayoutMetrics.ts'
+import {
+  phoneWorkspaceSidebarDrawerMaxWidth,
+  phoneWorkspaceSidebarDrawerWidth,
+  phoneWorkspaceSidebarDrawerWidthRatio,
+} from '../screens/phoneWorkspaceTransitions.ts'
 
 export { nativePropertiesMetricContract } from './nativePropertiesLayoutMetrics.ts'
 
@@ -172,8 +177,8 @@ export const nativeWysiwygEditorMetricContract = {
 } as const
 
 export const nativePhoneShellMetricContract = {
-  drawerMaxWidth: 320,
-  drawerWidthRatio: 0.78,
+  drawerMaxWidth: phoneWorkspaceSidebarDrawerMaxWidth,
+  drawerWidthRatio: phoneWorkspaceSidebarDrawerWidthRatio,
   maxWidth: 899,
   minContentHeight: 320,
   minRootHeight: 480,
@@ -567,10 +572,7 @@ function assertNativePhoneSidebarLayoutMetrics(metrics: NativeLayoutMetricMap): 
 }
 
 function phoneSidebarDrawerWidth(rootWidth: number) {
-  return Math.min(
-    nativePhoneShellMetricContract.drawerMaxWidth,
-    Math.round(rootWidth * nativePhoneShellMetricContract.drawerWidthRatio),
-  )
+  return phoneWorkspaceSidebarDrawerWidth(rootWidth)
 }
 
 function assertNativePhoneNoteListLayoutMetrics(metrics: NativeLayoutMetricMap): NativeLayoutAssertionFailure[] {

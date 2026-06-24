@@ -54,24 +54,6 @@ const expectedNativeWysiwygAutocompleteProofs: NativeWysiwygAutocompleteExpected
     scenario: 'emoji',
   },
   {
-    id: 'editor.wysiwyg.autocomplete.slashCommand',
-    kind: 'slashCommand',
-    message: 'Native WYSIWYG detects slash-command autocomplete with the exact replacement range',
-    query: 'table',
-    rangeFrom: 8,
-    rangeTo: 14,
-    scenario: 'slashCommand',
-  },
-  {
-    id: 'editor.wysiwyg.autocomplete.slashCommandTextBlock',
-    kind: 'slashCommand',
-    message: 'Native WYSIWYG detects desktop text-block slash commands with the exact replacement range',
-    query: 'heading2',
-    rangeFrom: 8,
-    rangeTo: 17,
-    scenario: 'slashCommandTextBlock',
-  },
-  {
     id: 'editor.wysiwyg.autocomplete.inlineCodeSuppression',
     kind: '',
     message: 'Native WYSIWYG suppresses autocomplete inside inline code marks',
@@ -115,16 +97,6 @@ export function nativeWysiwygAutocompleteProbeSteps(): NativeWysiwygAutocomplete
       content: textProbeContent('Ship :rock'),
       scenario: 'emoji',
       selection: { from: 11, to: 11 },
-    },
-    {
-      content: textProbeContent('Insert /table'),
-      scenario: 'slashCommand',
-      selection: { from: 14, to: 14 },
-    },
-    {
-      content: textProbeContent('Insert /heading2'),
-      scenario: 'slashCommandTextBlock',
-      selection: { from: 17, to: 17 },
     },
     {
       content: inlineCodeProbeContent('code [[AI'),

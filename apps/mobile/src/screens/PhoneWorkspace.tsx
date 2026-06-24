@@ -37,6 +37,7 @@ import { useTabletWorkspaceController } from './useTabletWorkspaceController'
 import { useMobileInspectorReferenceGroups } from './useMobileInspectorReferenceGroups'
 import {
   phoneWorkspaceDragOffset,
+  phoneWorkspaceSidebarDrawerWidth,
   phoneWorkspaceSwipeDestination,
   type PhoneWorkspaceState,
   type PhoneWorkspaceSwipeDirection,
@@ -110,6 +111,8 @@ function PhoneWorkspaceChrome(props: PhoneWorkspaceChromeProps) {
   const tableOfContents = usePhoneTableOfContentsTarget(setPhoneState)
   const phoneLayoutProbe = useMobileLayoutProbe(options.layoutProbe)
   const navigation = usePhoneWorkspaceNavigation({ controller, setPhoneState, setSourceModeRequest })
+  const selectNextNote = useCallback(() => selectAdjacentVisiblePhoneNote(controller.notes, controller.selectedNoteId, controller.onSelectNote, 1), [controller])
+  const selectPreviousNote = useCallback(() => selectAdjacentVisiblePhoneNote(controller.notes, controller.selectedNoteId, controller.onSelectNote, -1), [controller])
   const commandPalette = usePhoneCommandPalette({
     controller,
     onOpenNativeVault,
@@ -125,8 +128,12 @@ function PhoneWorkspaceChrome(props: PhoneWorkspaceChromeProps) {
   })
   useMobileWorkspaceKeyboardShortcuts({
     onCreateNote: controller.onOpenCreateNote,
+    onOpenFindInNote: controller.onOpenFindInNote,
     onOpenCommandPalette: commandPalette.open,
     onOpenSearch: controller.onOpenSearch,
+    onSelectNextNote: selectNextNote,
+    onSelectPreviousNote: selectPreviousNote,
+    onToggleRawEditor: editorCommandRegistry.commands.toggleRawEditor,
   })
   usePhoneCommandPaletteProof(commandPalette.commands, commandPaletteProbe)
   const createRelationshipTargetAndOpenEditor = useCreateRelationshipTargetAndOpenEditor(controller, setPhoneState)
@@ -196,6 +203,19 @@ function phoneWorkspaceEditorOptions(props: PhoneWorkspaceProps): PhoneWorkspace
 }
 
 type PhoneWorkspaceNavigation = ReturnType<typeof usePhoneWorkspaceNavigation>
+
+function selectAdjacentVisiblePhoneNote(
+  notes: MobileNote[],
+  selectedNoteId: string | null,
+  onSelectNote: (noteId: string) => void,
+  direction: -1 | 1,
+) {
+  if (notes.length === 0) return
+  const currentIndex = Math.max(0, notes.findIndex((note) => note.id === selectedNoteId))
+  const nextIndex = Math.max(0, Math.min(notes.length - 1, currentIndex + direction))
+  const noteId = notes[nextIndex]?.id
+  if (noteId) onSelectNote(noteId)
+}
 
 function usePhoneWorkspaceNavigation({
   controller,
@@ -683,7 +703,7 @@ function PhoneSidebarDrawer({
   phoneSwipePreview,
 }: PhoneWorkspaceStateViewProps) {
   const { width } = useWindowDimensions()
-  const drawerWidth = Math.min(320, Math.round(width * 0.78))
+  const drawerWidth = phoneWorkspaceSidebarDrawerWidth(width)
   const swipeHandlers = useHorizontalSwipe({
     ...phoneSwipePreviewHandlers(phoneSwipePreview),
     onSwipeLeft: openList,
@@ -979,7 +999,6 @@ const styles = StyleSheet.create({
   },
   drawerPreview: {
     bottom: 0,
-    opacity: 0.72,
     position: 'absolute',
     top: 0,
   },

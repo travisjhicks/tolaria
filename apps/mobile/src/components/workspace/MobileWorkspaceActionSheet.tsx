@@ -56,7 +56,7 @@ import { MoreActionsContent } from './MobileWorkspaceMoreActionsContent'
 import { MobileFavoriteActions, MobileSavedViewActions, MobileTypeSectionActions } from './MobileWorkspaceMoveActions'
 import { MobileWorkspaceSuggestionList } from './MobileWorkspaceSuggestionList'
 import type { MobileWorkspaceSuggestionItem } from './MobileWorkspaceSuggestionList'
-import { chipTone, noteTypeColor, noteTypeSoftColor, statusTone, tagTone } from './mobileWorkspaceTone'
+import { chipTone, noteTypeSoftColor, statusTone, tagTone } from './mobileWorkspaceTone'
 import { mobileSingleTextFieldSubmitDisabled } from './MobileWorkspaceActionSheetModel'
 
 export type MobileWorkspaceAction =
@@ -417,7 +417,6 @@ function SearchContent({
             chips={<NoteRowChips note={note} />}
             selected={index === selectedResultIndex}
             selectedBackgroundColor={noteTypeSoftColor(note.typeTone)}
-            selectedBorderColor={noteTypeColor(note.typeTone)}
             subtitle={note.snippet}
             testID={`workspace-search-result-${note.id}`}
             title={note.title}

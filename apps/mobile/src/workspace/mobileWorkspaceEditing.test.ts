@@ -876,7 +876,7 @@ describe('applyMobileWorkspaceEdit', () => {
     expectUpdatedSavedViewSnapshot(result)
   })
 
-  it('deletes saved views and removes the sidebar section when none remain', () => {
+  it('deletes saved views and keeps an empty sidebar section for creating the next view', () => {
     const result = applyMobileWorkspaceEditWithWrites(workspaceScenarioForId('default'), {
       type: 'deleteView',
       viewId: 'view-active-procedures',
@@ -887,7 +887,11 @@ describe('applyMobileWorkspaceEdit', () => {
       path: 'views/active-procedures.yml',
     }])
     expect(result.snapshot.views).toEqual([])
-    expect(result.snapshot.sidebarSections.some((section) => section.id === 'views')).toBe(false)
+    expect(result.snapshot.sidebarSections.find((section) => section.id === 'views')).toMatchObject({
+      id: 'views',
+      items: [],
+      label: 'Views',
+    })
   })
 
   it('moves saved views and persists desktop-style dense order values', () => {

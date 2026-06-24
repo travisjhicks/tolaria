@@ -134,6 +134,7 @@ const folderTreeRowStyles = StyleSheet.create({
   row: {
     justifyContent: 'center',
     borderRadius: desktopSidebarParity.itemRadius,
+    minHeight: desktopSidebarParity.folderRowHeight,
     paddingBottom: desktopSidebarParity.itemPadding.regular.bottom,
     paddingRight: desktopSidebarParity.itemPadding.regular.right,
     paddingTop: desktopSidebarParity.itemPadding.regular.top,
