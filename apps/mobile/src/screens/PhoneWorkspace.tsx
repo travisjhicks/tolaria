@@ -38,9 +38,11 @@ import { useMobileInspectorReferenceGroups } from './useMobileInspectorReference
 import { useInitialActionSheetQaTarget } from './useInitialActionSheetQaTarget'
 import type { MobileActionSheetQaTarget } from './tabletWorkspaceTypes'
 import {
+  phoneWorkspaceDragCommitOffset,
   phoneWorkspaceDragOffset,
   phoneWorkspaceSidebarDrawerWidth,
   phoneWorkspaceSwipeDestination,
+  phoneWorkspaceTransitionDurationMs,
   type PhoneWorkspaceState,
   type PhoneWorkspaceSwipeDirection,
 } from './phoneWorkspaceTransitions'
@@ -501,10 +503,27 @@ function usePhoneDragPreview(phoneState: PhoneWorkspaceState, screenWidth: numbe
     }
 
     dragX.stopAnimation()
-    dragX.setValue(0)
-    setPreviewState(null)
-    action()
-  }, [dragX, enabled])
+    const commitOffset = phoneWorkspaceDragCommitOffset(phoneState, nextState, screenWidth)
+    if (commitOffset === 0) {
+      dragX.setValue(0)
+      setPreviewState(null)
+      action()
+      return
+    }
+
+    setPreviewState(nextState)
+    NativeAnimated.timing(dragX, {
+      duration: phoneWorkspaceTransitionDurationMs,
+      toValue: commitOffset,
+      useNativeDriver: true,
+    }).start(() => {
+      action()
+      requestAnimationFrame(() => {
+        dragX.setValue(0)
+        setPreviewState(null)
+      })
+    })
+  }, [dragX, enabled, phoneState, screenWidth])
   const onSwipeProgress = useCallback(({ dx }: { dx: number }) => {
     if (!enabled) return
 
