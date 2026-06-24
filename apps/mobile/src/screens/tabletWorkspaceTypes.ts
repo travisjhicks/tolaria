@@ -269,6 +269,7 @@ export type TabletWorkspaceChromeProps = {
   sourceIdleSave?: boolean
   sourceSelectionProbe?: boolean
   tableOfContentsProbe?: boolean
+  tabletTransitionProbe?: boolean
   snapshot: MobileWorkspaceSnapshot
   vaultRootUri: string | null
   wysiwygAutocompleteProbe?: boolean

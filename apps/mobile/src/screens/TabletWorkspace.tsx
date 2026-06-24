@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Animated as NativeAnimated, Dimensions, Platform, StyleSheet, useWindowDimensions, View } from 'react-native'
 import { CaretLeft, CaretRight, SidebarSimple } from 'phosphor-react-native'
 import { MobileCommandPalette } from '../components/workspace/MobileCommandPalette'
@@ -56,6 +56,7 @@ export function TabletWorkspace({
   sourceSelectionProbe = false,
   snapshot,
   tableOfContentsProbe = false,
+  tabletTransitionProbe = false,
   wysiwygAutocompleteProbe = false,
   wysiwygExternalLinkProbe = false,
   wysiwygFormatCommandProbe = false,
@@ -81,6 +82,7 @@ export function TabletWorkspace({
   sourceSelectionProbe?: boolean
   snapshot: MobileWorkspaceSnapshot
   tableOfContentsProbe?: boolean
+  tabletTransitionProbe?: boolean
   wysiwygAutocompleteProbe?: boolean
   wysiwygExternalLinkProbe?: boolean
   wysiwygFormatCommandProbe?: boolean
@@ -110,6 +112,7 @@ export function TabletWorkspace({
         sourceIdleSave={sourceIdleSave}
         sourceSelectionProbe={sourceSelectionProbe}
         tableOfContentsProbe={tableOfContentsProbe}
+        tabletTransitionProbe={tabletTransitionProbe}
         wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
         wysiwygExternalLinkProbe={wysiwygExternalLinkProbe}
         wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
@@ -150,6 +153,7 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
     onOpenNativeVault,
     onSelectNote,
     snapshot,
+    tabletTransitionProbe = false,
   } = props
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(initialCommandPaletteOpen)
   const [tableOfContentsTarget, setTableOfContentsTarget] = useState<TabletTableOfContentsTargetRequest | null>(null)
@@ -182,6 +186,7 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
     onViewEditorList: gestures.showEditorList,
     onViewEditorOnly: gestures.showEditorOnly,
   }), [editorCommandRegistry.commands.pastePlainText, editorCommandRegistry.commands.save, editorCommandRegistry.commands.toggleRawEditor, gestures, onOpenNativeVault, openCommandPalette, props])
+  useTabletTransitionProbe(tabletTransitionProbe, gestures)
   const handleNavigateWikilink = useCallback((target: string) => {
     const noteId = mobileNoteIdForWikilinkTarget(suggestionNotes, target)
     if (noteId) onSelectNote(noteId)
@@ -235,6 +240,42 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
       {commandPaletteOpen ? <MobileCommandPalette commands={commandPaletteCommands} onClose={closeCommandPalette} /> : null}
     </View>
   )
+}
+
+function useTabletTransitionProbe(
+  enabled: boolean,
+  gestures: ReturnType<typeof useTabletPanelGestures>,
+) {
+  const actionsRef = useRef({
+    hideLeftChrome: gestures.hideLeftChrome,
+    hideProperties: gestures.hideProperties,
+    showLeftChrome: gestures.showLeftChrome,
+    showProperties: gestures.showProperties,
+  })
+
+  useEffect(() => {
+    actionsRef.current = {
+      hideLeftChrome: gestures.hideLeftChrome,
+      hideProperties: gestures.hideProperties,
+      showLeftChrome: gestures.showLeftChrome,
+      showProperties: gestures.showProperties,
+    }
+  }, [gestures.hideLeftChrome, gestures.hideProperties, gestures.showLeftChrome, gestures.showProperties])
+
+  useEffect(() => {
+    if (!enabled) return
+
+    const timers = [
+      setTimeout(() => actionsRef.current.hideLeftChrome(), 1200),
+      setTimeout(() => actionsRef.current.showLeftChrome(), 2600),
+      setTimeout(() => actionsRef.current.hideProperties(), 4000),
+      setTimeout(() => actionsRef.current.showProperties(), 5400),
+    ]
+
+    return () => {
+      timers.forEach(clearTimeout)
+    }
+  }, [enabled])
 }
 
 type TabletTableOfContentsTargetRequest = MobileTableOfContentsTarget & { requestId: number }
@@ -957,6 +998,8 @@ function useTabletPanelGestures(compactTablet: boolean, defaultPropertiesVisible
       }
       showLeftChrome()
     }, [hideLeftChrome, noteListVisible, showLeftChrome, showSidebar]),
+    hideLeftChrome,
+    showLeftChrome: useCallback(() => showLeftChrome(), [showLeftChrome]),
     leftChromeMotionStyle,
     leftChromeRevealSwipe: useHorizontalSwipe({
       disabled: leftChromeRendered,
@@ -973,6 +1016,7 @@ function useTabletPanelGestures(compactTablet: boolean, defaultPropertiesVisible
     leftChromeVisible: leftChromeRendered || leftChromePreviewVisible,
     noteListVisible,
     propertiesMotionStyle,
+    hideProperties,
     propertiesPanelVisible: propertiesVisible || propertiesPreviewVisible,
     showProperties: useCallback(() => showProperties(), [showProperties]),
     toggleProperties: useCallback(() => {

@@ -172,6 +172,7 @@ export function MobileUiLab() {
         sourceSelectionProbe={qa.sourceSelectionProbe}
         snapshot={snapshot}
         tableOfContentsProbe={qa.tableOfContentsProbe}
+        tabletTransitionProbe={qa.tabletTransitionProbe}
         onTableOfContentsScrollProof={qa.tableOfContentsProbe ? handleTableOfContentsScrollProof : undefined}
         wysiwygAutocompleteProbe={qa.wysiwygAutocompleteProbe}
         wysiwygExternalLinkProbe={qa.wysiwygExternalLinkProbe}
@@ -267,6 +268,7 @@ function mobileUiQaFlags(
     mobileActionAdapterProbe: nativeMobileActionAdapterProbeEnabled(searchParams),
     sourceSelectionProbe: nativeSourceSelectionProbeEnabled(searchParams),
     tableOfContentsProbe: nativeTableOfContentsProbeEnabled(searchParams),
+    tabletTransitionProbe: tabletTransitionProbeEnabled(searchParams),
     wysiwygAutocompleteProbe: nativeWysiwygAutocompleteProbeEnabled(searchParams),
     wysiwygExternalLinkProbe: nativeWysiwygExternalLinkProbeEnabled(searchParams),
     wysiwygFormatCommandProbe: nativeWysiwygFormatCommandProbeEnabled(searchParams),
@@ -389,6 +391,11 @@ function layoutProbeEnabled(searchParams: URLSearchParams) {
   return searchParams.get('layoutProbe') === '1' || envFlagEnabled('EXPO_PUBLIC_TOLARIA_LAYOUT_PROBE')
 }
 
+function tabletTransitionProbeEnabled(searchParams: URLSearchParams) {
+  return searchParams.get('tabletTransitionProbe') === '1'
+    || envFlagEnabled('EXPO_PUBLIC_TOLARIA_TABLET_TRANSITION_PROBE')
+}
+
 function editorIdleSaveDisabled(searchParams: URLSearchParams) {
   return searchParams.get('disableEditorIdleSave') === '1'
 }
@@ -473,6 +480,7 @@ function mobileWorkspaceKey({
   sourceSelectionProbe,
   mobileActionAdapterProbe,
   tableOfContentsProbe,
+  tabletTransitionProbe,
   workspacePersistenceProbe,
   wysiwygAutocompleteProbe,
   wysiwygExternalLinkProbe,
@@ -498,6 +506,7 @@ function mobileWorkspaceKey({
   sourceSelectionProbe: boolean
   mobileActionAdapterProbe: boolean
   tableOfContentsProbe: boolean
+  tabletTransitionProbe: boolean
   workspacePersistenceProbe: boolean
   wysiwygAutocompleteProbe: boolean
   wysiwygExternalLinkProbe: boolean
@@ -524,6 +533,7 @@ function mobileWorkspaceKey({
     flagKey(sourceSelectionProbe, 'source-selection-probe', 'no-source-selection-probe'),
     flagKey(mobileActionAdapterProbe, 'mobile-action-adapter-probe', 'no-mobile-action-adapter-probe'),
     flagKey(tableOfContentsProbe, 'table-of-contents-probe', 'no-table-of-contents-probe'),
+    flagKey(tabletTransitionProbe, 'tablet-transition-probe', 'no-tablet-transition-probe'),
     flagKey(workspacePersistenceProbe, 'workspace-persistence-probe', 'no-workspace-persistence-probe'),
     flagKey(wysiwygAutocompleteProbe, 'wysiwyg-autocomplete-probe', 'no-wysiwyg-autocomplete-probe'),
     flagKey(wysiwygExternalLinkProbe, 'wysiwyg-external-link-probe', 'no-wysiwyg-external-link-probe'),
