@@ -150,6 +150,8 @@ describe('native layout metrics', () => {
       propertyRowMetric('properties.row.links', { panelWidth: phoneWidth }),
       propertySectionMetric('properties.section.tags', { panelWidth: phoneWidth }),
       propertySectionMetric('properties.section.belongs-to', { panelWidth: phoneWidth }),
+      propertyActionMetric('properties.action.add-property', { panelWidth: phoneWidth }),
+      propertyActionMetric('properties.action.add-relationship', { panelWidth: phoneWidth }),
       relationshipRowMetric('properties.relationship.llm-workflow', 'properties.section.belongs-to', { panelWidth: phoneWidth }),
     ].flat())
 
@@ -175,6 +177,12 @@ describe('native layout metrics', () => {
       propertyRowMetric('properties.row.links', { panelWidth: phoneWidth }),
       propertySectionMetric('properties.section.tags', { panelWidth: phoneWidth }),
       propertySectionMetric('properties.section.belongs-to', { panelWidth: phoneWidth }),
+      propertyActionMetric('properties.action.add-property', {
+        panelWidth: phoneWidth,
+        rowX: 0,
+        valueRightPadding: 0,
+      }),
+      propertyActionMetric('properties.action.add-relationship', { panelWidth: phoneWidth }),
       relationshipRowMetric('properties.relationship.llm-workflow', 'properties.section.belongs-to', {
         panelWidth: phoneWidth,
         rowWidth: 260,
@@ -187,6 +195,8 @@ describe('native layout metrics', () => {
     expect(formatted).toContain('properties.row.type: property row keeps desktop minimum height')
     expect(formatted).toContain('properties.row.type: property label keeps desktop row inset')
     expect(formatted).toContain('properties.row.type: property value keeps desktop right padding')
+    expect(formatted).toContain('properties.action.add-property: property action row keeps desktop panel inset')
+    expect(formatted).toContain('properties.action.add-property: property action value keeps desktop right padding')
     expect(formatted).toContain('properties.relationship.llm-workflow: relationship row fills the property value width')
   })
 
@@ -237,6 +247,8 @@ describe('native layout metrics', () => {
       propertyRowMetric('properties.row.links'),
       propertySectionMetric('properties.section.tags'),
       propertySectionMetric('properties.section.belongs-to'),
+      propertyActionMetric('properties.action.add-property'),
+      propertyActionMetric('properties.action.add-relationship'),
       relationshipRowMetric('properties.relationship.llm-workflow', 'properties.section.belongs-to'),
     ].flat())
 
@@ -469,6 +481,35 @@ function propertySectionMetric(
     containerMetric({ height: rowHeight, id: `${id}.row`, width: rowWidth, x: rowX }),
     containerMetric({ height: 18, id: `${id}.label`, width: nativePropertiesMetricContract.labelWidth, x: labelX, y: 6 }),
     containerMetric({ height: 28, id: `${id}.value`, width: rowWidth - labelX * 2, x: labelX, y: 24 }),
+  ]
+}
+
+function propertyActionMetric(
+  id: string,
+  {
+    labelX = desktopPropertyParity.rowPaddingHorizontal,
+    panelWidth = desktopPanelParity.inspectorWidth,
+    rowHeight = desktopPropertyParity.rowMinHeight,
+    rowX = desktopPropertyParity.panelPadding,
+    valueRightPadding = desktopPropertyParity.rowPaddingHorizontal,
+  }: {
+    labelX?: number
+    panelWidth?: number
+    rowHeight?: number
+    rowX?: number
+    valueRightPadding?: number
+  } = {},
+): NativeLayoutMetric[] {
+  const rowWidth = panelWidth - desktopPropertyParity.panelPadding * 2
+  const contentWidth = rowWidth - desktopPropertyParity.rowPaddingHorizontal - valueRightPadding - mobileSpace.sm
+  const labelWidth = contentWidth / 2
+  const valueWidth = contentWidth - labelWidth
+  const valueX = labelX + labelWidth + mobileSpace.sm
+
+  return [
+    containerMetric({ height: rowHeight, id: `${id}.row`, width: rowWidth, x: rowX }),
+    containerMetric({ height: 18, id: `${id}.label`, width: labelWidth, x: labelX, y: 5 }),
+    containerMetric({ height: 18, id: `${id}.value`, width: valueWidth, x: valueX, y: 5 }),
   ]
 }
 

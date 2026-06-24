@@ -239,8 +239,20 @@ function NoteProperties({
           onPress={() => onAddRelationship(slot.key)}
         />
       ))}
-      <PropertyActionRow label={mobileText('inspector.properties.addProperty')} testID="property-action-add-property" onPress={() => onAddProperty()} />
-      <PropertyActionRow label={mobileText('inspector.relationship.addRelationship')} testID="property-action-add-relationship" onPress={() => onAddRelationship()} />
+      <PropertyActionRow
+        label={mobileText('inspector.properties.addProperty')}
+        layoutProbe={layoutProbe}
+        layoutProbeId="properties.action.add-property"
+        testID="property-action-add-property"
+        onPress={() => onAddProperty()}
+      />
+      <PropertyActionRow
+        label={mobileText('inspector.relationship.addRelationship')}
+        layoutProbe={layoutProbe}
+        layoutProbeId="properties.action.add-relationship"
+        testID="property-action-add-relationship"
+        onPress={() => onAddRelationship()}
+      />
       <ReferenceGroups groups={referenceGroups} typeDefinitions={typeDefinitions} onSelectNote={onSelectNote} />
     </>
   )
@@ -511,25 +523,37 @@ function PropertySection({
 
 function PropertyActionRow({
   label,
+  layoutProbe,
+  layoutProbeId,
   onPress,
   testID,
 }: {
   label: string
+  layoutProbe?: MobileLayoutProbe
+  layoutProbeId?: string
   onPress: () => void
   testID: string
 }) {
   const visibleLabel = label.replace(/^\+\s*/, '')
+  const metricId = layoutProbeId ?? testID
 
   return (
-    <Pressable accessibilityLabel={label} accessibilityRole="button" style={({ pressed }) => [actionStyles.row, pressed ? actionStyles.rowPressed : null]} testID={testID} onPress={onPress}>
-      <View style={actionStyles.label}>
+    <View {...propertyProbe(layoutProbe, metricId, 'row')} style={actionStyles.row}>
+      <View {...propertyProbe(layoutProbe, metricId, 'label')} pointerEvents="none" style={actionStyles.label}>
         <View style={actionStyles.iconSlot}>
-          <Plus color={mobileColors.textMuted} size={14} />
+          <Plus color={mobileColors.textFaint} size={14} />
         </View>
         <Text numberOfLines={1} style={actionStyles.text}>{visibleLabel}</Text>
       </View>
-      <View style={actionStyles.value} />
-    </Pressable>
+      <View {...propertyProbe(layoutProbe, metricId, 'value')} pointerEvents="none" style={actionStyles.value} />
+      <Pressable
+        accessibilityLabel={label}
+        accessibilityRole="button"
+        style={({ pressed }) => [actionStyles.pressLayer, pressed ? actionStyles.rowPressed : null]}
+        testID={testID}
+        onPress={onPress}
+      />
+    </View>
   )
 }
 
@@ -1051,14 +1075,23 @@ const actionStyles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     gap: mobileSpace.xs,
+    marginRight: mobileSpace.sm,
+    zIndex: 1,
+  },
+  pressLayer: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: desktopPropertyParity.actionRowRadius,
   },
   row: {
+    height: desktopPropertyParity.rowMinHeight,
     minHeight: desktopPropertyParity.rowMinHeight,
     alignItems: 'center',
     flexDirection: 'row',
-    gap: mobileSpace.sm,
+    gap: 0,
+    alignSelf: 'stretch',
     borderRadius: desktopPropertyParity.actionRowRadius,
     paddingHorizontal: desktopPropertyParity.rowPaddingHorizontal,
+    position: 'relative',
   },
   rowPressed: {
     backgroundColor: mobileColors.graySoft,
@@ -1066,10 +1099,11 @@ const actionStyles = StyleSheet.create({
   text: {
     minWidth: 0,
     flex: 1,
-    color: mobileColors.textMuted,
+    color: mobileColors.textFaint,
     fontSize: desktopPropertyParity.labelTextSize,
   },
   value: {
     flex: 1,
+    zIndex: 1,
   },
 })

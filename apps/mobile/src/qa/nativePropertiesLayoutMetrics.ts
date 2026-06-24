@@ -54,6 +54,7 @@ type RelationshipLayoutSpec = {
 const layoutTolerance = 1.5
 const propertyRowPrefix = 'properties.row.'
 const propertySectionPrefix = 'properties.section.'
+const propertyActionPrefix = 'properties.action.'
 const relationshipPrefix = 'properties.relationship.'
 const rowMetricSuffix = '.row'
 const tagsSectionId = 'properties.section.tags'
@@ -65,6 +66,11 @@ const requiredPropertyRowIds = [
   'properties.row.modified',
   'properties.row.workspace',
   'properties.row.links',
+] as const
+
+const requiredPropertyActionIds = [
+  'properties.action.add-property',
+  'properties.action.add-relationship',
 ] as const
 
 export const nativePropertiesMetricContract = {
@@ -81,6 +87,7 @@ export function assertNativePropertiesLayoutMetrics(context: PropertyLayoutConte
     ...assertPropertiesPanelLayout(context),
     ...propertyRowIdsForMetrics(context.metrics).flatMap((id) => assertPropertyRowLayout({ ...context, id })),
     ...propertySectionIdsForMetrics(context.metrics).flatMap((id) => assertPropertySectionLayout({ ...context, id })),
+    ...propertyActionIdsForMetrics(context.metrics).flatMap((id) => assertPropertyActionLayout({ ...context, id })),
     ...relationshipMetricIdsForMetrics(context.metrics).flatMap((id) => assertRelationshipRowLayout({
       id,
       metrics: context.metrics,
@@ -100,6 +107,13 @@ function propertySectionIdsForMetrics(metrics: NativeLayoutMetricMap): string[] 
   return uniqueMetricIds([
     tagsSectionId,
     ...metricBaseIds(metrics, propertySectionPrefix),
+  ])
+}
+
+function propertyActionIdsForMetrics(metrics: NativeLayoutMetricMap): string[] {
+  return uniqueMetricIds([
+    ...requiredPropertyActionIds,
+    ...metricBaseIds(metrics, propertyActionPrefix),
   ])
 }
 
@@ -178,6 +192,31 @@ function assertPropertySectionLayout({
       expected: nativePropertiesMetricContract.rowPaddingHorizontal,
       id,
       message: 'property section value keeps desktop row inset',
+    }),
+  ]
+}
+
+function assertPropertyActionLayout({
+  expectedPanelWidth,
+  id,
+  metrics,
+}: PropertyLayoutSpec): NativeLayoutAssertionFailure[] {
+  const row = propertyRowMetrics({ id, metrics })
+
+  return [
+    ...assertPropertyRowMetricsCaptured(id, row),
+    ...assertPropertyRowFrameLayout({ expectedPanelWidth, id, label: 'property action row', row }),
+    ...expectClose({
+      actual: row.label?.x ?? null,
+      expected: nativePropertiesMetricContract.rowPaddingHorizontal,
+      id,
+      message: 'property action label keeps desktop row inset',
+    }),
+    ...expectClose({
+      actual: row.row && row.value ? row.row.width - row.value.x - row.value.width : null,
+      expected: nativePropertiesMetricContract.rowPaddingHorizontal,
+      id,
+      message: 'property action value keeps desktop right padding',
     }),
   ]
 }
